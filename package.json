@@ -1,0 +1,28 @@
+{
+  "name": "devtool",
+  "version": "2.0.0",
+  "description": "120+ Free Developer Tools - Pure Vanilla JavaScript",
+  "type": "module",
+  "scripts": {
+    "dev": "python3 -m http.server 8000",
+    "start": "python3 -m http.server 8000",
+    "build": "echo 'No build needed - static site'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/i-am-epic/devtools.git"
+  },
+  "keywords": [
+    "developer-tools",
+    "devtools",
+    "utilities",
+    "ai-tools",
+    "cybersecurity",
+    "parquet-viewer",
+    "mermaid-viewer",
+    "csv-converter"
+  ],
+  "author": "Nik Boson (@nikboson)",
+  "license": "MIT",
+  "homepage": "https://github.com/i-am-epic/devtools#readme"
+}
