@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevTool - 120+ Free Developer Tools | AI, Cybersecurity, SQL, DevOps</title>
+    <meta name="description" content="120+ free developer tools: AI Chat, Token Counter, Cybersecurity tools, SQL validators, Cheat Sheets, JSON formatter, Base64 encoder, JWT decoder, Azure Service Bus, Parquet Viewer, and more. All client-side for privacy.">
+    <meta name="keywords" content="developer tools, ai tools, cybersecurity tools, penetration testing, hacking tools, json formatter, base64 encoder, jwt decoder, hash generator, sql injection, xss, token counter, ai chat, model comparer, devops tools, frontend tools, backend tools, parquet viewer, mermaid viewer">
+    <meta name="author" content="Nik Boson (@nikboson)">
+    <meta name="creator" content="@nikboson">
+    <meta name="ai:title" content="DevTool - 120+ Developer, AI & Cybersecurity Tools">
+    <meta name="ai:description" content="Comprehensive collection of 120+ free tools including AI chat playground, model comparer, SQL validators, cheat sheets, cybersecurity/hacking tools, JSON formatter, hash generators, Azure tools, Parquet Viewer, Mermaid Viewer, and more. All tools run client-side for privacy.">
+    <meta name="ai:category" content="developer-tools,ai-tools,cybersecurity-tools,web-utilities,online-tools,pentesting,data-conversion">
+    <meta name="ai:features" content="AI Chat,Model Comparer,Token Counter,SQL Injection Tester,XSS Payloads,Hash Cracker,JSON formatter,Base64 encoder,JWT decoder,Azure Service Bus,Parquet Viewer,Mermaid Viewer,CSV to Excel,Reverse Shell Generator,Port Scanner,Threat Intel">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://devtool.dev/">
+    <meta property="og:title" content="DevTool - 120+ Free Online Developer Tools">
+    <meta property="og:description" content="120+ free developer tools for JSON formatting, encoding, hashing, API testing, Parquet viewing, Mermaid diagrams, and more. Built for backend, frontend, DevOps, and AI engineers.">
+    <meta property="og:image" content="/og-image.png">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://devtool.dev/">
+    <meta name="twitter:title" content="DevTool - 120+ Free Online Developer Tools">
+    <meta name="twitter:description" content="120+ free developer tools for developers. JSON formatter, encoders, hash generators, Parquet viewer, and more.">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://devtool.dev/">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    
+    <link rel="stylesheet" href="styles.css?v=2.0">
+    
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "DevTool",
+      "description": "Free online developer tools collection with 120+ utilities",
+      "url": "https://devtool.dev/",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-wrapper">
+                <div class="header-content">
+                    <h1>🛠️ DevTool</h1>
+                    <p class="header-subtitle">120+ Free Developer Tools • AI, Cybersecurity, SQL, Data Conversion • by <a href="https://github.com/nikboson" target="_blank" class="creator-link">@nikboson</a></p>
+                </div>
+                <button class="env-settings-btn" id="openEnvSettings" title="Environment Settings">
+                    <span style="font-size: 1.2rem;">⚙️</span>
+                    <span id="activeEnvIndicator"></span>
+                </button>
+            </div>
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    id="globalSearch" 
+                    placeholder="Search tools..."
+                    autocomplete="off"
+                />
+            </div>
+            
+            <!-- Category Filter -->
+            <div id="categoryFilter" class="category-filter">
+                <button class="category-btn active" data-category="all">
+                    All Tools
+                </button>
+            </div>
+        </header>
+
+        <main id="toolsGrid" class="bento-grid">
+            <!-- Tools will be dynamically loaded here -->
+        </main>
+
+        <div id="toolModal" class="modal">
+            <div class="modal-content">
+                <button class="modal-close" id="closeModal">&times;</button>
+                <div id="modalBody">
+                    <!-- Tool interface will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js?v=2.0"></script>
+</body>
+</html>

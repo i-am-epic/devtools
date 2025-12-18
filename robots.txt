@@ -1,0 +1,35 @@
+# DevTools Hub - Free Online Developer Tools
+# Created by @nikboson
+
+User-agent: *
+Allow: /
+Disallow: /js/
+Disallow: /*.json
+
+# AI Crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+# Sitemap
+Sitemap: https://devtoolshub.dev/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1

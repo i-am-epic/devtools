@@ -1,0 +1,1214 @@
+{
+  "categories": {
+    "backend": { "name": "Backend Development", "icon": "🔧", "order": 1 },
+    "frontend": { "name": "Frontend Development", "icon": "🎨", "order": 2 },
+    "devops": { "name": "DevOps & Cloud", "icon": "☁️", "order": 3 },
+    "ai": { "name": "AI & LLM Tools", "icon": "🤖", "order": 4 },
+    "cybersecurity": { "name": "Cybersecurity & Hacking", "icon": "🛡️", "order": 5 },
+    "conversion": { "name": "Data Conversion", "icon": "🔄", "order": 6 },
+    "sql": { "name": "SQL & Database", "icon": "🗄️", "order": 7 },
+    "cheatsheet": { "name": "Cheat Sheets", "icon": "📚", "order": 8 },
+    "data": { "name": "Data Engineer", "icon": "📊", "order": 9 },
+    "security": { "name": "Security & Crypto", "icon": "🔐", "order": 10 },
+    "utility": { "name": "General Utilities", "icon": "⚙️", "order": 11 }
+  },
+  "tools": [
+    {
+      "id": "json-beautifier",
+      "name": "JSON Formatter",
+      "description": "Format, minify, and validate JSON with syntax highlighting",
+      "category": "backend",
+      "enabled": true,
+      "icon": "{ }",
+      "keywords": ["json", "formatter", "beautifier", "validator", "pretty print", "minify"]
+    },
+    {
+      "id": "guid-generator",
+      "name": "UUID Generator",
+      "description": "Generate UUID v4 and GUID identifiers instantly",
+      "category": "utility",
+      "enabled": true,
+      "icon": "🔑",
+      "keywords": ["uuid", "guid", "identifier", "unique id", "random id", "generator"]
+    },
+    {
+      "id": "sha256-hash",
+      "name": "Hash Generator",
+      "description": "Generate SHA256, SHA1, MD5 cryptographic hashes",
+      "category": "security",
+      "enabled": true,
+      "icon": "#️⃣",
+      "keywords": ["hash", "sha256", "sha1", "md5", "checksum", "crypto", "hash generator"]
+    },
+    {
+      "id": "base64-encoder",
+      "name": "Base64 Tool",
+      "description": "Encode and decode Base64 strings and files",
+      "category": "utility",
+      "enabled": true,
+      "icon": "⇄",
+      "keywords": ["base64", "encode", "decode", "encoding", "base64 encoder", "base64 decoder"]
+    },
+    {
+      "id": "diff-checker",
+      "name": "Text Diff Tool",
+      "description": "Compare two texts side by side with difference highlighting",
+      "category": "utility",
+      "enabled": true,
+      "icon": "≠",
+      "keywords": ["diff", "compare", "difference", "merge", "text comparison", "diff checker"]
+    },
+    {
+      "id": "servicebus-sender",
+      "name": "Service Bus Sender",
+      "description": "Send messages to Azure Service Bus queues and topics",
+      "category": "devops",
+      "enabled": true,
+      "icon": "📤",
+      "keywords": ["azure", "service bus", "queue", "topic", "messaging", "azure service bus"]
+    },
+    {
+      "id": "servicebus-listener",
+      "name": "Service Bus Listener",
+      "description": "Listen and consume Azure Service Bus messages in real-time",
+      "category": "devops",
+      "enabled": true,
+      "icon": "📥",
+      "keywords": ["azure", "service bus", "listener", "subscriber", "consumer", "azure messaging"]
+    },
+    {
+      "id": "jwt-decoder",
+      "name": "JWT Debugger",
+      "description": "Decode, verify, and generate JSON Web Tokens",
+      "category": "security",
+      "enabled": false,
+      "icon": "🎫",
+      "keywords": ["jwt", "json web token", "auth", "authentication", "oauth", "jwt decoder"]
+    },
+    {
+      "id": "regex-tester",
+      "name": "Regex Tester",
+      "description": "Test and debug regular expressions with live matching",
+      "category": "utility",
+      "enabled": false,
+      "icon": ".*",
+      "keywords": ["regex", "regexp", "regular expression", "pattern matching", "regex tester"]
+    },
+    {
+      "id": "curl-converter",
+      "name": "cURL Converter",
+      "description": "Convert cURL commands to Python, JavaScript, Go, and more",
+      "category": "backend",
+      "enabled": false,
+      "icon": "📡",
+      "keywords": ["curl", "http", "api", "request", "postman", "curl converter"]
+    },
+    {
+      "id": "markdown-preview",
+      "name": "Markdown Editor",
+      "description": "Live markdown editor with preview and export to HTML",
+      "category": "frontend",
+      "enabled": false,
+      "icon": "📝",
+      "keywords": ["markdown", "md", "editor", "preview", "documentation", "markdown editor"]
+    },
+    {
+      "id": "mermaid-viewer",
+      "name": "Mermaid Viewer",
+      "description": "Visualize Mermaid diagrams with live preview and export",
+      "category": "frontend",
+      "enabled": true,
+      "icon": "🧜‍♀️",
+      "keywords": ["mermaid", "diagram", "flowchart", "sequence", "gantt", "visualization", "uml"]
+    },
+    {
+      "id": "color-picker",
+      "name": "Color Picker",
+      "description": "Pick colors, convert HEX, RGB, HSL, and generate palettes",
+      "category": "frontend",
+      "enabled": false,
+      "icon": "🎨",
+      "keywords": ["color", "picker", "hex", "rgb", "hsl", "palette", "color converter"]
+    },
+    {
+      "id": "css-minifier",
+      "name": "CSS Minifier",
+      "description": "Minify and beautify CSS code for production",
+      "category": "frontend",
+      "enabled": false,
+      "icon": "🎯",
+      "keywords": ["css", "minify", "compress", "beautify", "optimize", "css minifier"]
+    },
+    {
+      "id": "html-encoder",
+      "name": "HTML Encoder",
+      "description": "Encode/decode HTML entities and special characters",
+      "category": "frontend",
+      "enabled": false,
+      "icon": "🏷️",
+      "keywords": ["html", "encode", "decode", "entities", "escape", "html encoder"]
+    },
+    {
+      "id": "url-parser",
+      "name": "URL Parser",
+      "description": "Parse, encode, and decode URLs and query strings",
+      "category": "backend",
+      "enabled": false,
+      "icon": "🔗",
+      "keywords": ["url", "uri", "parser", "query string", "encode", "decode", "url encoder"]
+    },
+    {
+      "id": "timestamp-converter",
+      "name": "Unix Timestamp",
+      "description": "Convert Unix timestamps to dates and vice versa",
+      "category": "utility",
+      "enabled": false,
+      "icon": "⏰",
+      "keywords": ["timestamp", "unix", "epoch", "date", "time converter", "unix timestamp"]
+    },
+    {
+      "id": "sql-formatter",
+      "name": "SQL Formatter",
+      "description": "Format and beautify SQL queries for better readability",
+      "category": "sql",
+      "enabled": false,
+      "icon": "🗄️",
+      "keywords": ["sql", "formatter", "query", "database", "beautify", "sql formatter"]
+    },
+    {
+      "id": "sql-validator",
+      "name": "SQL Validator",
+      "description": "Validate SQL syntax for MySQL, PostgreSQL, Oracle, SQL Server",
+      "category": "sql",
+      "enabled": false,
+      "icon": "✅",
+      "keywords": ["sql validator", "syntax checker", "sql syntax", "database"]
+    },
+    {
+      "id": "sql-to-builder",
+      "name": "SQL Query Builder",
+      "description": "Build SQL queries visually without writing code",
+      "category": "sql",
+      "enabled": false,
+      "icon": "🏗️",
+      "keywords": ["sql builder", "query builder", "visual sql", "no code"]
+    },
+    {
+      "id": "sql-to-mongo",
+      "name": "SQL to MongoDB",
+      "description": "Convert SQL queries to MongoDB queries",
+      "category": "sql",
+      "enabled": false,
+      "icon": "🔄",
+      "keywords": ["sql to mongo", "mongodb", "nosql", "query converter"]
+    },
+    {
+      "id": "table-generator",
+      "name": "SQL Table Generator",
+      "description": "Generate CREATE TABLE statements from CSV or JSON",
+      "category": "sql",
+      "enabled": false,
+      "icon": "📋",
+      "keywords": ["create table", "ddl", "schema generator", "sql"]
+    },
+    {
+      "id": "er-diagram",
+      "name": "ER Diagram Generator",
+      "description": "Generate Entity-Relationship diagrams from SQL schema",
+      "category": "sql",
+      "enabled": false,
+      "icon": "📊",
+      "keywords": ["er diagram", "database design", "schema", "relationships"]
+    },
+    {
+      "id": "sql-explain",
+      "name": "SQL Query Analyzer",
+      "description": "Analyze and explain SQL query execution plans",
+      "category": "sql",
+      "enabled": false,
+      "icon": "🔍",
+      "keywords": ["explain", "query plan", "performance", "optimization"]
+    },
+    {
+      "id": "stored-procedure-generator",
+      "name": "Stored Procedure Generator",
+      "description": "Generate CRUD stored procedures for tables",
+      "category": "sql",
+      "enabled": false,
+      "icon": "⚙️",
+      "keywords": ["stored procedure", "sproc", "crud", "database"]
+    },
+    {
+      "id": "xml-formatter",
+      "name": "XML Formatter",
+      "description": "Format, validate, and convert XML to JSON",
+      "category": "backend",
+      "enabled": false,
+      "icon": "📄",
+      "keywords": ["xml", "formatter", "validator", "json converter", "xml formatter"]
+    },
+    {
+      "id": "yaml-validator",
+      "name": "YAML Validator",
+      "description": "Validate and convert YAML to JSON format",
+      "category": "devops",
+      "enabled": false,
+      "icon": "📋",
+      "keywords": ["yaml", "yml", "validator", "json", "kubernetes", "docker-compose", "yaml validator"]
+    },
+    {
+      "id": "eventhub-sender",
+      "name": "EventHub Sender",
+      "description": "Send events to Azure EventHub for streaming analytics",
+      "category": "devops",
+      "enabled": false,
+      "icon": "📨",
+      "keywords": ["azure", "eventhub", "events", "streaming", "telemetry", "azure eventhub"]
+    },
+    {
+      "id": "eventhub-listener",
+      "name": "EventHub Listener",
+      "description": "Stream and process events from Azure EventHub",
+      "category": "devops",
+      "enabled": false,
+      "icon": "📬",
+      "keywords": ["azure", "eventhub", "listener", "streaming", "consumer", "event streaming"]
+    },
+    {
+      "id": "docker-compose-generator",
+      "name": "Docker Compose",
+      "description": "Generate and validate docker-compose.yml files",
+      "category": "devops",
+      "enabled": false,
+      "icon": "🐳",
+      "keywords": ["docker", "compose", "container", "orchestration", "docker-compose"]
+    },
+    {
+      "id": "kubernetes-yaml",
+      "name": "K8s YAML Generator",
+      "description": "Generate Kubernetes deployment and service YAML manifests",
+      "category": "devops",
+      "enabled": false,
+      "icon": "☸️",
+      "keywords": ["kubernetes", "k8s", "yaml", "deployment", "service", "kubectl"]
+    },
+    {
+      "id": "cron-expression",
+      "name": "Cron Expression",
+      "description": "Build and validate cron expressions with human-readable format",
+      "category": "devops",
+      "enabled": false,
+      "icon": "⏲️",
+      "keywords": ["cron", "schedule", "expression", "job", "task", "cron generator"]
+    },
+    {
+      "id": "json-to-csv",
+      "name": "JSON to CSV",
+      "description": "Convert JSON data to CSV format for Excel",
+      "category": "data",
+      "enabled": false,
+      "icon": "📊",
+      "keywords": ["json", "csv", "convert", "export", "data", "json to csv converter"]
+    },
+    {
+      "id": "csv-to-json",
+      "name": "CSV to JSON",
+      "description": "Convert CSV data to JSON format",
+      "category": "data",
+      "enabled": false,
+      "icon": "📈",
+      "keywords": ["csv", "json", "convert", "import", "data", "csv to json converter"]
+    },
+    {
+      "id": "api-mock",
+      "name": "API Mock Server",
+      "description": "Create mock REST API endpoints for testing",
+      "category": "backend",
+      "enabled": false,
+      "icon": "🎭",
+      "keywords": ["api", "mock", "rest", "testing", "endpoint", "api mock"]
+    },
+    {
+      "id": "websocket-tester",
+      "name": "WebSocket Tester",
+      "description": "Test WebSocket connections and real-time messages",
+      "category": "backend",
+      "enabled": false,
+      "icon": "🔌",
+      "keywords": ["websocket", "ws", "realtime", "socket", "testing", "websocket client"]
+    },
+    {
+      "id": "graphql-playground",
+      "name": "GraphQL Playground",
+      "description": "Test GraphQL queries and mutations interactively",
+      "category": "backend",
+      "enabled": false,
+      "icon": "◈",
+      "keywords": ["graphql", "query", "mutation", "api", "testing", "graphql client"]
+    },
+    {
+      "id": "qr-generator",
+      "name": "QR Code Generator",
+      "description": "Generate QR codes for URLs, text, WiFi, and vCards",
+      "category": "utility",
+      "enabled": false,
+      "icon": "📱",
+      "keywords": ["qr", "qr code", "generator", "barcode", "scanner", "qr generator"]
+    },
+    {
+      "id": "lorem-ipsum",
+      "name": "Lorem Ipsum",
+      "description": "Generate placeholder text for design mockups",
+      "category": "frontend",
+      "enabled": false,
+      "icon": "📃",
+      "keywords": ["lorem ipsum", "placeholder", "dummy text", "filler", "lorem generator"]
+    },
+    {
+      "id": "image-optimizer",
+      "name": "Image Optimizer",
+      "description": "Compress and resize images (JPG, PNG, WebP)",
+      "category": "frontend",
+      "enabled": false,
+      "icon": "🖼️",
+      "keywords": ["image", "compress", "optimize", "resize", "webp", "image compressor"]
+    },
+    {
+      "id": "svg-optimizer",
+      "name": "SVG Optimizer",
+      "description": "Optimize and minify SVG files for web",
+      "category": "frontend",
+      "enabled": false,
+      "icon": "🎭",
+      "keywords": ["svg", "optimize", "minify", "vector", "graphics", "svgo"]
+    },
+    {
+      "id": "token-counter",
+      "name": "AI Token Counter",
+      "description": "Count tokens for OpenAI GPT, Claude, Gemini, and other LLM APIs",
+      "category": "ai",
+      "enabled": false,
+      "icon": "🤖",
+      "keywords": ["tokens", "openai", "gpt", "claude", "llm", "ai", "token counter", "tiktoken"]
+    },
+    {
+      "id": "prompt-tester",
+      "name": "Prompt Tester",
+      "description": "Test and optimize AI prompts with templates and variables",
+      "category": "ai",
+      "enabled": false,
+      "icon": "💬",
+      "keywords": ["prompt", "ai", "gpt", "testing", "optimization", "prompt engineering"]
+    },
+    {
+      "id": "ai-chat-playground",
+      "name": "AI Chat Playground",
+      "description": "Chat with multiple AI models (GPT-4, Claude, Gemini) in one interface",
+      "category": "ai",
+      "enabled": false,
+      "icon": "🗨️",
+      "keywords": ["ai chat", "gpt", "claude", "gemini", "chatbot", "llm comparison"]
+    },
+    {
+      "id": "model-comparer",
+      "name": "AI Model Comparer",
+      "description": "Compare responses from different AI models side by side",
+      "category": "ai",
+      "enabled": false,
+      "icon": "⚖️",
+      "keywords": ["ai comparison", "model comparison", "gpt vs claude", "llm benchmark"]
+    },
+    {
+      "id": "text-humanizer",
+      "name": "AI Text Humanizer",
+      "description": "Make AI-generated text sound more natural and human-like",
+      "category": "ai",
+      "enabled": false,
+      "icon": "👤",
+      "keywords": ["humanizer", "ai detection", "paraphrase", "rewrite", "natural text"]
+    },
+    {
+      "id": "ai-detector",
+      "name": "AI Content Detector",
+      "description": "Detect if text was written by AI (GPT, Claude, etc.)",
+      "category": "ai",
+      "enabled": false,
+      "icon": "🔍",
+      "keywords": ["ai detector", "gpt detector", "ai checker", "plagiarism"]
+    },
+    {
+      "id": "prompt-optimizer",
+      "name": "Prompt Optimizer",
+      "description": "Automatically improve and optimize your AI prompts",
+      "category": "ai",
+      "enabled": false,
+      "icon": "✨",
+      "keywords": ["prompt optimization", "prompt engineering", "ai prompts", "better prompts"]
+    },
+    {
+      "id": "system-prompt-generator",
+      "name": "System Prompt Generator",
+      "description": "Generate effective system prompts for AI assistants",
+      "category": "ai",
+      "enabled": false,
+      "icon": "⚙️",
+      "keywords": ["system prompt", "ai instructions", "chatbot setup", "prompt template"]
+    },
+    {
+      "id": "rag-document-chunker",
+      "name": "RAG Document Chunker",
+      "description": "Split documents into optimal chunks for RAG systems",
+      "category": "ai",
+      "enabled": false,
+      "icon": "📄",
+      "keywords": ["rag", "chunking", "embeddings", "vector database", "retrieval"]
+    },
+    {
+      "id": "embedding-visualizer",
+      "name": "Embedding Visualizer",
+      "description": "Visualize text embeddings in 2D/3D space",
+      "category": "ai",
+      "enabled": false,
+      "icon": "🎯",
+      "keywords": ["embeddings", "vector", "visualization", "openai embeddings", "similarity"]
+    },
+    {
+      "id": "fine-tune-dataset",
+      "name": "Fine-tune Dataset Builder",
+      "description": "Build and validate datasets for AI model fine-tuning",
+      "category": "ai",
+      "enabled": false,
+      "icon": "🎓",
+      "keywords": ["fine-tuning", "dataset", "training data", "jsonl", "openai fine-tune"]
+    },
+    {
+      "id": "json-schema",
+      "name": "JSON Schema",
+      "description": "Generate and validate JSON schemas for APIs",
+      "category": "backend",
+      "enabled": false,
+      "icon": "📐",
+      "keywords": ["json schema", "validation", "swagger", "openapi", "json validator"]
+    },
+    {
+      "id": "openapi-viewer",
+      "name": "OpenAPI Viewer",
+      "description": "Visualize OpenAPI/Swagger API specifications",
+      "category": "backend",
+      "enabled": false,
+      "icon": "📖",
+      "keywords": ["openapi", "swagger", "api", "documentation", "spec", "swagger ui"]
+    },
+    {
+      "id": "password-generator",
+      "name": "Password Generator",
+      "description": "Generate secure random passwords with custom rules",
+      "category": "security",
+      "enabled": false,
+      "icon": "🔐",
+      "keywords": ["password", "generator", "random", "secure", "strength", "password generator"]
+    },
+    {
+      "id": "rsa-key-generator",
+      "name": "RSA Key Generator",
+      "description": "Generate RSA public/private key pairs for encryption",
+      "category": "security",
+      "enabled": false,
+      "icon": "🔑",
+      "keywords": ["rsa", "key", "encryption", "public key", "private key", "ssh key"]
+    },
+    {
+      "id": "ssl-checker",
+      "name": "SSL Certificate Checker",
+      "description": "Check SSL certificate details, validity, and expiry",
+      "category": "security",
+      "enabled": false,
+      "icon": "🔒",
+      "keywords": ["ssl", "tls", "certificate", "https", "security", "ssl checker"]
+    },
+    {
+      "id": "dns-lookup",
+      "name": "DNS Lookup",
+      "description": "Perform DNS lookups and troubleshooting",
+      "category": "devops",
+      "enabled": false,
+      "icon": "🌐",
+      "keywords": ["dns", "lookup", "domain", "nameserver", "records", "dns checker"]
+    },
+    {
+      "id": "whois-lookup",
+      "name": "WHOIS Lookup",
+      "description": "Check domain registration and ownership information",
+      "category": "devops",
+      "enabled": false,
+      "icon": "🔍",
+      "keywords": ["whois", "domain", "registration", "lookup", "domain checker"]
+    },
+    {
+      "id": "text-case-converter",
+      "name": "Case Converter",
+      "description": "Convert between camelCase, snake_case, kebab-case, and more",
+      "category": "utility",
+      "enabled": false,
+      "icon": "Aa",
+      "keywords": ["case", "converter", "camelcase", "snake case", "kebab case", "text transformer"]
+    },
+    {
+      "id": "word-counter",
+      "name": "Word Counter",
+      "description": "Count words, characters, lines, and estimate reading time",
+      "category": "utility",
+      "enabled": false,
+      "icon": "📊",
+      "keywords": ["word count", "character count", "text analysis", "reading time"]
+    },
+    {
+      "id": "ascii-art",
+      "name": "ASCII Art Generator",
+      "description": "Convert text to ASCII art and banners",
+      "category": "utility",
+      "enabled": false,
+      "icon": "🎨",
+      "keywords": ["ascii", "art", "banner", "text art", "ascii generator"]
+    },
+    {
+      "id": "http-status-codes",
+      "name": "HTTP Status Codes",
+      "description": "Quick reference for HTTP status codes with descriptions",
+      "category": "backend",
+      "enabled": false,
+      "icon": "📡",
+      "keywords": ["http", "status codes", "200", "404", "500", "rest api"]
+    },
+    {
+      "id": "mime-types",
+      "name": "MIME Types",
+      "description": "Search and browse MIME types and file extensions",
+      "category": "backend",
+      "enabled": false,
+      "icon": "📎",
+      "keywords": ["mime", "content type", "file extension", "media type"]
+    },
+    {
+      "id": "json-path-tester",
+      "name": "JSONPath Tester",
+      "description": "Test JSONPath expressions against JSON data",
+      "category": "data",
+      "enabled": false,
+      "icon": "🛤️",
+      "keywords": ["jsonpath", "json query", "json filter", "json selector"]
+    },
+    {
+      "id": "xpath-tester",
+      "name": "XPath Tester",
+      "description": "Test XPath expressions against XML/HTML",
+      "category": "data",
+      "enabled": false,
+      "icon": "🗺️",
+      "keywords": ["xpath", "xml query", "html selector", "xml parser"]
+    },
+    {
+      "id": "epoch-converter",
+      "name": "Epoch Converter",
+      "description": "Convert between epoch/unix timestamps and dates",
+      "category": "utility",
+      "enabled": false,
+      "icon": "🕐",
+      "keywords": ["epoch", "unix time", "timestamp", "date converter", "time converter"]
+    },
+    {
+      "id": "bcrypt-generator",
+      "name": "Bcrypt Generator",
+      "description": "Generate and verify bcrypt password hashes",
+      "category": "security",
+      "enabled": false,
+      "icon": "🔐",
+      "keywords": ["bcrypt", "password hash", "hash verify", "password security"]
+    },
+    {
+      "id": "nanoid-generator",
+      "name": "Nano ID Generator",
+      "description": "Generate tiny, secure, URL-friendly unique IDs",
+      "category": "utility",
+      "enabled": false,
+      "icon": "🆔",
+      "keywords": ["nanoid", "short id", "unique id", "url safe id"]
+    },
+    {
+      "id": "ulid-generator",
+      "name": "ULID Generator",
+      "description": "Generate Universally Unique Lexicographically Sortable IDs",
+      "category": "utility",
+      "enabled": false,
+      "icon": "🔢",
+      "keywords": ["ulid", "sortable id", "unique id", "timestamp id"]
+    },
+    {
+      "id": "ip-lookup",
+      "name": "IP Address Lookup",
+      "description": "Get geolocation and details for any IP address",
+      "category": "devops",
+      "enabled": false,
+      "icon": "🌍",
+      "keywords": ["ip lookup", "geolocation", "ip address", "ip info"]
+    },
+    {
+      "id": "user-agent-parser",
+      "name": "User Agent Parser",
+      "description": "Parse and analyze HTTP User-Agent strings",
+      "category": "backend",
+      "enabled": false,
+      "icon": "🔍",
+      "keywords": ["user agent", "browser detection", "device detection", "ua parser"]
+    },
+    {
+      "id": "json-web-signature",
+      "name": "JWS Tool",
+      "description": "Create and verify JSON Web Signatures",
+      "category": "security",
+      "enabled": false,
+      "icon": "✍️",
+      "keywords": ["jws", "json web signature", "jwt", "signing"]
+    },
+    {
+      "id": "cors-tester",
+      "name": "CORS Tester",
+      "description": "Test Cross-Origin Resource Sharing configurations",
+      "category": "backend",
+      "enabled": false,
+      "icon": "🔀",
+      "keywords": ["cors", "cross origin", "preflight", "http headers"]
+    },
+    {
+      "id": "base32-encoder",
+      "name": "Base32 Tool",
+      "description": "Encode and decode Base32 strings",
+      "category": "utility",
+      "enabled": false,
+      "icon": "⇅",
+      "keywords": ["base32", "encode", "decode", "encoding"]
+    },
+    {
+      "id": "hex-converter",
+      "name": "Hex Converter",
+      "description": "Convert between hex, decimal, binary, and octal",
+      "category": "utility",
+      "enabled": false,
+      "icon": "🔢",
+      "keywords": ["hex", "hexadecimal", "binary", "decimal", "octal", "converter"]
+    },
+    {
+      "id": "text-encryptor",
+      "name": "Text Encryptor",
+      "description": "Encrypt and decrypt text with AES-256",
+      "category": "security",
+      "enabled": false,
+      "icon": "🔒",
+      "keywords": ["encrypt", "decrypt", "aes", "encryption", "cipher"]
+    },
+    {
+      "id": "slack-message-formatter",
+      "name": "Slack Message Formatter",
+      "description": "Format and preview Slack Block Kit messages",
+      "category": "backend",
+      "enabled": false,
+      "icon": "💬",
+      "keywords": ["slack", "block kit", "message", "formatting", "webhook"]
+    },
+    {
+      "id": "git-cheatsheet",
+      "name": "Git Cheatsheet",
+      "description": "Quick reference for common Git commands with examples",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "🌿",
+      "keywords": ["git", "version control", "commands", "cheatsheet", "reference"]
+    },
+    {
+      "id": "docker-cheatsheet",
+      "name": "Docker Cheatsheet",
+      "description": "Essential Docker commands and best practices",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "🐳",
+      "keywords": ["docker", "containers", "commands", "cheatsheet", "reference"]
+    },
+    {
+      "id": "kubernetes-cheatsheet",
+      "name": "Kubernetes Cheatsheet",
+      "description": "kubectl commands and K8s resource examples",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "☸️",
+      "keywords": ["kubernetes", "k8s", "kubectl", "cheatsheet", "reference"]
+    },
+    {
+      "id": "linux-cheatsheet",
+      "name": "Linux Commands",
+      "description": "Essential Linux/Unix commands reference",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "🐧",
+      "keywords": ["linux", "unix", "bash", "terminal", "commands", "cheatsheet"]
+    },
+    {
+      "id": "vim-cheatsheet",
+      "name": "Vim Cheatsheet",
+      "description": "Vim editor commands and shortcuts",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "📝",
+      "keywords": ["vim", "vi", "editor", "shortcuts", "cheatsheet"]
+    },
+    {
+      "id": "regex-cheatsheet",
+      "name": "Regex Cheatsheet",
+      "description": "Regular expressions patterns and examples",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": ".*",
+      "keywords": ["regex", "regexp", "patterns", "cheatsheet", "reference"]
+    },
+    {
+      "id": "python-cheatsheet",
+      "name": "Python Cheatsheet",
+      "description": "Python syntax, functions, and common patterns",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "🐍",
+      "keywords": ["python", "syntax", "functions", "cheatsheet", "reference"]
+    },
+    {
+      "id": "javascript-cheatsheet",
+      "name": "JavaScript Cheatsheet",
+      "description": "Modern JavaScript ES6+ syntax and methods",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "📜",
+      "keywords": ["javascript", "js", "es6", "syntax", "cheatsheet"]
+    },
+    {
+      "id": "typescript-cheatsheet",
+      "name": "TypeScript Cheatsheet",
+      "description": "TypeScript types, interfaces, and advanced patterns",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "📘",
+      "keywords": ["typescript", "types", "interfaces", "cheatsheet"]
+    },
+    {
+      "id": "react-cheatsheet",
+      "name": "React Cheatsheet",
+      "description": "React hooks, components, and best practices",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "⚛️",
+      "keywords": ["react", "hooks", "components", "jsx", "cheatsheet"]
+    },
+    {
+      "id": "nodejs-cheatsheet",
+      "name": "Node.js Cheatsheet",
+      "description": "Node.js APIs, modules, and common patterns",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "🟢",
+      "keywords": ["nodejs", "node", "npm", "modules", "cheatsheet"]
+    },
+    {
+      "id": "sql-cheatsheet",
+      "name": "SQL Cheatsheet",
+      "description": "SQL commands, joins, and query examples",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "🗃️",
+      "keywords": ["sql", "database", "queries", "joins", "cheatsheet"]
+    },
+    {
+      "id": "mongodb-cheatsheet",
+      "name": "MongoDB Cheatsheet",
+      "description": "MongoDB queries, aggregations, and operations",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "🍃",
+      "keywords": ["mongodb", "nosql", "queries", "aggregation", "cheatsheet"]
+    },
+    {
+      "id": "aws-cheatsheet",
+      "name": "AWS Services Cheatsheet",
+      "description": "AWS services overview and CLI commands",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "☁️",
+      "keywords": ["aws", "amazon", "cloud", "services", "cheatsheet"]
+    },
+    {
+      "id": "azure-cheatsheet",
+      "name": "Azure Cheatsheet",
+      "description": "Azure services and CLI commands reference",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "☁️",
+      "keywords": ["azure", "microsoft", "cloud", "cli", "cheatsheet"]
+    },
+    {
+      "id": "http-status-cheatsheet",
+      "name": "HTTP Status Codes",
+      "description": "Complete HTTP status codes reference",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "📡",
+      "keywords": ["http", "status codes", "rest", "api", "cheatsheet"]
+    },
+    {
+      "id": "markdown-cheatsheet",
+      "name": "Markdown Cheatsheet",
+      "description": "Markdown syntax and formatting reference",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "📝",
+      "keywords": ["markdown", "md", "syntax", "formatting", "cheatsheet"]
+    },
+    {
+      "id": "css-cheatsheet",
+      "name": "CSS Cheatsheet",
+      "description": "CSS properties, selectors, and flexbox/grid",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "🎨",
+      "keywords": ["css", "styling", "flexbox", "grid", "cheatsheet"]
+    },
+    {
+      "id": "html-cheatsheet",
+      "name": "HTML Cheatsheet",
+      "description": "HTML tags, attributes, and semantic elements",
+      "category": "cheatsheet",
+      "enabled": false,
+      "icon": "🏷️",
+      "keywords": ["html", "tags", "elements", "semantic", "cheatsheet"]
+    },
+    {
+      "id": "unicode-inspector",
+      "name": "Unicode Inspector",
+      "description": "Inspect Unicode characters and find special symbols",
+      "category": "utility",
+      "enabled": false,
+      "icon": "🔤",
+      "keywords": ["unicode", "characters", "symbols", "emoji", "utf-8"]
+    },
+    {
+      "id": "api-response-formatter",
+      "name": "API Response Formatter",
+      "description": "Format and beautify API responses (JSON, XML, HTML)",
+      "category": "backend",
+      "enabled": false,
+      "icon": "📥",
+      "keywords": ["api", "response", "formatter", "json", "xml", "pretty print"]
+    },
+    {
+      "id": "lorem-data-generator",
+      "name": "Mock Data Generator",
+      "description": "Generate realistic mock data for testing (names, emails, addresses)",
+      "category": "frontend",
+      "enabled": false,
+      "icon": "👤",
+      "keywords": ["mock data", "fake data", "test data", "faker", "random data"]
+    },
+    {
+      "id": "sql-injection-tester",
+      "name": "SQL Injection Tester",
+      "description": "Test SQL injection vulnerabilities and generate payloads",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "💉",
+      "keywords": ["sql injection", "sqli", "security testing", "penetration testing", "payload"]
+    },
+    {
+      "id": "xss-payload-generator",
+      "name": "XSS Payload Generator",
+      "description": "Generate Cross-Site Scripting (XSS) payloads for testing",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "⚠️",
+      "keywords": ["xss", "cross site scripting", "security", "payload", "pentest"]
+    },
+    {
+      "id": "reverse-shell-generator",
+      "name": "Reverse Shell Generator",
+      "description": "Generate reverse shell one-liners for various languages",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "🐚",
+      "keywords": ["reverse shell", "netcat", "bash", "python", "pentesting"]
+    },
+    {
+      "id": "hash-cracker",
+      "name": "Hash Identifier & Cracker",
+      "description": "Identify hash types and crack common hashes",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "🔓",
+      "keywords": ["hash cracker", "hash identifier", "password cracking", "hashcat"]
+    },
+    {
+      "id": "port-scanner",
+      "name": "Port Scanner",
+      "description": "Scan for open ports and services on target hosts",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "🔍",
+      "keywords": ["port scan", "nmap", "network scanning", "security audit"]
+    },
+    {
+      "id": "subdomain-finder",
+      "name": "Subdomain Finder",
+      "description": "Discover subdomains of a target domain",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "🌐",
+      "keywords": ["subdomain", "enumeration", "reconnaissance", "dns"]
+    },
+    {
+      "id": "header-analyzer",
+      "name": "Security Headers Analyzer",
+      "description": "Analyze HTTP security headers and suggest improvements",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "🛡️",
+      "keywords": ["security headers", "csp", "hsts", "x-frame-options", "security"]
+    },
+    {
+      "id": "jwt-cracker",
+      "name": "JWT Secret Cracker",
+      "description": "Attempt to crack JWT secrets with wordlist attacks",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "🔐",
+      "keywords": ["jwt crack", "jwt secret", "brute force", "security testing"]
+    },
+    {
+      "id": "payload-encoder",
+      "name": "Payload Encoder/Obfuscator",
+      "description": "Encode and obfuscate payloads to bypass filters",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "🎭",
+      "keywords": ["obfuscation", "encoding", "bypass", "waf", "payload"]
+    },
+    {
+      "id": "cve-lookup",
+      "name": "CVE Lookup",
+      "description": "Search and explore Common Vulnerabilities and Exposures",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "📋",
+      "keywords": ["cve", "vulnerability", "security", "exploit", "nvd"]
+    },
+    {
+      "id": "exploit-db-search",
+      "name": "Exploit Database Search",
+      "description": "Search for exploits and proof-of-concepts",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "💣",
+      "keywords": ["exploit", "poc", "vulnerability", "security research"]
+    },
+    {
+      "id": "password-strength-checker",
+      "name": "Password Strength Checker",
+      "description": "Check password strength and get cracking time estimates",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "🔑",
+      "keywords": ["password strength", "password security", "entropy", "brute force"]
+    },
+    {
+      "id": "base-encoder-all",
+      "name": "Multi-Base Encoder",
+      "description": "Encode/decode in Base16, Base32, Base58, Base64, Base85",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "🔢",
+      "keywords": ["encoding", "base64", "base32", "base58", "base85"]
+    },
+    {
+      "id": "cipher-decoder",
+      "name": "Classical Cipher Tool",
+      "description": "Encode/decode Caesar, Vigenère, ROT13, and other ciphers",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "🔐",
+      "keywords": ["cipher", "caesar", "rot13", "vigenere", "cryptography"]
+    },
+    {
+      "id": "steganography-tool",
+      "name": "Steganography Tool",
+      "description": "Hide and extract data in images using steganography",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "🖼️",
+      "keywords": ["steganography", "hidden data", "image", "lsb", "stego"]
+    },
+    {
+      "id": "network-packet-analyzer",
+      "name": "Network Packet Analyzer",
+      "description": "Analyze network packets and pcap files",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "📦",
+      "keywords": ["packet analysis", "wireshark", "pcap", "network security"]
+    },
+    {
+      "id": "web-shell-detector",
+      "name": "Web Shell Detector",
+      "description": "Detect malicious web shells in PHP, ASP, JSP files",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "🚨",
+      "keywords": ["web shell", "backdoor", "malware", "security scan"]
+    },
+    {
+      "id": "log-analyzer",
+      "name": "Security Log Analyzer",
+      "description": "Analyze logs for security incidents and anomalies",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "📊",
+      "keywords": ["log analysis", "siem", "security", "incident response"]
+    },
+    {
+      "id": "threat-intel-lookup",
+      "name": "Threat Intelligence Lookup",
+      "description": "Check IPs, domains, and hashes against threat feeds",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "🎯",
+      "keywords": ["threat intel", "ioc", "malware", "virustotal", "abuse ip"]
+    },
+    {
+      "id": "osint-framework",
+      "name": "OSINT Framework",
+      "description": "Open Source Intelligence gathering tools and resources",
+      "category": "cybersecurity",
+      "enabled": false,
+      "icon": "🔎",
+      "keywords": ["osint", "reconnaissance", "intelligence", "doxing", "research"]
+    },
+    {
+      "id": "parquet-viewer",
+      "name": "Parquet Viewer",
+      "description": "Upload and view multiple Parquet files with data preview and schema inspection",
+      "category": "conversion",
+      "enabled": true,
+      "icon": "📦",
+      "keywords": ["parquet", "viewer", "apache parquet", "data preview", "schema"]
+    },
+    {
+      "id": "parquet-to-csv",
+      "name": "Parquet to CSV",
+      "description": "Convert Parquet files to CSV format",
+      "category": "conversion",
+      "enabled": false,
+      "icon": "📊➡️📄",
+      "keywords": ["parquet", "csv", "convert", "export", "data conversion"]
+    },
+    {
+      "id": "parquet-to-json",
+      "name": "Parquet to JSON",
+      "description": "Convert Parquet files to JSON format",
+      "category": "conversion",
+      "enabled": false,
+      "icon": "📦➡️{ }",
+      "keywords": ["parquet", "json", "convert", "export", "data"]
+    },
+    {
+      "id": "parquet-to-excel",
+      "name": "Parquet to Excel",
+      "description": "Convert Parquet files to Excel (XLSX) format",
+      "category": "conversion",
+      "enabled": false,
+      "icon": "📦➡️📊",
+      "keywords": ["parquet", "excel", "xlsx", "convert", "spreadsheet"]
+    },
+    {
+      "id": "csv-to-parquet",
+      "name": "CSV to Parquet",
+      "description": "Convert CSV files to Apache Parquet format",
+      "category": "conversion",
+      "enabled": false,
+      "icon": "📄➡️📦",
+      "keywords": ["csv", "parquet", "convert", "compression", "columnar"]
+    },
+    {
+      "id": "json-to-parquet",
+      "name": "JSON to Parquet",
+      "description": "Convert JSON files to Apache Parquet format",
+      "category": "conversion",
+      "enabled": false,
+      "icon": "{ }➡️📦",
+      "keywords": ["json", "parquet", "convert", "columnar storage"]
+    },
+    {
+      "id": "excel-to-parquet",
+      "name": "Excel to Parquet",
+      "description": "Convert Excel (XLSX) files to Parquet format",
+      "category": "conversion",
+      "enabled": false,
+      "icon": "📊➡️📦",
+      "keywords": ["excel", "xlsx", "parquet", "convert"]
+    },
+    {
+      "id": "csv-to-excel",
+      "name": "CSV to Excel",
+      "description": "Convert CSV files to Excel (XLSX) with formatting",
+      "category": "conversion",
+      "enabled": true,
+      "icon": "📄➡️📊",
+      "keywords": ["csv", "excel", "xlsx", "convert", "spreadsheet"]
+    },
+    {
+      "id": "excel-to-csv",
+      "name": "Excel to CSV",
+      "description": "Convert Excel (XLSX) files to CSV format",
+      "category": "conversion",
+      "enabled": false,
+      "icon": "📊➡️📄",
+      "keywords": ["excel", "xlsx", "csv", "convert", "export"]
+    },
+    {
+      "id": "excel-to-json",
+      "name": "Excel to JSON",
+      "description": "Convert Excel (XLSX) sheets to JSON format",
+      "category": "conversion",
+      "enabled": false,
+      "icon": "📊➡️{ }",
+      "keywords": ["excel", "json", "convert", "sheets"]
+    },
+    {
+      "id": "json-to-excel",
+      "name": "JSON to Excel",
+      "description": "Convert JSON data to Excel (XLSX) spreadsheets",
+      "category": "conversion",
+      "enabled": false,
+      "icon": "{ }➡️📊",
+      "keywords": ["json", "excel", "xlsx", "convert", "spreadsheet"]
+    },
+    {
+      "id": "avro-to-parquet",
+      "name": "Avro to Parquet",
+      "description": "Convert Apache Avro files to Parquet format",
+      "category": "conversion",
+      "enabled": false,
+      "icon": "🅰️➡️📦",
+      "keywords": ["avro", "parquet", "convert", "big data"]
+    },
+    {
+      "id": "parquet-to-avro",
+      "name": "Parquet to Avro",
+      "description": "Convert Parquet files to Apache Avro format",
+      "category": "conversion",
+      "enabled": false,
+      "icon": "📦➡️🅰️",
+      "keywords": ["parquet", "avro", "convert", "serialization"]
+    }
+  ]
+}
