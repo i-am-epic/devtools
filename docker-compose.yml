@@ -1,23 +1,25 @@
-version: '3.8'
-
 services:
-  codeforge:
+  devtools:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: codeforge-app
+    container_name: devtools
     ports:
-      - "8080:80"
+      # Bound to localhost on the host. Change to "8080:8000" only if you
+      # intend other machines to be able to use the Service Bus relay.
+      - "127.0.0.1:8080:8000"
     restart: unless-stopped
     environment:
-      - NGINX_HOST=localhost
-      - NGINX_PORT=80
+      - DEVTOOLS_HOST=0.0.0.0
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
     labels:
-      - "com.codeforge.description=CodeForge - 100+ Free Developer Tools"
-      - "com.codeforge.author=@nikboson"
-      - "com.codeforge.version=1.0.0"
+      - "com.devtools.description=DevTools - browser-based developer utilities"
+      - "com.devtools.author=@i-am-epic"
+      - "com.devtools.version=4.0.0"
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2).status == 200 else 1)"]
       interval: 30s
       timeout: 3s
       retries: 3

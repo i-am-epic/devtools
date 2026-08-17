@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DevOps tool correctness</title>
+<style>
+  body { font-family: ui-monospace, Consolas, monospace; padding: 1.5rem; background: #14140f; color: #ede9e0; font-size: 13px; }
+  .pass { color: #4ade80; } .fail { color: #f87171; } .info { color: #93c5fd; }
+  pre { white-space: pre-wrap; line-height: 1.55; }
+</style>
+</head>
+<body>
+<h1 style="font-size:1.1rem">DevOps, diagram and sanitiser checks</h1>
+<pre id="out">running...</pre>
+<script type="module">
+const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const out = document.getElementById('out');
+const lines = [];
+let pass = 0, fail = 0;
+const check = (label, cond, detail = '') => {
+  if (cond) { pass++; lines.push(`<span class="pass">ok   ${esc(label)}</span>`); }
+  else { fail++; lines.push(`<span class="fail">FAIL ${esc(label)} ${esc(detail)}</span>`); }
+};
+
+for (const u of ['../js/tools/specs/devops.js','../js/tools/specs/diagram.js','../js/lib/sanitize.js',
+                 '../js/tools/registry.js','../js/tools/MarkdownViewerTool.js']) {
+  await fetch(u, { cache: 'reload' }).catch(() => {});
+}
+
+try {
+  const { TOOLS } = await import('../js/tools/registry.js');
+  const spec = (id) => { const t = TOOLS.find(x => x.id === id); if (!t) throw new Error(`${id} missing`); return t.spec; };
+  const defaults = (s, over = {}) => {
+    const o = {};
+    for (const opt of s.options || []) {
+      o[opt.id] = opt.default !== undefined ? opt.default
+        : opt.type === 'checkbox' ? false
+        : opt.type === 'select' ? (typeof opt.choices[0] === 'string' ? opt.choices[0] : opt.choices[0].value)
+        : opt.type === 'number' ? 0 : '';
+    }
+    return { ...o, ...over };
+  };
+  const run = async (id, input, over = {}) => {
+    const s = spec(id);
+    const r = await s.run({ input, options: defaults(s, over), bytes: null, fileName: '', tool: { id_: n => n } });
+    return typeof r === 'string' ? { output: r } : r;
+  };
+  const hasRule = (r, rule) => r.output.includes(rule);
+
+  // ------------------------------------------------------ YAML beautifier --
+  lines.push('<b>YAML beautifier</b>');
+  {
+    const r = await run('yaml-formatter', 'a:   1\nb:\n    - x\n    - y\n');
+    check('normalises indentation', r.output.includes('a: 1') && r.output.includes('  - x'), JSON.stringify(r.output));
+
+    const sorted = await run('yaml-formatter', 'b: 2\na: 1\n', { sortKeys: true });
+    check('sorts keys when asked', sorted.output.indexOf('a:') < sorted.output.indexOf('b:'), sorted.output);
+
+    const multi = await run('yaml-formatter', 'a: 1\n---\nb: 2\n');
+    check('handles multi-document', multi.note.includes('2 documents'), multi.note);
+
+    const norway = await run('yaml-formatter', 'country: NO\nenabled: yes\n');
+    check('warns about the Norway problem', norway.extraHtml.includes('Norway'), norway.extraHtml.slice(0, 80));
+
+    let rejected = false;
+    try { await run('yaml-formatter', 'a: [1, 2\nb: :\n'); } catch { rejected = true; }
+    check('rejects invalid YAML', rejected);
+
+    // round-trip equivalence: formatting must not change the data
+    const src = 'name: svc\nlist:\n  - 1\n  - two\nnested: {a: 1, b: "x"}\n';
+    const yaml = await (await import('../js/lib/loader.js')).libs.yaml();
+    const formatted = (await run('yaml-formatter', src)).output;
+    check('round-trips to identical data',
+      JSON.stringify(yaml.load(formatted)) === JSON.stringify(yaml.load(src)),
+      `${JSON.stringify(yaml.load(formatted))} vs ${JSON.stringify(yaml.load(src))}`);
+  }
+
+  // -------------------------------------------------- Dockerfile linter ----
+  lines.push('\n<b>Dockerfile linter</b>');
+  {
+    const bad = `FROM node:latest
+WORKDIR /app
+COPY . .
+RUN npm install
+RUN apt-get update
+RUN apt-get install -y curl
+ENV API_KEY=sk-supersecret
+CMD npm start`;
+    const r = await run('dockerfile-linter', bad);
+    check('flags unpinned base image', hasRule(r, 'pin-base-image'));
+    check('flags COPY . . before install (cache bust)', hasRule(r, 'layer-order'));
+    check('flags apt-get install split from update', hasRule(r, 'apt-update-separate'));
+    check('flags secret baked into the image', hasRule(r, 'secret-in-image'));
+    check('flags missing USER', hasRule(r, 'run-as-non-root'));
+    check('flags shell-form CMD', hasRule(r, 'exec-form'));
+
+    const good = `FROM node:20.11.1-alpine@sha256:abc
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+USER node
+HEALTHCHECK CMD node healthcheck.js
+CMD ["node", "server.js"]`;
+    const r2 = await run('dockerfile-linter', good);
+    check('clean Dockerfile has no layer-order error', !hasRule(r2, 'layer-order'), r2.output);
+    check('clean Dockerfile has no root warning', !hasRule(r2, 'run-as-non-root'));
+    check('clean Dockerfile has no pin warning', !hasRule(r2, 'pin-base-image'));
+    check('clean Dockerfile has no exec-form warning', !hasRule(r2, 'exec-form'));
+
+    let rejected = false;
+    try { await run('dockerfile-linter', '# only a comment'); } catch { rejected = true; }
+    check('rejects a file with no instructions', rejected);
+  }
+
+  // ------------------------------------------------- compose validator -----
+  lines.push('\n<b>Docker Compose validator</b>');
+  {
+    const r = await run('compose-validator', `version: "3.8"
+services:
+  web:
+    image: nginx:latest
+    ports: ["8080:80"]
+    depends_on: [api]
+  api:
+    build: .
+    ports: ["8080:3000"]
+    privileged: true
+    volumes: ["/:/host"]
+    environment:
+      - DB_PASSWORD=hunter2
+  worker:
+    image: x:1
+    depends_on: [queue]
+`);
+    check('detects duplicate host port', hasRule(r, 'port-clash'));
+    check('detects missing dependency', hasRule(r, 'missing-dependency'));
+    check('detects privileged', hasRule(r, 'privileged'));
+    check('detects host root mount', hasRule(r, 'mount-root'));
+    check('detects inline secret', hasRule(r, 'inline-secret'));
+    check('notes obsolete version key', hasRule(r, 'version-obsolete'));
+    check('counts three services', r.note.includes('3 services'), r.note);
+
+    const clean = await run('compose-validator', `services:
+  web:
+    image: nginx:1.25.3
+    restart: unless-stopped
+    healthcheck: {test: ["CMD","true"]}
+    deploy: {resources: {limits: {memory: 256M}}}
+`);
+    check('clean compose has no errors', !hasRule(clean, 'port-clash') && !hasRule(clean, 'privileged'), clean.output);
+
+    let rejected = false;
+    try { await run('compose-validator', 'name: not-a-compose-file'); } catch (e) { rejected = e.message.includes('services'); }
+    check('rejects a file with no services block', rejected);
+  }
+
+  // ------------------------------------------------------ k8s validator ----
+  lines.push('\n<b>Kubernetes checker</b>');
+  {
+    const r = await run('k8s-validator', `apiVersion: apps/v1
+kind: Deployment
+metadata: {name: api}
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: api
+          image: myrepo/api:latest
+          env:
+            - name: DB_PASSWORD
+              value: hunter2
+`);
+    check('flags latest tag', hasRule(r, 'pin-image'));
+    check('flags missing resource limits', hasRule(r, 'resource-limits'));
+    check('flags missing liveness probe', hasRule(r, 'liveness-probe'));
+    check('flags missing readiness probe', hasRule(r, 'readiness-probe'));
+    check('flags inline secret', hasRule(r, 'inline-secret'));
+    check('flags single replica', hasRule(r, 'replicas'));
+    check('flags runAsNonRoot missing', hasRule(r, 'run-as-non-root'));
+
+    const multi = await run('k8s-validator', 'kind: ConfigMap\napiVersion: v1\nmetadata: {name: a}\n---\nkind: Service\napiVersion: v1\nmetadata: {name: b}\n');
+    check('handles multi-document manifests', multi.note.includes('2 documents'), multi.note);
+
+    const secret = await run('k8s-validator', 'apiVersion: v1\nkind: Secret\nmetadata: {name: s}\ndata: {a: Yg==}\n');
+    check('warns about committing a Secret', hasRule(secret, 'secret-in-git'));
+  }
+
+  // ------------------------------------------------------ GHA validator ----
+  lines.push('\n<b>GitHub Actions checker</b>');
+  {
+    const r = await run('gha-validator', `name: CI
+on:
+  pull_request_target:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: some/action@main
+      - run: echo "\${{ github.event.pull_request.title }}"
+        env:
+          TOKEN: ghp_abcdefghijklmnopqrstuvwxyz12
+`);
+    check('flags pull_request_target', hasRule(r, 'pull-request-target'));
+    check('flags action pinned to a branch', hasRule(r, 'unpinned-action'));
+    check('flags script injection', hasRule(r, 'script-injection'));
+    check('flags hardcoded token', hasRule(r, 'hardcoded-secret'));
+    check('flags missing permissions', hasRule(r, 'permissions'));
+
+    const clean = await run('gha-validator', `name: CI
+"on": {push: {branches: [main]}}
+permissions: {contents: read}
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: npm ci
+        env:
+          TITLE: \${{ github.event.pull_request.title }}
+`);
+    check('clean workflow has no injection finding', !hasRule(clean, 'script-injection'),
+      'env: interpolation is safe; only run: bodies are injectable');
+    check('clean workflow has no permissions finding', !hasRule(clean, 'permissions'));
+    check('clean workflow has no unpinned finding', !hasRule(clean, 'unpinned-action'), clean.output);
+  }
+
+  // ------------------------------------------------------- k8s secrets -----
+  lines.push('\n<b>Kubernetes Secret decoder</b>');
+  {
+    const dec = await run('k8s-secret', 'apiVersion: v1\nkind: Secret\ndata:\n  DB_PASSWORD: aHVudGVyMg==\n  API_KEY: c2stbGl2ZQ==\n', { direction: 'decode' });
+    check('decodes base64 values', dec.output.includes('hunter2') && dec.output.includes('sk-live'), dec.output);
+
+    const enc = await run('k8s-secret', 'DB_PASSWORD=hunter2\n', { direction: 'encode', name: 'app' });
+    check('encodes to a Secret manifest', enc.output.includes('kind: Secret') && enc.output.includes('aHVudGVyMg=='), enc.output);
+    check('encode warns base64 is not encryption', enc.extraHtml.includes('not encryption'));
+
+    const str = await run('k8s-secret', 'A=b\n', { direction: 'encode', stringData: true });
+    check('stringData mode skips base64', str.output.includes('stringData:') && str.output.includes('"b"'), str.output);
+  }
+
+  // ------------------------------------------------------- gitignore -------
+  lines.push('\n<b>.gitignore generator</b>');
+  {
+    const r = await run('gitignore-generator', '', { stacks: 'node,python', includeSecrets: true, includeEditors: true });
+    check('includes node patterns', r.output.includes('node_modules/'));
+    check('includes python patterns', r.output.includes('__pycache__/'));
+    check('includes secret patterns', r.output.includes('.env') && r.output.includes('*.pem'));
+    check('keeps .env.example', r.output.includes('!.env.example'));
+    let rejected = false;
+    try { await run('gitignore-generator', '', { stacks: 'cobol' }); } catch { rejected = true; }
+    check('rejects unknown stack', rejected);
+  }
+
+  // ------------------------------------------------- mermaid generator -----
+  lines.push('\n<b>Mermaid generator &amp; validator</b>');
+  {
+    const flow = await run('mermaid-generator', 'A -> B\nB -> C', { kind: 'flowchart', direction: 'LR', shape: 'box' });
+    check('flowchart has direction', flow.output.startsWith('flowchart LR'), flow.output.split('\n')[0]);
+    check('flowchart has edges', (flow.output.match(/-->/g) || []).length === 2, flow.output);
+
+    const labelled = await run('mermaid-generator', 'A ->|yes| B', { kind: 'flowchart' });
+    check('edge labels supported', labelled.output.includes('-->|yes|'), labelled.output);
+
+    const seq = await run('mermaid-generator', 'Browser -> Server: request\nServer -> DB: query', { kind: 'sequence' });
+    check('sequence diagram built', seq.output.startsWith('sequenceDiagram') && seq.output.includes('participant'), seq.output);
+
+    const pie = await run('mermaid-generator', 'Chrome, 62.4\nSafari, 20.1', { kind: 'pie' });
+    check('pie chart built', pie.output.includes('"Chrome" : 62.4'), pie.output);
+
+    const mind = await run('mermaid-generator', 'Root\n  Child A\n  Child B', { kind: 'mindmap' });
+    check('mindmap built', mind.output.startsWith('mindmap'), mind.output);
+
+    // Every generated diagram must actually parse.
+    const { libs } = await import('../js/lib/loader.js');
+    const mermaid = await libs.mermaid();
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
+    for (const [name, diagram] of [['flowchart', flow.output], ['sequence', seq.output], ['pie', pie.output], ['labelled', labelled.output]]) {
+      let ok = true; let why = '';
+      try { await mermaid.parse(diagram); } catch (e) { ok = false; why = (e.message || '').split('\n')[0]; }
+      check(`generated ${name} parses in mermaid`, ok, why);
+    }
+
+    const valid = await run('mermaid-validator', 'flowchart TD\n  A --> B');
+    check('validator accepts valid diagram', valid.note === 'Valid', valid.output);
+    const invalid = await run('mermaid-validator', 'flowchart TD\n  A --> [[[');
+    check('validator rejects invalid diagram', invalid.note === 'Invalid', invalid.output.slice(0, 80));
+  }
+
+  // ---------------------------------------------------------- sanitiser ----
+  lines.push('\n<b>HTML sanitiser</b>');
+  {
+    const { sanitizeHtml, slugify } = await import('../js/lib/sanitize.js');
+    const strip = (h) => sanitizeHtml(h);
+
+    // These payloads are assembled from fragments: a literal "<script" or "</"
+    // inside this inline module would terminate the script element and the rest
+    // of the file would be parsed as HTML.
+    const S = '<' + 'scr' + 'ipt>';
+    const SE = '<' + '/scr' + 'ipt>';
+    const IFRAME = '<' + 'iframe src="evil">' + '<' + '/iframe>';
+    const STYLE = '<' + 'style>body{display:none}' + '<' + '/style>';
+
+    check('removes script tags', !strip(`<p>a</p>${S}alert(1)${SE}`).includes('scr' + 'ipt'));
+    check('removes event handlers', !strip('<p onclick="alert(1)">x</p>').includes('onclick'));
+    check('removes javascript: hrefs', !strip('<a href="javascript:alert(1)">x</a>').includes('javascript:'));
+    check('removes iframes', !strip(IFRAME).includes('iframe'));
+    check('removes style blocks', !strip(STYLE).includes('style'));
+    check('removes onerror on img', !strip('<img src=x onerror=alert(1)>').includes('onerror'));
+    check('keeps safe markup', strip('<p><strong>bold</strong> and <em>italic</em></p>').includes('<strong>bold</strong>'));
+    check('keeps tables', strip('<table><tr><td>a</td></tr></table>').includes('<td>a</td>'));
+    check('keeps http links', strip('<a href="https://x.dev">x</a>').includes('https://x.dev'));
+    check('keeps relative links', strip('<a href="/docs">x</a>').includes('/docs'));
+    check('keeps data: image src', strip('<img src="data:image/png;base64,iVBOR">').includes('data:image/png'));
+    check('drops data: html src', !strip(`<img src="data:text/html,${S}">`).includes('data:text/html'));
+    check('adds noopener to target=_blank', strip('<a href="https://x.dev" target="_blank">x</a>').includes('noopener'));
+    check('keeps task-list checkboxes', strip('<input type="checkbox" checked>').includes('checkbox'));
+    check('drops other inputs', !strip('<input type="password">').includes('input'));
+    check('unwraps unknown tags but keeps text', strip('<marquee>hello</marquee>').includes('hello'));
+
+    const taken = new Set();
+    check('slugify basic', slugify('Hello World!', taken) === 'hello-world');
+    check('slugify dedupes', slugify('Hello World!', taken) === 'hello-world-1');
+    check('slugify handles empty', slugify('!!!', taken) === 'section');
+  }
+
+} catch (err) {
+  fail++;
+  lines.push(`<span class="fail">FATAL ${esc(err.message)}\n${esc(err.stack)}</span>`);
+}
+
+lines.push(`\n<b>${pass} passed, ${fail} failed</b>`);
+lines.push(fail === 0 ? '<span class="pass">ALL GOOD</span>' : '<span class="fail">FAILURES PRESENT</span>');
+out.innerHTML = lines.join('\n');
+window.__done = true;
+</script>
+</body>
+</html>

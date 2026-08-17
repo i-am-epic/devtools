@@ -27,7 +27,23 @@ docker-compose.yml
 
 # Documentation
 README.md
+CONTRIBUTING.md
+CHANGELOG.md
+QUICK_REFERENCE.md
 LICENSE
+
+# Tests, fixtures and generators -- not needed at runtime
+scripts/
+
+# Vercel serverless functions -- the container uses server.py instead
+api/
+vercel.json
+.vercel
+
+# Python artefacts
+__pycache__
+*.pyc
+.venv
 
 # Temporary files
 *.log

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hash verification</title>
+<style>
+  body { font-family: ui-monospace, Consolas, monospace; padding: 2rem; background: #111; color: #eee; }
+  .pass { color: #4ade80; } .fail { color: #f87171; } .skip { color: #fbbf24; }
+  pre { white-space: pre-wrap; line-height: 1.5; }
+  h1 { font-size: 1.2rem; }
+</style>
+</head>
+<body>
+<h1>hashes.js verification</h1>
+<pre id="out">running…</pre>
+<script type="module">
+import { ALGORITHMS, digest, hmac } from '../js/lib/hashes.js';
+
+const out = document.getElementById('out');
+const lines = [];
+let pass = 0, fail = 0;
+const enc = (s) => new TextEncoder().encode(s);
+const hex = (u8) => [...u8].map(b => b.toString(16).padStart(2, '0')).join('');
+
+// Keccak-256 has no hashlib equivalent; these are the published vectors.
+const KECCAK256 = {
+  '': 'c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470',
+  'abc': '4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45',
+  'The quick brown fox jumps over the lazy dog':
+    '4d741b6f1eb29cb2a9b9911c82f56fa8d73b04959d3d9d222895df6c0b28aa15',
+};
+
+function check(label, actual, expected) {
+  if (actual === expected) { pass++; }
+  else {
+    fail++;
+    lines.push(`<span class="fail">FAIL ${label}\n  expected ${expected}\n  actual   ${actual}</span>`);
+  }
+}
+
+try {
+  const vectors = await (await fetch('./hash-vectors.json')).json();
+  const { samples, hmacCases, digests, hmacs } = vectors;
+
+  lines.push('--- digests ---');
+  for (const algo of Object.keys(ALGORITHMS)) {
+    if (digests[algo]) {
+      for (let i = 0; i < samples.length; i++) {
+        check(`${algo} #${i}`, hex(await digest(algo, enc(samples[i]))), digests[algo][i]);
+      }
+      lines.push(`<span class="pass">ok  ${algo.padEnd(11)} ${samples.length} vectors (python hashlib)</span>`);
+    } else if (algo === 'keccak-256') {
+      for (const [input, expected] of Object.entries(KECCAK256)) {
+        check(`keccak-256 "${input.slice(0,20)}"`, hex(await digest(algo, enc(input))), expected);
+      }
+      lines.push(`<span class="pass">ok  ${algo.padEnd(11)} ${Object.keys(KECCAK256).length} vectors (published)</span>`);
+    } else {
+      lines.push(`<span class="skip">skip ${algo}</span>`);
+    }
+  }
+
+  lines.push('\n--- hmac ---');
+  for (const algo of Object.keys(ALGORITHMS)) {
+    if (!hmacs[algo]) { lines.push(`<span class="skip">skip hmac-${algo}</span>`); continue; }
+    for (let i = 0; i < hmacCases.length; i++) {
+      const { key, msg } = hmacCases[i];
+      check(`hmac-${algo} #${i}`, hex(await hmac(algo, enc(key), enc(msg))), hmacs[algo][i]);
+    }
+    lines.push(`<span class="pass">ok  hmac-${algo.padEnd(11)} ${hmacCases.length} vectors</span>`);
+  }
+
+  lines.push(`\n<b>${pass} passed, ${fail} failed</b>`);
+  lines.push(fail === 0 ? '<span class="pass">ALL GOOD</span>' : '<span class="fail">FAILURES PRESENT</span>');
+} catch (err) {
+  lines.push(`<span class="fail">ERROR: ${err.message}\n${err.stack}</span>`);
+}
+
+out.innerHTML = lines.join('\n');
+window.__done = true;
+window.__result = { pass, fail };
+</script>
+</body>
+</html>

@@ -5,17 +5,140 @@ All notable changes to DevToolkit will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [4.1.0] - 2026-08-17
+
+### Fixed
+- **Dead space under short tools.** The tool view was a `position: fixed` overlay with
+  `body { overflow: hidden }`. It looked right, but a full-page screenshot captures the
+  *document* height rather than the overlay, producing a large blank band — and the same
+  overlay broke printing and find-in-page. The view is now an ordinary block in document
+  flow, and the body stops forcing a full screen once a tool has rendered content below
+  the editors. Remaining gap is the 2rem bottom padding.
+- **Markdown preview had a fixed 220px height with its own scrollbar.** It was a fully
+  sandboxed iframe, which cannot be measured from the parent, so it could not auto-size.
+  The preview now renders inline through the new sanitiser and sizes to its content.
+- The Kubernetes checker never reported inline Secrets: the check sat after an early
+  `continue` for documents with no pod template, so it was unreachable.
+- Mermaid diagrams generated for the "copy as fenced block" button contained a literal
+  triple backtick inside a template literal, which was a syntax error that stopped the
+  whole registry loading.
 
 ### Added
-- Comprehensive contribution guidelines in CONTRIBUTING.md
-- Detailed README with architecture documentation
-- CHANGELOG.md for version tracking
+- **Markdown Reader** — open or drag in a `.md` file and read it rendered: GFM tables,
+  task lists, footnotes, heading anchors, generated table of contents, code copy buttons,
+  and **Mermaid diagrams rendered in place**. Exports self-contained HTML or prints to PDF.
+- **Mermaid Generator** — build flowcharts, sequence diagrams, mind maps, ER diagrams,
+  pie charts and user journeys from plain lists or CSV. Every generated diagram is checked
+  against the real Mermaid parser by the test suite.
+- **Mermaid Validator** — parses with Mermaid itself and reports the failing line, with a
+  preview when it succeeds.
+- **DevOps & Config category** — YAML beautifier, Dockerfile linter, Docker Compose
+  validator, Kubernetes manifest checker, GitHub Actions checker, Kubernetes Secret
+  decoder/encoder, .gitignore generator.
+- `js/lib/sanitize.js` — allowlist HTML sanitiser used wherever rendered Markdown is put
+  into the page.
+- `scripts/devops-test.html` — 83 assertions covering the linters, Mermaid generation and
+  the sanitiser.
 
-### To Be Implemented
-- Parquet Viewer tool (multi-file upload)
-- Data conversion tools (CSV ↔ Excel ↔ Parquet ↔ JSON ↔ Avro)
-- 100+ placeholder tools across 11 categories
+### Changed
+- JSON Formatter is now "JSON Formatter & Beautifier" and matches searches for
+  beautify/prettify/unminify.
+
+## [4.0.0] - 2026-08-17
+
+### Changed
+- **Tools open full screen instead of in a dialog.** The old modal capped at 1000px
+  wide with short editors; a tool now takes the whole viewport and the editor panes
+  flex to fill whatever height is left, so a JSON document gets ~450px of editor on a
+  1512×946 screen rather than ~220px.
+- Search ranks a whole-word name match above a keyword match, so "token" finds the
+  LLM Token Counter before the JWT Signer.
+
+### Added
+- **Quick search palette** on `Ctrl`+`Space`, `Alt`+`Space`, `Ctrl`/`Cmd`+`K` or `/`,
+  with arrow-key navigation. Works on macOS and Windows. (A page cannot register a
+  global OS hotkey — these fire while the tab has focus.)
+- **Environment export and import.** Download all or just the active environment as
+  JSON and import it back, with keep-both / replace / skip handling for name clashes.
+  Accepts a bare array or a single environment object too, and regenerates ids so an
+  import cannot overwrite an unrelated environment.
+- **22 new tools.**
+  - AI & LLM: token counter (real BPE via gpt-tokenizer, cl100k and o200k), cost
+    calculator, prompt template renderer, chat API payload builder, JSONL toolkit.
+  - JSON power tools: JSON→TypeScript/Python/Go/C#/Rust/Java, JSON Schema generator,
+    JSONPath evaluator, structural JSON diff.
+  - Developer utilities: ID decoder (UUID v1/v4/v6/v7, ULID, ObjectId, Snowflake),
+    Unicode inspector, CIDR calculator, Kubernetes quantity converter, duration
+    converter, semver checker, cURL converter, .env converter, JWT signer, HTTP
+    reference, mock data generator, Markdown table formatter, line-ending inspector.
+- **Nik Agents section** — 20 `nikbot-*` subagent definitions, rendered with copy and
+  download. `scripts/build_agents.py` publishes only the general-purpose set and
+  refuses to copy an agent that mentions an internal project name.
+- Click-to-copy on hash digests, colour formats, JWT parts, JSONPath examples, MIME
+  types, CIDR subnets, ISO durations, Unicode code points and Mermaid source, via one
+  delegated handler.
+- `scripts/newtools-test.html` — 131 correctness assertions for the new tools.
+
+### Fixed
+- The environment edit form only saved its own known variable names, so a variable
+  brought in by an import was silently dropped on the next save.
+- Mermaid viewer gained copy buttons for the source and the rendered SVG.
+
+### Removed
+- The MIT licence. The project now carries no licence — all rights reserved.
+
+## [3.0.0] - 2026-08-17
+
+Rewrite. Every listed tool now works; the tool list is generated from
+implementations, so there is nowhere for a placeholder to hide.
+
+### Fixed
+- **Parquet Viewer returned fake data.** It generated `User 1..100` rows and never
+  read the uploaded file (`"Mock implementation for demonstration"`). It now parses
+  real Parquet via hyparquet.
+- **Service Bus tools only simulated.** Both printed success without contacting
+  Azure (`"Simulate sending"`). They now publish and consume for real.
+- **CSV to Excel did not produce xlsx.** It wrote an HTML table with an `.xls`
+  extension, which makes Excel warn that the format and extension disagree. It now
+  writes a real workbook with native number, date and boolean cells.
+- **Text diff aligned lines by index**, so inserting one line marked everything
+  after it as changed. Replaced with an LCS alignment plus word-level highlighting
+  and unified-diff export.
+- Mermaid viewer appended a duplicate `<style>` element on every open, and ran with
+  `securityLevel: 'loose'`, which allows markup injection from a pasted diagram.
+
+### Added
+- 90 working tools, covering the appdevtools.com feature set plus Parquet, Service
+  Bus, JWT, cron, regex, colour and QR.
+- **Parquet viewer**: multi-file, footer metadata (row groups, codecs, encodings,
+  compression ratio, bytes per row), per-column statistics computed from the data,
+  a filter language (`age > 30 AND city = 'London'`, `LIKE`, `IN`, `IS NULL`),
+  sorting, CSV/JSON/NDJSON export, file stacking and schema comparison.
+- **Service Bus relay** at `/api/servicebus` — `server.py` locally and in Docker,
+  `api/servicebus.js` on Vercel, verified to produce identical SAS tokens. Publish
+  with broker and application properties; consume by peek-lock with
+  complete/abandon/renew, or receive-and-delete.
+- Hash generator computing 12 algorithms at once. MD5, SHA-224, SHA-3, Keccak-256
+  and RIPEMD-160 are implemented locally since WebCrypto lacks them, and are
+  verified against Python's `hashlib`.
+- Warm-paper design system with light and dark themes, WCAG-AA contrast throughout.
+- Ranked search, category grouping, and per-tool deep links (`#json-formatter`).
+- Test suites: `scripts/smoke-test.html`, `parquet-test.html`, `tools-test.html`,
+  `verify-hashes.html`, `servicebus-js-test.html`, `test_servicebus.py`.
+
+### Changed
+- `tools-config.json` removed. The catalogue lives in `js/tools/registry.js`, so a
+  tool cannot be listed without an implementation behind it.
+- Most tools are now declarative specs rendered by `SimpleTool` rather than a class
+  each.
+- Docker image runs `server.py` on Python instead of nginx, so the Service Bus
+  tools work in a container. It binds to localhost unless `DEVTOOLS_HOST` says
+  otherwise.
+
+### Removed
+- 123 placeholder tool entries that had no implementation, including several that
+  could not work client-side at all (port scanner, hash cracker, threat intel).
+- `CACHE_FIX.md`, which documented a bug in the replaced architecture.
 
 ## [1.0.0] - 2024-12-18
 

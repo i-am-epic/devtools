@@ -52,6 +52,8 @@ graph TD
             <button class="action-btn" id="exportSvgBtn" style="background: var(--bg-secondary);">
               📥 Export SVG
             </button>
+            <button class="action-btn secondary" id="copyCodeBtn">Copy code</button>
+            <button class="action-btn secondary" id="copySvgBtn">Copy SVG</button>
             <button class="action-btn" id="clearBtn" style="background: #ef4444;">
               🗑️ Clear
             </button>
@@ -109,33 +111,28 @@ graph TD
       exportSvgBtn?.addEventListener('click', () => this.exportDiagram('svg'));
       clearBtn?.addEventListener('click', () => this.clearAll());
 
+      document.getElementById('copyCodeBtn')?.addEventListener('click', async () => {
+        const { copyText, toast } = await import('../ui/toast.js');
+        const code = document.getElementById('mermaidInput')?.value || '';
+        if (code.trim()) copyText(code, 'Diagram source copied');
+        else toast('Nothing to copy', 'err');
+      });
+
+      document.getElementById('copySvgBtn')?.addEventListener('click', async () => {
+        const { copyText, toast } = await import('../ui/toast.js');
+        const svg = document.querySelector('#diagramOutput svg');
+        if (svg) copyText(svg.outerHTML, 'SVG copied');
+        else toast('Render the diagram first', 'err');
+      });
+
       templateBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
           const template = e.target.dataset.template;
           this.loadTemplate(template);
         });
       });
-
-      // Add styling for template buttons
-      const style = document.createElement('style');
-      style.textContent = `
-        .template-btn {
-          padding: 0.5rem 1rem;
-          background: var(--bg-card);
-          border: 1px solid var(--border-color);
-          border-radius: 6px;
-          color: var(--text-primary);
-          cursor: pointer;
-          font-size: 0.85rem;
-          transition: var(--transition);
-        }
-        .template-btn:hover {
-          background: var(--bg-secondary);
-          border-color: var(--accent-color);
-          transform: translateY(-1px);
-        }
-      `;
-      document.head.appendChild(style);
+      // .template-btn is styled in styles.css -- it used to be injected here on
+      // every open, which appended a duplicate <style> each time the tool ran.
     }, 0);
   }
 
@@ -145,7 +142,9 @@ graph TD
       window.mermaid.initialize({ 
         startOnLoad: false,
         theme: 'default',
-        securityLevel: 'loose'
+        // 'strict' escapes HTML in node labels. 'loose' would let a pasted
+        // diagram inject markup into this page.
+        securityLevel: 'strict'
       });
       return;
     }
@@ -157,7 +156,9 @@ graph TD
       window.mermaid.initialize({ 
         startOnLoad: false,
         theme: 'default',
-        securityLevel: 'loose'
+        // 'strict' escapes HTML in node labels. 'loose' would let a pasted
+        // diagram inject markup into this page.
+        securityLevel: 'strict'
       });
       this.showInfo('Mermaid library loaded successfully!');
     };

@@ -1,5 +1,4 @@
-// Main Application Entry Point (Dependency Injection Pattern)
-console.log('📦 Loading modules...');
+// Application entry point.
 
 import { ConfigManager } from './core/ConfigManager.js';
 import { ToolFactory } from './core/ToolFactory.js';
@@ -7,253 +6,265 @@ import { SearchService } from './core/SearchService.js';
 import { UIManager } from './core/UIManager.js';
 import { EnvironmentManager } from './core/EnvironmentManager.js';
 import { EnvironmentUI } from './ui/EnvironmentUI.js';
+import { CommandPalette } from './ui/palette.js';
+import { copyText } from './ui/toast.js';
 
-console.log('✅ All modules loaded successfully');
+const THEME_KEY = 'devtools_theme';
+const CATEGORY_KEY = 'devtools_category';
+
+const isMac = /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent);
 
 class Application {
     constructor() {
-        this.configManager = new ConfigManager('./tools-config.json');
+        this.configManager = new ConfigManager();
         this.toolFactory = new ToolFactory();
         this.searchService = new SearchService();
         this.uiManager = new UIManager(this.toolFactory);
         this.envManager = new EnvironmentManager();
         this.envUI = new EnvironmentUI();
         this.allTools = [];
+        this.currentCategory = 'all';
     }
 
     async init() {
         try {
-            console.log('🚀 Starting DevTools Hub...');
-            
-            // Load configuration
-            console.log('📋 Loading configuration...');
             await this.configManager.load();
             this.allTools = this.configManager.getAllTools();
             this.categories = this.configManager.getCategories();
-            console.log('✓ Loaded', this.allTools.length, 'tools');
-            
-            // Set tools for search service
+
+            this.uiManager.setCategories(this.categories);
             this.searchService.setTools(this.allTools);
-            
-            // Render category filters
+
+            this.palette = new CommandPalette({
+                searchService: this.searchService,
+                onSelect: (tool) => this.uiManager.openTool(tool),
+            });
+            this.palette.mount();
+
+            this.applyStoredTheme();
             this.renderCategoryFilters();
-            
-            // Restore last selected category
-            const savedCategory = localStorage.getItem('selectedCategory') || 'all';
-            this.currentCategory = savedCategory;
-            
-            // Render initial grid with saved category
-            console.log('🎨 Rendering tools grid...');
-            const initialTools = savedCategory === 'all' 
-                ? this.allTools 
-                : this.allTools.filter(tool => tool.category === savedCategory);
-            this.uiManager.renderToolsGrid(initialTools);
-            
-            // Set active category button
-            setTimeout(() => {
-                const activeBtn = document.querySelector(`.category-btn[data-category="${savedCategory}"]`);
-                if (activeBtn) {
-                    document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
-                    activeBtn.classList.add('active');
-                }
-            }, 0);
-            
-            console.log('✓ Grid rendered');
-            
-            // Setup event listeners
-            console.log('🔌 Setting up event listeners...');
+            this.updateShortcutHint();
+
+            this.currentCategory = localStorage.getItem(CATEGORY_KEY) || 'all';
+            if (this.currentCategory !== 'all' && !this.categories[this.currentCategory]) {
+                this.currentCategory = 'all';
+            }
+            this.filterByCategory(this.currentCategory, { save: false });
+
             this.setupEventListeners();
-            
-            // Update active environment indicator
             this.updateEnvironmentIndicator();
-            
-            // Auto-focus search on page load
-            setTimeout(() => {
-                const searchInput = document.getElementById('globalSearch');
-                if (searchInput) {
-                    searchInput.focus();
-                }
-            }, 100);
-            
-            console.log('✅ DevTools Hub initialized successfully');
+            this.openFromHash();
         } catch (error) {
-            console.error('❌ Failed to initialize application:', error);
-            console.error('Stack trace:', error.stack);
-            
-            // Show error to user
-            document.body.innerHTML = `
-                <div style="padding: 2rem; text-align: center; color: #ff6b6b;">
-                    <h1>❌ Failed to Load</h1>
-                    <p style="color: #a0a0a0; margin-top: 1rem;">
+            console.error('Failed to initialise:', error);
+            const grid = document.getElementById('toolsGrid');
+            if (grid) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <strong>Something went wrong while loading</strong>
                         ${error.message}
-                    </p>
-                    <pre style="text-align: left; background: #111; padding: 1rem; margin-top: 1rem; border-radius: 8px; overflow-x: auto;">
-                        ${error.stack}
-                    </pre>
-                    <p style="margin-top: 1rem;">Check browser console for details</p>
-                </div>
-            `;
-        }
-    }
-
-    updateEnvironmentIndicator() {
-        const activeEnv = this.envManager.getActiveEnvironment();
-        const indicator = document.getElementById('activeEnvIndicator');
-        
-        if (indicator) {
-            if (activeEnv) {
-                indicator.textContent = activeEnv.name;
-                indicator.style.color = '#51cf66';
-            } else {
-                indicator.textContent = '';
+                    </div>`;
             }
         }
     }
 
-    setupEventListeners() {
-        // Global search
-        const searchInput = document.getElementById('globalSearch');
-        searchInput?.addEventListener('input', (e) => {
-            this.handleSearch(e.target.value);
-        });
+    // ------------------------------------------------------------- theme --
 
-        // Environment settings button
-        const envSettingsBtn = document.getElementById('openEnvSettings');
-        envSettingsBtn?.addEventListener('click', () => {
-            this.openEnvironmentSettings();
-        });
-
-        // Modal close button
-        const closeModal = document.getElementById('closeModal');
-        closeModal?.addEventListener('click', () => {
-            this.uiManager.closeModal();
-        });
-
-        // Close modal on background click
-        const modal = document.getElementById('toolModal');
-        modal?.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                this.uiManager.closeModal();
-            }
-        });
-
-        // Global keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            // ESC to close modal
-            if (e.key === 'Escape') {
-                this.uiManager.closeModal();
-            }
-            
-            // Ctrl+Enter (Windows/Linux) or Cmd+Enter (Mac) to focus search
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                e.preventDefault();
-                searchInput?.focus();
-                searchInput?.select();
-            }
-        });
+    applyStoredTheme() {
+        const stored = localStorage.getItem(THEME_KEY);
+        if (stored === 'light' || stored === 'dark') {
+            document.documentElement.setAttribute('data-theme', stored);
+        }
+        this.updateThemeButton();
     }
 
-    openEnvironmentSettings() {
-        const modal = document.getElementById('toolModal');
-        const modalBody = document.getElementById('modalBody');
-
-        modalBody.innerHTML = this.envUI.render();
-        modal.classList.add('active');
-        
-        setTimeout(() => {
-            this.envUI.attachEventListeners();
-        }, 0);
-
-        // Refresh environment indicator when modal closes
-        const observer = new MutationObserver(() => {
-            if (!modal.classList.contains('active')) {
-                this.updateEnvironmentIndicator();
-            }
-        });
-        observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+    toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme')
+            || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem(THEME_KEY, next);
+        this.updateThemeButton();
     }
+
+    updateThemeButton() {
+        const button = document.getElementById('themeToggle');
+        if (!button) return;
+        const isDark = (document.documentElement.getAttribute('data-theme')
+            || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark';
+        button.innerHTML = isDark ? '<span>☀</span><span>Light</span>' : '<span>☾</span><span>Dark</span>';
+        button.setAttribute('aria-label', isDark ? 'Switch to light theme' : 'Switch to dark theme');
+    }
+
+    updateShortcutHint() {
+        const hint = document.getElementById('searchHint');
+        if (hint) hint.textContent = isMac ? '⌘ K' : 'Ctrl + Space';
+    }
+
+    // -------------------------------------------------------- categories --
 
     renderCategoryFilters() {
-        const filterContainer = document.getElementById('categoryFilter');
-        if (!filterContainer || !this.categories) return;
-        
-        // Count tools per category
-        const categoryCounts = {};
-        this.allTools.forEach(tool => {
-            categoryCounts[tool.category] = (categoryCounts[tool.category] || 0) + 1;
-        });
-        
-        // Sort categories by order
-        const sortedCategories = Object.entries(this.categories)
-            .sort(([, a], [, b]) => (a.order || 0) - (b.order || 0));
-        
-        // Add category buttons
-        sortedCategories.forEach(([id, category]) => {
-            const count = categoryCounts[id] || 0;
-            if (count === 0) return;
-            
-            const button = document.createElement('button');
-            button.className = 'category-btn';
-            button.dataset.category = id;
-            button.innerHTML = `
-                <span>${category.icon}</span>
-                <span>${category.name}</span>
-                <span class="count">${count}</span>
-            `;
-            
-            button.addEventListener('click', () => this.filterByCategory(id));
-            filterContainer.appendChild(button);
+        const container = document.getElementById('categoryFilter');
+        if (!container) return;
+
+        const counts = {};
+        for (const tool of this.allTools) counts[tool.category] = (counts[tool.category] || 0) + 1;
+
+        const buttons = [
+            { id: 'all', name: 'All tools', icon: '✦', count: this.allTools.length },
+            ...Object.entries(this.categories)
+                .sort(([, a], [, b]) => (a.order || 0) - (b.order || 0))
+                .filter(([id]) => counts[id])
+                .map(([id, category]) => ({ id, name: category.name, icon: category.icon, count: counts[id] })),
+        ];
+
+        container.innerHTML = buttons.map((button) => `
+            <button class="category-btn" data-category="${button.id}" type="button">
+                <span aria-hidden="true">${button.icon}</span>
+                <span>${button.name}</span>
+                <span class="count">${button.count}</span>
+            </button>`).join('');
+
+        container.querySelectorAll('.category-btn').forEach((button) => {
+            button.addEventListener('click', () => this.filterByCategory(button.dataset.category));
         });
     }
-    
-    filterByCategory(categoryId) {
-        // Store current category
+
+    filterByCategory(categoryId, { save = true } = {}) {
         this.currentCategory = categoryId;
-        
-        // Update active button
-        document.querySelectorAll('.category-btn').forEach(btn => {
-            btn.classList.remove('active');
+
+        document.querySelectorAll('.category-btn').forEach((button) => {
+            button.classList.toggle('active', button.dataset.category === categoryId);
         });
-        
-        const activeBtn = categoryId === 'all' 
-            ? document.querySelector('.category-btn[data-category="all"]')
-            : document.querySelector(`.category-btn[data-category="${categoryId}"]`);
-        
-        if (activeBtn) {
-            activeBtn.classList.add('active');
-        }
-        
-        // Filter tools
-        const filteredTools = categoryId === 'all' 
-            ? this.allTools 
-            : this.allTools.filter(tool => tool.category === categoryId);
-        
-        // Clear search
-        const searchInput = document.getElementById('globalSearch');
-        if (searchInput) searchInput.value = '';
-        
-        // Re-render grid
-        this.uiManager.renderToolsGrid(filteredTools);
-        
-        // Save to localStorage
-        localStorage.setItem('selectedCategory', categoryId);
+
+        const search = document.getElementById('globalSearch');
+        if (search) search.value = '';
+
+        const tools = categoryId === 'all'
+            ? this.allTools
+            : this.allTools.filter((tool) => tool.category === categoryId);
+
+        this.uiManager.renderToolsGrid(tools, categoryId === 'all');
+        this.updateToolCount(tools.length);
+
+        if (save) localStorage.setItem(CATEGORY_KEY, categoryId);
     }
 
     handleSearch(query) {
-        const filteredTools = this.searchService.search(query);
-        const filteredIds = filteredTools.map(tool => tool.id);
-        this.uiManager.showCards(filteredIds);
+        if (!query.trim()) {
+            this.filterByCategory(this.currentCategory, { save: false });
+            return;
+        }
+        const results = this.searchService.search(query);
+        this.uiManager.renderToolsGrid(results, false);
+        this.updateToolCount(results.length, query);
+    }
+
+    updateToolCount(count = this.allTools.length, query = '') {
+        const node = document.getElementById('toolCount');
+        if (!node) return;
+        node.textContent = query
+            ? `${count} result${count === 1 ? '' : 's'} for “${query}”`
+            : `${count} tool${count === 1 ? '' : 's'}`;
+    }
+
+    // ------------------------------------------------------------ routing --
+
+    openFromHash() {
+        const id = decodeURIComponent(location.hash.slice(1));
+        if (!id) return;
+        const tool = this.configManager.getTool(id);
+        if (tool) this.uiManager.openTool(tool);
+    }
+
+    // ------------------------------------------------------ environments --
+
+    updateEnvironmentIndicator() {
+        const indicator = document.getElementById('activeEnvIndicator');
+        if (!indicator) return;
+        const active = this.envManager.getActiveEnvironment();
+        indicator.textContent = active ? active.name : '';
+    }
+
+    openEnvironmentSettings() {
+        this.uiManager.openPanel(this.envUI.render(), {
+            title: 'Environments',
+            icon: '⚙',
+            category: 'utility',
+        });
+        setTimeout(() => this.envUI.attachEventListeners(), 0);
+    }
+
+    // ------------------------------------------------------------ events --
+
+    setupEventListeners() {
+        const search = document.getElementById('globalSearch');
+        let debounce;
+        search?.addEventListener('input', (event) => {
+            clearTimeout(debounce);
+            const { value } = event.target;
+            debounce = setTimeout(() => this.handleSearch(value), 120);
+        });
+
+        document.getElementById('themeToggle')?.addEventListener('click', () => this.toggleTheme());
+        document.getElementById('openEnvSettings')?.addEventListener('click', () => this.openEnvironmentSettings());
+        document.getElementById('closeModal')?.addEventListener('click', () => this.closeModal());
+        document.getElementById('modalShare')?.addEventListener('click', () => this.uiManager.shareLink());
+        document.getElementById('modalSettings')?.addEventListener('click', () => this.openEnvironmentSettings());
+
+        window.addEventListener('hashchange', () => {
+            const id = decodeURIComponent(location.hash.slice(1));
+            if (!id) this.closeModal();
+            else this.openFromHash();
+        });
+
+        // One delegated handler serves every click-to-copy affordance on the
+        // site, so individual tools only need to add data-copy.
+        document.addEventListener('click', (event) => {
+            const trigger = event.target.closest('[data-copy]');
+            if (!trigger) return;
+            event.preventDefault();
+            event.stopPropagation();
+
+            const value = trigger.dataset.copy === ''
+                ? (trigger.closest('[data-copy-source]')?.dataset.copySource ?? trigger.textContent.trim())
+                : trigger.dataset.copy;
+
+            copyText(value, trigger.dataset.copyLabel || 'Copied');
+
+            const chip = trigger.matches('.copy-chip') ? trigger : trigger.querySelector('.copy-chip');
+            if (chip) {
+                const original = chip.textContent;
+                chip.textContent = '✓';
+                chip.classList.add('is-ok');
+                setTimeout(() => {
+                    chip.textContent = original;
+                    chip.classList.remove('is-ok');
+                }, 1200);
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            // The palette owns its own keys while it is open.
+            if (this.palette?.open) {
+                if (event.key === 'Escape') this.palette.close();
+                return;
+            }
+
+            if (this.palette?.handleShortcut(event)) return;
+
+            if (event.key === 'Escape') {
+                this.closeModal();
+            }
+        });
+    }
+
+    closeModal() {
+        this.uiManager.closeModal();
+        this.updateEnvironmentIndicator();
     }
 }
 
-// Initialize application when DOM is ready
-console.log('⏳ Waiting for DOM to be ready...');
-
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('✅ DOM ready, initializing application...');
     window.app = new Application();
     window.app.init();
 });
-
-console.log('📜 App.js script loaded');
-

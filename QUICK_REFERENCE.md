@@ -1,350 +1,147 @@
-# DevToolkit - Quick Reference
+# Quick reference
 
-## 📁 Project Overview
-- **Total Files:** 30
-- **JavaScript Modules:** 17
-- **Working Tools:** 7
-- **Total Tools Configured:** 120+
-- **Categories:** 11
-- **Documentation:** 1579 lines
-
-## 🚀 Quick Start Commands
+## Run
 
 ```bash
-# Development
-python3 -m http.server 8000
-open http://localhost:8000
-
-# Docker
-docker-compose up -d
-open http://localhost:8080
-
-# Docker (manual)
-docker build -t devtoolkit .
-docker run -p 8080:80 devtoolkit
+python server.py 8000          # site + Service Bus relay on :8000
+docker compose up --build      # same thing in a container, on :8080
 ```
 
-## 📂 File Structure
+No build step and no dependencies.
+
+## Layout
 
 ```
-devtoolkit/                    (30 files total)
-├── Documentation             (5 files, 1579 lines)
-│   ├── README.md            (18 KB, comprehensive guide)
-│   ├── CONTRIBUTING.md      (16 KB, contribution guide)
-│   ├── CHANGELOG.md         (5.6 KB, version history)
-│   ├── LICENSE              (MIT License)
-│   └── .gitignore           (Git exclusions)
-│
-├── Configuration             (6 files)
-│   ├── index.html           (5222 bytes, SEO optimized)
-│   ├── styles.css           (CSS Grid, animations)
-│   ├── tools-config.json    (1089+ lines, 120+ tools)
-│   ├── robots.txt           (AI crawler rules)
-│   ├── sitemap.xml          (SEO sitemap)
-│   └── .dockerignore        (Docker exclusions)
-│
-├── Docker                    (2 files)
-│   ├── Dockerfile           (Multi-stage build)
-│   └── docker-compose.yml   (Orchestration)
-│
-└── JavaScript (ES6 Modules)  (17 files)
-    ├── app.js               (Application bootstrap)
-    │
-    ├── core/                (6 modules)
-    │   ├── BaseTool.js      (Abstract base class)
-    │   ├── ToolFactory.js   (Factory pattern)
-    │   ├── ConfigManager.js (Config loader)
-    │   ├── SearchService.js (Search engine)
-    │   ├── UIManager.js     (UI renderer)
-    │   └── EnvironmentManager.js (Variable substitution)
-    │
-    ├── ui/                  (1 module)
-    │   └── EnvironmentUI.js (Settings modal)
-    │
-    ├── utils/               (1 module)
-    │   └── StorageManager.js (localStorage)
-    │
-    └── tools/               (8 implementations)
-        ├── JsonBeautifierTool.js
-        ├── GuidGeneratorTool.js
-        ├── Sha256Tool.js
-        ├── Base64Tool.js
-        ├── DiffCheckerTool.js
-        ├── ServiceBusSenderTool.js
-        ├── ServiceBusListenerTool.js
-        └── PlaceholderTool.js
+index.html          shell
+styles.css          design system, light + dark
+server.py           static server + /api/servicebus relay
+api/                the same relay as Vercel functions
+js/app.js           search, categories, theme, hash routing
+js/core/            ConfigManager, ToolFactory, SimpleTool, SearchService, UIManager, BaseTool
+js/lib/             bytes, hashes, tabular, wordlist, loader, servicebus
+js/tools/registry.js    source of truth for what exists
+js/tools/specs/     declarative tools by category
+js/tools/*.js       bespoke-UI tools
+scripts/            tests and fixture generators
 ```
 
-## 🛠️ Working Tools (7)
+## Add a simple tool
 
-1. **JSON Beautifier** - Format, minify, validate JSON
-2. **GUID Generator** - Generate UUID/GUID identifiers
-3. **SHA256 Hash** - Generate SHA256 hashes
-4. **Base64 Encoder/Decoder** - Encode/decode Base64 strings
-5. **Difference Checker** - Compare two texts side by side
-6. **Service Bus Sender** - Send messages to Azure Service Bus
-7. **Service Bus Listener** - Subscribe to Azure Service Bus
+Most tools are text-in / text-out. Add an object to the right file in
+`js/tools/specs/` — it is picked up automatically because `registry.js` spreads
+each category array.
 
-## 📦 Categories (11)
-
-| Category | Tools | Status |
-|----------|-------|--------|
-| 🔧 Backend | 20+ | 5 active |
-| 🎨 Frontend | 15+ | Placeholders |
-| 🚀 DevOps | 15+ | Placeholders |
-| 🤖 AI | 11 | Placeholders |
-| 🔐 Cybersecurity | 20+ | Placeholders |
-| 🔄 Conversion | 13 | Placeholders |
-| 🗄️ SQL & Database | 10+ | Placeholders |
-| 📚 Cheat Sheets | 10+ | Placeholders |
-| 📊 Data | 5+ | 1 active |
-| 🔒 Security | 5+ | 1 active |
-| 🎯 Utility | 15+ | 1 active |
-
-## 🏗️ Architecture
-
-### Design Patterns
-- **Factory Pattern** - ToolFactory creates tool instances
-- **Template Method** - BaseTool defines interface
-- **Dependency Injection** - Tools receive config
-- **Single Responsibility** - Each module has one purpose
-- **Open/Closed** - Extend without modifying core
-
-### Key Components
-
-```javascript
-// 1. Tool Registration
-tools-config.json → ConfigManager → ToolFactory
-
-// 2. Tool Creation
-ToolFactory.createTool(config) → Tool Instance
-
-// 3. Tool Rendering
-UIManager.openTool(config) → Modal Display
-
-// 4. Search
-SearchService.search(query) → Filtered Results
-
-// 5. Environment Variables
-EnvironmentManager.replaceVariables("{{apiUrl}}")
+```js
+{
+    id: 'my-tool',                    // unique; also the URL fragment
+    name: 'My Tool',
+    description: 'One line shown on the card.',
+    category: 'text',                 // must exist in CATEGORIES
+    icon: '★',
+    keywords: ['search', 'terms'],    // ranked highly by search
+    spec: {
+        lede: 'Sentence shown under the title.',
+        input: { label: 'Input', placeholder: '...', sample: 'try me' },
+        output: { label: 'Output', filename: 'result.txt' },
+        options: [
+            { id: 'upper', type: 'checkbox', label: 'Uppercase', default: false },
+        ],
+        run: ({ input, options }) => options.upper ? input.toUpperCase() : input,
+    },
+}
 ```
 
-## ⚡ Key Features
+### `run` contract
 
-### 1. Category Filtering
-- 11 categories with dynamic counts
-- Persistent selection (localStorage)
-- All Tools button always reselectable
+Receives `{ input, options, bytes, fileName, tool }`. May be async.
 
-### 2. Smart Search
-- Global search with Ctrl+Enter / Cmd+Enter
-- Auto-focus on page load
-- Searches name, description, keywords
-- Category-aware filtering
+Returns either a string, or:
 
-### 3. Environment Manager
-- Postman-like variable management
-- `{{variable}}` substitution syntax
-- 15+ predefined variables
-- Custom variable support
-- Accessible from all tools via Settings button
-
-### 4. Tool Modal
-- Clean modal interface
-- Settings button access
-- Smooth animations
-- Responsive design
-- ESC to close
-
-### 5. Storage
-- Configuration persistence
-- History tracking (last 5)
-- Category selection
-- Environment variables
-- All stored in browser localStorage
-
-## 🎨 Styling
-
-### CSS Variables
-```css
---bg-primary: #000000;      /* Main background */
---bg-secondary: #0a0a0a;    /* Secondary background */
---bg-card: #111111;         /* Card background */
---text-primary: #ffffff;    /* Primary text */
---accent-color: #ffffff;    /* Accent color */
+```js
+{ output, extraHtml, note, filename }
 ```
 
-### Utility Classes
-```html
-<div class="tool-interface">      <!-- Main wrapper -->
-<div class="tool-section">         <!-- Content section -->
-<div class="output-section">       <!-- Result displays -->
-<button class="action-btn">        <!-- Primary button -->
-<pre class="error">                <!-- Error message -->
+Throw to show an error banner: `throw new Error('Not valid hex')`.
+
+### Option types
+
+| type | notes |
+| --- | --- |
+| `checkbox` | `default: true\|false` |
+| `select` | `choices: [{ value, label }]` or `['a', 'b']` |
+| `number` | `min`, `max`, `step` |
+| `text` | `placeholder` |
+
+### Spec fields
+
+| field | meaning |
+| --- | --- |
+| `layout` | `'io'` (default) or `'output'` for generators |
+| `live` | recompute while typing; default `true` |
+| `actionLabel` | primary button text when `live: false` |
+| `swap` | adds a button moving output back into input |
+| `input.accept` | enables a file picker |
+| `input.binary` | file arrives as `bytes` rather than text |
+| `footnote` | caveat box under the tool (HTML allowed) |
+
+## Add a bespoke tool
+
+Extend `BaseTool`, implement `render()` and `onOpen()`, then register it in
+`js/tools/registry.js` with `toolClass` instead of `spec`.
+
+```js
+import { BaseTool } from '../core/BaseTool.js';
+
+export class MyTool extends BaseTool {
+    render() { return `<div class="tool-interface">...</div>`; }
+    onOpen() { setTimeout(() => { /* bind listeners */ }, 0); }
+    onClose() { /* stop timers, drop buffers */ }
+}
 ```
 
-## 🔧 Development Workflow
+`render()` must include a `.tool-interface` wrapper — the smoke test checks for it.
 
-### Adding a New Tool
+## Loading a third-party library
 
-1. **Add to tools-config.json**
-   ```json
-   {
-     "id": "my-tool",
-     "name": "My Tool",
-     "description": "What it does",
-     "category": "utility",
-     "enabled": true,
-     "icon": "🔧",
-     "keywords": ["keyword1", "keyword2"]
-   }
-   ```
+Never add a `<script>` tag to `index.html`. Add an entry to `js/lib/loader.js`
+and call it inside `run()`; it is fetched once, on first use.
 
-2. **Create js/tools/MyTool.js**
-   ```javascript
-   import { BaseTool } from '../core/BaseTool.js';
-   
-   export class MyTool extends BaseTool {
-     render() { return `<div>...</div>`; }
-     onOpen() { /* Event listeners */ }
-   }
-   ```
-
-3. **Register in js/core/ToolFactory.js**
-   ```javascript
-   ['my-tool', MyTool]
-   ```
-
-4. **Test**
-   ```bash
-   python3 -m http.server 8000
-   open http://localhost:8000
-   ```
-
-## 📊 Tool Implementation Status
-
-### Enabled (7/120)
-- JsonBeautifierTool.js
-- GuidGeneratorTool.js
-- Sha256Tool.js
-- Base64Tool.js
-- DiffCheckerTool.js
-- ServiceBusSenderTool.js
-- ServiceBusListenerTool.js
-
-### Pending Implementation (113/120)
-- Parquet Viewer (high priority)
-- Data Conversion tools (13 tools)
-- AI tools (11 tools)
-- Cybersecurity tools (20 tools)
-- DevOps tools (15 tools)
-- Frontend tools (15 tools)
-- SQL tools (10 tools)
-- Cheat Sheets (10 tools)
-- Others (19 tools)
-
-## 🐳 Docker Details
-
-### Dockerfile
-- Multi-stage build
-- Base: nginx:alpine
-- Size: Optimized for production
-- Port: 80
-
-### docker-compose.yml
-- Service: devtoolkit-web
-- Port mapping: 8080→80
-- Auto-restart: unless-stopped
-
-## 🤖 SEO & AI
-
-### Meta Tags
-- Title: "DevToolkit - Free Developer Tools"
-- Description: 120+ tools
-- Keywords: 20+ relevant terms
-- Open Graph (Facebook/LinkedIn)
-- Twitter Cards
-- JSON-LD structured data
-
-### AI-Scrapeable
-- Custom meta tags for LLMs
-- `ai:title`, `ai:description`, `ai:features`
-- robots.txt with AI crawler permissions
-- GPTBot, Claude-Web, Anthropic, CCBot allowed
-
-### robots.txt
-```
-User-agent: *
-Allow: /
-
-User-agent: GPTBot
-Allow: /
-
-Disallow: /js/
-Disallow: /*.json
+```js
+const yaml = await libs.yaml();
 ```
 
-## 📝 Documentation
+If a package uses bare import specifiers, use jsDelivr's `/+esm` endpoint —
+that is why `hyparquetCompressors` does.
 
-| File | Size | Lines | Purpose |
-|------|------|-------|---------|
-| README.md | 18 KB | ~500 | Main documentation |
-| CONTRIBUTING.md | 16 KB | ~700 | Contribution guide |
-| CHANGELOG.md | 5.6 KB | ~250 | Version history |
-| LICENSE | 1 KB | ~21 | MIT License |
-| .gitignore | <1 KB | ~58 | Git exclusions |
+## CSS you can use
 
-## 🔗 Important Links
+`.tool-interface` `.tool-section` `.io-grid` `.io-pane` `.field-group` `.opt-row`
+`.check` `.action-btn` `.action-btn.secondary` `.action-btn.danger` `.mini-btn`
+`.output-section` `.alert.ok|.err|.warn|.info` `.info-box` `.helper-text`
+`.stat-grid` `.stat-tile` `.stat-label` `.stat-value` `.table-wrap` `table.data`
+`.chip` `.file-input` `.file-row` `.message-card` `.template-btn`
 
-- **GitHub:** https://github.com/nikboson/devtoolkit
-- **Issues:** https://github.com/nikboson/devtoolkit/issues
-- **Discussions:** https://github.com/nikboson/devtoolkit/discussions
-- **Creator:** [@nikboson](https://github.com/nikboson)
+Use the tokens (`var(--ink)`, `var(--surface)`, `var(--line)`, `var(--accent)`)
+rather than literal colours, so both themes work.
 
-## 📈 Next Steps
+## Tests
 
-### High Priority
-1. Implement Parquet Viewer tool
-2. Implement data conversion tools (CSV/Excel/Parquet/JSON/Avro)
-3. Deploy to GitHub Pages
+| URL / command | Checks |
+| --- | --- |
+| `/scripts/verify-hashes.html` | hashes + HMAC vs Python `hashlib` |
+| `/scripts/smoke-test.html` | every tool runs on its own sample |
+| `/scripts/parquet-test.html` | real Parquet files end to end |
+| `/scripts/tools-test.html` | diff, xlsx round-trip, codecs |
+| `/scripts/servicebus-js-test.html` | Node relay == Python relay |
+| `python scripts/test_servicebus.py` | SAS signing, parsing, error paths |
 
-### Medium Priority
-4. Implement AI tools (11 tools)
-5. Implement cybersecurity tools (20 tools)
-6. Add unit tests
+Run the smoke test after adding a tool. It fails a tool that throws, and fails a
+tool that returns nothing for its own sample input.
 
-### Low Priority
-7. Implement remaining placeholder tools
-8. Add keyboard shortcuts
-9. Dark/light theme toggle
-10. Export/import settings
+## Keyboard
 
-## 🎯 Statistics
-
-- **Total Code Lines:** ~5000+
-- **JavaScript Files:** 17
-- **Working Tools:** 7 (5.8%)
-- **Placeholder Tools:** 113 (94.2%)
-- **Categories:** 11
-- **Dependencies:** 0 (zero!)
-- **Build Tools:** 0 (zero!)
-- **Bundle Size:** 0 KB
-- **Load Time:** <1s
-
-## 🏆 Key Achievements
-
-✅ Fully functional SOLID architecture  
-✅ Zero dependencies (pure vanilla JS)  
-✅ 100% client-side processing  
-✅ Comprehensive documentation (1579 lines)  
-✅ Docker-ready deployment  
-✅ SEO optimized with AI-scrapeable metadata  
-✅ 120+ tools configured  
-✅ Responsive design  
-✅ Environment variable management  
-✅ Category filtering with persistence  
-
----
-
-**Built with ❤️ by [@nikboson](https://github.com/nikboson)**  
-**Last Updated:** 2024-12-19
+| | |
+| --- | --- |
+| `/` or `Ctrl`/`Cmd`+`K` | focus search |
+| `Esc` | close the tool |
+| `#tool-id` in the URL | opens that tool directly |

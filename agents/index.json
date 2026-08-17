@@ -1,0 +1,185 @@
+{
+  "version": 1,
+  "agents": [
+    {
+      "id": "agent-arch",
+      "agent": "nikbot-arch",
+      "title": "Architecture",
+      "icon": "\ud83c\udfdb",
+      "description": "Designs or reviews system architecture - component boundaries, data flow, scaling, failure modes, trade-offs. Use for \"how should we build X\", \"review this design\", or evaluating an architectural change. For a concrete implementation plan use Plan; for building it use nikbot-dev.",
+      "file": "nikbot-arch.md",
+      "words": 506
+    },
+    {
+      "id": "agent-bug",
+      "agent": "nikbot-bug",
+      "title": "Bug Hunt",
+      "icon": "\ud83d\udc1b",
+      "description": "Diagnoses a specific defect - reproduces it, isolates the cause, explains the mechanism, and proposes a minimal fix. Use for a failing test, a stack trace, a crash, or \"this works here but not there\". For a broad hunt across unchanged code use nikbot-review; for slowness rather than wrongness use nikbot-perf.",
+      "file": "nikbot-bug.md",
+      "words": 499
+    },
+    {
+      "id": "agent-dev",
+      "agent": "nikbot-dev",
+      "title": "Developer",
+      "icon": "\u2692",
+      "description": "Implements a described feature, change or fix end to end - writes the code, matches existing conventions, and verifies it builds and passes tests. Use when the user wants something built rather than analysed. For diagnosing an unknown defect first use nikbot-bug; for writing tests for existing code use the nikbot-unit agents.",
+      "file": "nikbot-dev.md",
+      "words": 455
+    },
+    {
+      "id": "agent-docs",
+      "agent": "nikbot-docs",
+      "title": "Documentation",
+      "icon": "\ud83d\udcc4",
+      "description": "Writes and updates documentation - READMEs, API references, architecture notes, runbooks, changelogs, code comments. Use for \"document this\", \"update the README\", or when a change needs its docs brought in line. For explaining code to yourself rather than producing a document use nikbot-explain.",
+      "file": "nikbot-docs.md",
+      "words": 433
+    },
+    {
+      "id": "agent-explain",
+      "agent": "nikbot-explain",
+      "title": "Explain",
+      "icon": "\ud83d\udca1",
+      "description": "Explains how an unfamiliar codebase, module or mechanism works, so you can work in it. Use for \"how does this work\", \"where do I start\", onboarding, or tracing a flow end to end. For a short description use nikbot-summary; for judging the design use nikbot-arch.",
+      "file": "nikbot-explain.md",
+      "words": 416
+    },
+    {
+      "id": "agent-perf",
+      "agent": "nikbot-perf",
+      "title": "Performance",
+      "icon": "\u26a1",
+      "description": "Investigates slowness or excessive resource use by measuring first - profiles, finds the real bottleneck, proposes changes with expected effect. Use for \"this is slow\", \"why does this use so much memory\", or evaluating a performance claim. For wrong results rather than slow ones use nikbot-bug.",
+      "file": "nikbot-perf.md",
+      "words": 551
+    },
+    {
+      "id": "agent-pr",
+      "agent": "nikbot-pr",
+      "title": "Pull Request Review",
+      "icon": "\ud83d\udd00",
+      "description": "Reviews a complete branch or pull request - every commit, the full diff against the base, the description, and merge risk. Use for \"review this PR\", \"review my branch before I raise it\", or when given a PR number or URL. For uncommitted work in progress use nikbot-review instead.",
+      "file": "nikbot-pr.md",
+      "words": 508
+    },
+    {
+      "id": "agent-req",
+      "agent": "nikbot-req",
+      "title": "Requirements Review",
+      "icon": "\ud83d\udccb",
+      "description": "Reviews requirements, specs, tickets and acceptance criteria for ambiguity, gaps, testability and contradictions - before anyone builds them. Use for \"is this ticket ready\", \"review this spec\", or \"what is missing from these requirements\". For designing the solution use nikbot-arch.",
+      "file": "nikbot-req.md",
+      "words": 457
+    },
+    {
+      "id": "agent-research",
+      "agent": "nikbot-research",
+      "title": "Research",
+      "icon": "\ud83d\udd0e",
+      "description": "Investigates an open question across the codebase and the web and returns a sourced answer with trade-offs. Use for \"how should we do X\", \"what are the options for Y\", \"how does library Z handle this\", or comparing approaches. For locating code in this repo use Explore; for a system design use nikbot-arch.",
+      "file": "nikbot-research.md",
+      "words": 350
+    },
+    {
+      "id": "agent-review",
+      "agent": "nikbot-review",
+      "title": "Code Review",
+      "icon": "\ud83d\udc41",
+      "description": "Reviews uncommitted or staged code changes for correctness, security and maintainability. Use when the user asks to review their work, check a diff before committing, or find problems in changes they just made. For a whole branch or a GitHub PR use nikbot-pr instead; for a security-only pass use nikbot-security.",
+      "file": "nikbot-review.md",
+      "words": 482
+    },
+    {
+      "id": "agent-sanity",
+      "agent": "nikbot-sanity",
+      "title": "Sanity Check",
+      "icon": "\u2705",
+      "description": "Fast pre-commit gate - builds, runs tests, and scans the diff for obvious mistakes like secrets, debug leftovers and stray files. Use before committing or pushing when you want a quick pass/fail, not a considered review. For a real review use nikbot-review.",
+      "file": "nikbot-sanity.md",
+      "words": 333
+    },
+    {
+      "id": "agent-security",
+      "agent": "nikbot-security",
+      "title": "Security Review",
+      "icon": "\ud83d\udd12",
+      "description": "Security audit with an attacker-first mindset - untrusted input, authn/authz, secrets, injection, dependency CVEs. Use for \"is this secure\", auditing a feature that handles user input or credentials, or a pre-release security pass. For general correctness review use nikbot-review.",
+      "file": "nikbot-security.md",
+      "words": 508
+    },
+    {
+      "id": "agent-summary",
+      "agent": "nikbot-summary",
+      "title": "Summary",
+      "icon": "\ud83d\udcdd",
+      "description": "Condenses something into a short, accurate summary - a file, a directory, a diff, a log, a document, or recent commits. Use for \"what does this do\", \"summarise this\", \"what changed\". For understanding a module well enough to work in it use nikbot-explain; for judging quality use nikbot-review.",
+      "file": "nikbot-summary.md",
+      "words": 307
+    },
+    {
+      "id": "agent-test",
+      "agent": "nikbot-test",
+      "title": "Test Strategy",
+      "icon": "\ud83e\uddea",
+      "description": "Analyses test coverage and designs a test strategy - what is untested, which tests are weak, what should be tested at which level. Use for \"what tests do we need\", \"is this well tested\", or planning a test suite. To actually write the tests use nikbot-unit-dotnet or nikbot-unit-python.",
+      "file": "nikbot-test.md",
+      "words": 471
+    },
+    {
+      "id": "agent-triage",
+      "agent": "nikbot-triage",
+      "title": "Triage",
+      "icon": "\ud83d\udea8",
+      "description": "Reads logs, traces, crash dumps and monitoring output to work out what happened and what to do next. Use for \"here are the logs from the failure\", incident triage, or making sense of a long noisy log. To then diagnose the defect in code use nikbot-bug.",
+      "file": "nikbot-triage.md",
+      "words": 472
+    },
+    {
+      "id": "agent-unit-dotnet",
+      "agent": "nikbot-unit-dotnet",
+      "title": "Unit Tests (.NET)",
+      "icon": "\ud83e\uddea",
+      "description": "Writes unit tests for C#/.NET code using the project's existing framework (xUnit, NUnit or MSTest). Use for \"write tests for this class\" in a .NET repo. For deciding what should be tested use nikbot-test; for Python use nikbot-unit-python.",
+      "file": "nikbot-unit-dotnet.md",
+      "words": 523
+    },
+    {
+      "id": "agent-unit-python",
+      "agent": "nikbot-unit-python",
+      "title": "Unit Tests (Python)",
+      "icon": "\ud83e\uddea",
+      "description": "Writes unit tests for Python code using the project's existing framework (pytest or unittest). Use for \"write tests for this module\" in a Python repo. For deciding what should be tested use nikbot-test; for .NET use nikbot-unit-dotnet.",
+      "file": "nikbot-unit-python.md",
+      "words": 514
+    },
+    {
+      "id": "agent-upgrade-dotnet",
+      "agent": "nikbot-upgrade-dotnet",
+      "title": "Upgrade (.NET)",
+      "icon": "\u2b06",
+      "description": "Upgrades NuGet packages and .NET target frameworks - CVE audit, breaking changes, transitive resolution, staged verification. Use for dependency or framework upgrades in a .NET repo. For other ecosystems use nikbot-upgrade or nikbot-upgrade-python.",
+      "file": "nikbot-upgrade-dotnet.md",
+      "words": 538
+    },
+    {
+      "id": "agent-upgrade-python",
+      "agent": "nikbot-upgrade-python",
+      "title": "Upgrade (Python)",
+      "icon": "\u2b06",
+      "description": "Upgrades Python dependencies and the interpreter version - CVE audit, breaking changes, resolver conflicts, staged verification. Use for dependency or Python version upgrades in a Python repo. For other ecosystems use nikbot-upgrade or nikbot-upgrade-dotnet.",
+      "file": "nikbot-upgrade-python.md",
+      "words": 599
+    },
+    {
+      "id": "agent-upgrade",
+      "agent": "nikbot-upgrade",
+      "title": "Dependency Upgrade",
+      "icon": "\u2b06",
+      "description": "Plans and performs dependency upgrades - reads changelogs, finds breaking changes and CVEs, sequences the work, verifies after each step. Use for \"update our dependencies\", \"are we on anything vulnerable\", or upgrading a specific package. Language-specific variants exist for .NET and Python.",
+      "file": "nikbot-upgrade.md",
+      "words": 466
+    }
+  ]
+}

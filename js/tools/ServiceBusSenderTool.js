@@ -1,254 +1,313 @@
+// Publish messages to an Azure Service Bus queue or topic.
 import { BaseTool } from '../core/BaseTool.js';
 import { StorageManager } from '../utils/StorageManager.js';
 import { EnvironmentManager } from '../core/EnvironmentManager.js';
+import { call, checkProxy, inspectConnectionString, relayBanner } from '../lib/servicebus.js';
+import { toast } from '../ui/toast.js';
+
+const escapeHtml = (value) => String(value)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
 export class ServiceBusSenderTool extends BaseTool {
     constructor(config) {
         super(config);
         this.storage = new StorageManager();
         this.envManager = new EnvironmentManager();
-        this.isConnected = false;
+        this.sent = 0;
     }
 
     render() {
-        const savedConfig = this.storage.loadConfig('servicebus-sender');
-        const history = this.storage.loadHistory('servicebus-sender');
+        const saved = this.storage.loadConfig('servicebus-sender') || {};
+        const history = this.storage.loadHistory('servicebus-sender') || [];
         const activeEnv = this.envManager.getActiveEnvironment();
 
         return `
-            <div class="tool-interface">
-                <h2>${this.icon} ${this.name}</h2>
-                
+            <div class="tool-interface" data-cat="cloud">
+                <h2><span class="tool-icon">${this.icon}</span>${escapeHtml(this.name)}</h2>
+                <p class="tool-lede">
+                    Publish a message to a queue or topic using a connection string. Requests are relayed through
+                    your own machine, so the credentials never go anywhere except Azure.
+                </p>
+
+                <div id="sbRelayStatus"></div>
+
                 ${activeEnv ? `
-                    <div style="padding: 0.75rem 1rem; background: rgba(81, 207, 102, 0.1); border: 1px solid rgba(81, 207, 102, 0.3); border-radius: 8px; margin-bottom: 1.5rem;">
-                        <div style="color: #51cf66; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem;">
-                            🌍 Environment: ${activeEnv.name}
-                        </div>
-                        <div style="color: var(--text-secondary); font-size: 0.85rem;">
-                            Using environment variables. Type {{variableName}} to use them.
-                        </div>
-                    </div>
-                ` : `
-                    <div style="padding: 0.75rem 1rem; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 8px; margin-bottom: 1.5rem;">
-                        <div style="color: #ffd700; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem;">
-                            ⚠️ No Environment Active
-                        </div>
-                        <div style="color: var(--text-secondary); font-size: 0.85rem;">
-                            Click the ⚙️ button in the header to set up environments.
-                        </div>
-                    </div>
-                `}
-                
-                <div class="config-section">
-                    <div class="tool-section">
-                        <h3>Configuration</h3>
-                        
-                        ${history.length > 0 ? `
-                        <div style="margin-bottom: 1rem;">
-                            <label style="color: var(--text-secondary); font-size: 0.875rem; display: block; margin-bottom: 0.5rem;">
-                                Load from History
-                            </label>
-                            <select id="sbConfigHistory" style="width: 100%; padding: 0.75rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem;">
-                                <option value="">-- Select a saved configuration --</option>
-                                ${history.map((h, i) => `
-                                    <option value="${i}">${h.label} (${new Date(h.timestamp).toLocaleString()})</option>
+                    <div class="alert info">
+                        <span>🌍</span>
+                        <span>Environment <strong>${escapeHtml(activeEnv.name)}</strong> is active — write
+                        <code>{{variableName}}</code> anywhere below to substitute a variable.</span>
+                    </div>` : ''}
+
+                <div class="tool-section">
+                    <h3>Connection</h3>
+
+                    ${history.length ? `
+                        <div style="margin-bottom:0.85rem;">
+                            <label for="sbHistory">Saved connections</label>
+                            <select id="sbHistory">
+                                <option value="">— Select a saved connection —</option>
+                                ${history.map((entry, index) => `
+                                    <option value="${index}">${escapeHtml(entry.label || entry.queueName || 'Untitled')} · ${escapeHtml(new Date(entry.timestamp).toLocaleString())}</option>
                                 `).join('')}
                             </select>
-                        </div>
-                        ` : ''}
-                        
-                        <div style="margin-bottom: 1rem;">
-                            <label style="color: var(--text-secondary); font-size: 0.875rem; display: block; margin-bottom: 0.5rem;">
-                                Configuration Label (optional)
-                            </label>
-                            <input type="text" id="sbConfigLabel" placeholder="e.g., Production, Dev, Test" 
-                                value="${savedConfig?.label || ''}"
-                                style="width: 100%; padding: 0.75rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem; min-height: auto;">
-                        </div>
-                        
-                        <div style="margin-bottom: 1rem;">
-                            <label style="color: var(--text-secondary); font-size: 0.875rem; display: block; margin-bottom: 0.5rem;">
-                                Connection String *
-                            </label>
-                            <textarea id="sbConnectionString" placeholder="Endpoint=sb://...;SharedAccessKeyName=...;SharedAccessKey=..." 
-                                style="min-height: 100px; font-family: 'Monaco', monospace; font-size: 0.85rem;"
-                            >${savedConfig?.connectionString || ''}</textarea>
-                        </div>
-                        
-                        <div style="margin-bottom: 1rem;">
-                            <label style="color: var(--text-secondary); font-size: 0.875rem; display: block; margin-bottom: 0.5rem;">
-                                Queue or Topic Name *
-                            </label>
-                            <input type="text" id="sbQueueName" placeholder="my-queue or my-topic" 
-                                value="${savedConfig?.queueName || ''}"
-                                style="width: 100%; padding: 0.75rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem; min-height: auto;">
-                        </div>
-                        
-                        <button class="action-btn" id="sbSaveConfig">Save Configuration</button>
-                        <button class="action-btn secondary" id="sbClearConfig">Clear</button>
+                        </div>` : ''}
+
+                    <div style="margin-bottom:0.85rem;">
+                        <label for="sbConnectionString">Connection string</label>
+                        <textarea id="sbConnectionString" class="short" spellcheck="false"
+                            placeholder="Endpoint=sb://your-namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=…">${escapeHtml(saved.connectionString || '')}</textarea>
+                        <div class="helper-text" id="sbConnInfo"></div>
                     </div>
 
-                    <div class="tool-section">
-                        <h3>Message</h3>
-                        <textarea id="sbMessageBody" placeholder="Enter your message body (JSON, text, etc.)..."></textarea>
-                        
-                        <div style="margin-top: 1rem;">
-                            <label style="color: var(--text-secondary); font-size: 0.875rem; display: block; margin-bottom: 0.5rem;">
-                                Custom Properties (JSON, optional)
-                            </label>
-                            <textarea id="sbMessageProps" placeholder='{"property1": "value1", "property2": "value2"}' 
-                                style="min-height: 80px; font-family: 'Monaco', monospace; font-size: 0.85rem;"></textarea>
+                    <div class="field-group">
+                        <div>
+                            <label for="sbEntity">Queue, or topic name</label>
+                            <input type="text" id="sbEntity" value="${escapeHtml(saved.queueName || '')}" placeholder="orders">
+                        </div>
+                        <div>
+                            <label for="sbLabel">Save as (optional)</label>
+                            <input type="text" id="sbLabel" value="${escapeHtml(saved.label || '')}" placeholder="Production orders">
                         </div>
                     </div>
 
-                    <div class="tool-section">
-                        <button class="action-btn" id="sbSendBtn">Send Message</button>
-                        <button class="action-btn secondary" id="sbClearMessage">Clear Message</button>
+                    <div class="btn-row">
+                        <button class="action-btn secondary" id="sbTest">Test connection</button>
+                        <button class="action-btn secondary" id="sbSave">Save connection</button>
+                        <button class="action-btn secondary" id="sbForget">Forget saved</button>
                     </div>
+                </div>
 
-                    <div class="tool-section">
-                        <h3>Response</h3>
-                        <div class="output-section" id="sbOutput">
-                            <pre>Message status will appear here...</pre>
+                <div class="tool-section">
+                    <h3>Message</h3>
+                    <textarea id="sbBody" class="short" spellcheck="false"
+                        placeholder='{"orderId": 1234, "status": "created"}'></textarea>
+
+                    <div class="field-group" style="margin-top:0.85rem;">
+                        <div>
+                            <label for="sbContentType">Content type</label>
+                            <input type="text" id="sbContentType" value="application/json" placeholder="application/json">
+                        </div>
+                        <div>
+                            <label for="sbMessageId">Message ID (optional)</label>
+                            <input type="text" id="sbMessageId" placeholder="auto-generated if blank">
+                        </div>
+                        <div>
+                            <label for="sbSessionId">Session ID (optional)</label>
+                            <input type="text" id="sbSessionId" placeholder="required for session-enabled entities">
+                        </div>
+                        <div>
+                            <label for="sbCorrelationId">Correlation ID (optional)</label>
+                            <input type="text" id="sbCorrelationId" placeholder="">
+                        </div>
+                        <div>
+                            <label for="sbSubject">Subject / Label (optional)</label>
+                            <input type="text" id="sbSubject" placeholder="">
+                        </div>
+                        <div>
+                            <label for="sbTtl">Time to live, seconds (optional)</label>
+                            <input type="number" id="sbTtl" min="1" placeholder="entity default">
                         </div>
                     </div>
+
+                    <div style="margin-top:0.85rem;">
+                        <label for="sbProperties">Custom application properties (JSON object, optional)</label>
+                        <textarea id="sbProperties" class="short" spellcheck="false"
+                            style="min-height:90px" placeholder='{"tenant": "acme", "priority": 1}'></textarea>
+                    </div>
+
+                    <div class="field-group" style="margin-top:0.85rem;">
+                        <div>
+                            <label for="sbRepeat">Send this message N times</label>
+                            <input type="number" id="sbRepeat" value="1" min="1" max="100">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button class="action-btn" id="sbSend">Send message</button>
+                    <button class="action-btn secondary" id="sbClear">Clear message</button>
+                </div>
+
+                <div class="tool-section" style="margin-top:1.5rem;">
+                    <h3>Log</h3>
+                    <div class="output-section" id="sbLog"><pre>Nothing sent yet.</pre></div>
                 </div>
             </div>
         `;
     }
 
     onOpen() {
-        setTimeout(() => {
-            // Load from history
-            document.getElementById('sbConfigHistory')?.addEventListener('change', (e) => {
-                if (e.target.value !== '') {
-                    const history = this.storage.loadHistory('servicebus-sender');
-                    const config = history[parseInt(e.target.value)];
-                    if (config) {
-                        document.getElementById('sbConfigLabel').value = config.label || '';
-                        document.getElementById('sbConnectionString').value = config.connectionString || '';
-                        document.getElementById('sbQueueName').value = config.queueName || '';
-                    }
-                }
+        setTimeout(async () => {
+            const status = document.getElementById('sbRelayStatus');
+            const available = await checkProxy(true);
+            if (status) status.innerHTML = relayBanner(available);
+
+            document.getElementById('sbSend')?.addEventListener('click', () => this.send());
+            document.getElementById('sbTest')?.addEventListener('click', () => this.test());
+            document.getElementById('sbSave')?.addEventListener('click', () => this.saveConnection());
+            document.getElementById('sbForget')?.addEventListener('click', () => this.forget());
+            document.getElementById('sbClear')?.addEventListener('click', () => {
+                document.getElementById('sbBody').value = '';
+                document.getElementById('sbProperties').value = '';
             });
 
-            // Save configuration
-            document.getElementById('sbSaveConfig')?.addEventListener('click', () => this.saveConfiguration());
-            
-            // Clear configuration
-            document.getElementById('sbClearConfig')?.addEventListener('click', () => this.clearConfiguration());
-            
-            // Send message
-            document.getElementById('sbSendBtn')?.addEventListener('click', () => this.sendMessage());
-            
-            // Clear message
-            document.getElementById('sbClearMessage')?.addEventListener('click', () => this.clearMessage());
+            const connection = document.getElementById('sbConnectionString');
+            connection?.addEventListener('input', () => this.describeConnection());
+            this.describeConnection();
+
+            document.getElementById('sbHistory')?.addEventListener('change', (event) => {
+                if (event.target.value === '') return;
+                const history = this.storage.loadHistory('servicebus-sender') || [];
+                const entry = history[Number(event.target.value)];
+                if (!entry) return;
+                document.getElementById('sbConnectionString').value = entry.connectionString || '';
+                document.getElementById('sbEntity').value = entry.queueName || '';
+                document.getElementById('sbLabel').value = entry.label || '';
+                this.describeConnection();
+            });
         }, 0);
     }
 
-    saveConfiguration() {
-        const label = document.getElementById('sbConfigLabel').value.trim();
+    describeConnection() {
+        const node = document.getElementById('sbConnInfo');
+        const raw = document.getElementById('sbConnectionString')?.value || '';
+        if (!node) return;
+
+        if (!raw.trim()) { node.textContent = ''; return; }
+
+        const info = inspectConnectionString(this.envManager.replaceVariables(raw));
+        node.innerHTML = info.valid
+            ? `<span style="color:var(--green)">✓ namespace <strong>${escapeHtml(info.namespace)}</strong> · policy <strong>${escapeHtml(info.keyName)}</strong> · key ${info.keyLength} chars${info.entityPath ? ` · EntityPath ${escapeHtml(info.entityPath)}` : ''}</span>`
+            : `<span style="color:var(--red)">✕ ${escapeHtml(info.error)}</span>`;
+    }
+
+    readConnection() {
+        const connectionString = this.envManager.replaceVariables(
+            document.getElementById('sbConnectionString')?.value.trim() || '',
+        );
+        const entity = this.envManager.replaceVariables(
+            document.getElementById('sbEntity')?.value.trim() || '',
+        );
+
+        const info = inspectConnectionString(connectionString);
+        if (!info.valid) throw new Error(info.error);
+        if (!entity && !info.entityPath) throw new Error('Enter a queue or topic name');
+
+        return { connectionString, entity: entity || info.entityPath };
+    }
+
+    log(message, kind = 'info') {
+        const node = document.getElementById('sbLog');
+        if (!node) return;
+        const colour = { ok: 'var(--green)', err: 'var(--red)', info: 'var(--ink)' }[kind];
+        const stamp = new Date().toLocaleTimeString();
+        const entry = `<pre style="color:${colour}">[${stamp}] ${escapeHtml(message)}</pre>`;
+        if (node.querySelector('pre')?.textContent === 'Nothing sent yet.') node.innerHTML = '';
+        node.insertAdjacentHTML('afterbegin', entry);
+    }
+
+    async test() {
+        const button = document.getElementById('sbTest');
+        try {
+            const { connectionString, entity } = this.readConnection();
+            button.disabled = true;
+            button.textContent = 'Testing…';
+            const result = await call({ action: 'test', connectionString, entity });
+            this.log(`Connection OK — ${result.detail}`, 'ok');
+            toast('Connection OK');
+        } catch (err) {
+            this.log(`Connection failed: ${err.message}`, 'err');
+            toast('Connection failed', 'err');
+        } finally {
+            button.disabled = false;
+            button.textContent = 'Test connection';
+        }
+    }
+
+    async send() {
+        const button = document.getElementById('sbSend');
+        try {
+            const { connectionString, entity } = this.readConnection();
+            const body = this.envManager.replaceVariables(document.getElementById('sbBody').value);
+            if (!body.trim()) throw new Error('The message body is empty');
+
+            const propertiesText = document.getElementById('sbProperties').value.trim();
+            let properties = {};
+            if (propertiesText) {
+                try {
+                    properties = JSON.parse(this.envManager.replaceVariables(propertiesText));
+                } catch (err) {
+                    throw new Error(`Custom properties are not valid JSON: ${err.message}`);
+                }
+                if (properties === null || typeof properties !== 'object' || Array.isArray(properties)) {
+                    throw new Error('Custom properties must be a JSON object');
+                }
+            }
+
+            const ttl = Number(document.getElementById('sbTtl').value);
+            const brokerProperties = {
+                MessageId: document.getElementById('sbMessageId').value.trim() || undefined,
+                SessionId: document.getElementById('sbSessionId').value.trim() || undefined,
+                CorrelationId: document.getElementById('sbCorrelationId').value.trim() || undefined,
+                Label: document.getElementById('sbSubject').value.trim() || undefined,
+                TimeToLive: Number.isFinite(ttl) && ttl > 0 ? ttl : undefined,
+            };
+
+            const contentType = document.getElementById('sbContentType').value.trim() || 'application/json';
+            const repeat = Math.max(1, Math.min(100, Number(document.getElementById('sbRepeat').value) || 1));
+
+            button.disabled = true;
+            for (let i = 0; i < repeat; i++) {
+                const perMessage = { ...brokerProperties };
+                // Let Azure assign distinct ids when repeating.
+                if (repeat > 1 && perMessage.MessageId) perMessage.MessageId = `${perMessage.MessageId}-${i + 1}`;
+
+                button.textContent = repeat > 1 ? `Sending ${i + 1} of ${repeat}…` : 'Sending…';
+                // eslint-disable-next-line no-await-in-loop
+                const result = await call({
+                    action: 'send',
+                    connectionString,
+                    entity,
+                    body,
+                    contentType,
+                    brokerProperties: perMessage,
+                    properties,
+                });
+                this.sent++;
+                this.log(`Sent ${result.bytesSent} bytes to ${result.namespace}/${result.entity}`, 'ok');
+            }
+            toast(repeat > 1 ? `Sent ${repeat} messages` : 'Message sent');
+        } catch (err) {
+            this.log(`Send failed: ${err.message}`, 'err');
+            toast('Send failed', 'err');
+        } finally {
+            button.disabled = false;
+            button.textContent = 'Send message';
+        }
+    }
+
+    saveConnection() {
         const connectionString = document.getElementById('sbConnectionString').value.trim();
-        const queueName = document.getElementById('sbQueueName').value.trim();
+        const queueName = document.getElementById('sbEntity').value.trim();
+        const label = document.getElementById('sbLabel').value.trim();
 
         if (!connectionString || !queueName) {
-            this.showOutput('Please provide connection string and queue/topic name', 'error');
+            toast('Enter a connection string and entity first', 'err');
             return;
         }
 
         const config = { label, connectionString, queueName };
-        
         this.storage.saveConfig('servicebus-sender', config);
         this.storage.saveToHistory('servicebus-sender', config);
-        
-        this.showOutput('✓ Configuration saved successfully!', 'success');
-        
-        // Refresh the page to show new history
-        setTimeout(() => {
-            const currentTool = document.querySelector('.tool-interface');
-            if (currentTool) {
-                currentTool.innerHTML = this.render();
-                this.onOpen();
-            }
-        }, 1000);
+        this.log('Connection saved to this browser\'s local storage.', 'ok');
+        toast('Connection saved');
     }
 
-    clearConfiguration() {
-        document.getElementById('sbConfigLabel').value = '';
-        document.getElementById('sbConnectionString').value = '';
-        document.getElementById('sbQueueName').value = '';
-        this.showOutput('Configuration cleared', 'info');
-    }
-
-    clearMessage() {
-        document.getElementById('sbMessageBody').value = '';
-        document.getElementById('sbMessageProps').value = '';
-    }
-
-    async sendMessage() {
-        let connectionString = document.getElementById('sbConnectionString').value.trim();
-        let queueName = document.getElementById('sbQueueName').value.trim();
-        const messageBody = document.getElementById('sbMessageBody').value.trim();
-        const messagePropsStr = document.getElementById('sbMessageProps').value.trim();
-
-        // Replace environment variables
-        connectionString = this.envManager.replaceVariables(connectionString);
-        queueName = this.envManager.replaceVariables(queueName);
-
-        if (!connectionString || !queueName || !messageBody) {
-            this.showOutput('Please provide connection string, queue name, and message body', 'error');
-            return;
-        }
-
-        let messageProps = {};
-        if (messagePropsStr) {
-            try {
-                messageProps = JSON.parse(messagePropsStr);
-            } catch (error) {
-                this.showOutput('Invalid JSON in custom properties', 'error');
-                return;
-            }
-        }
-
-        this.showOutput('Sending message to Service Bus...\n\nNote: This is a client-side tool. For actual Azure Service Bus integration, you need:\n\n1. Azure Service Bus SDK (@azure/service-bus)\n2. A backend proxy to handle credentials securely\n3. Or use Azure Service Bus REST API with SAS token\n\nMessage Preview:\n' + JSON.stringify({
-            queueName: queueName,
-            body: messageBody,
-            properties: messageProps,
-            timestamp: new Date().toISOString()
-        }, null, 2), 'info');
-
-        // Simulate sending (in production, you'd call Azure Service Bus REST API or backend)
-        setTimeout(() => {
-            this.showOutput('✓ Message simulated successfully!\n\nTo enable real Service Bus integration:\n\n1. Install: npm install @azure/service-bus\n2. Create a backend endpoint\n3. Use REST API with SAS token\n4. Or implement Azure Functions proxy\n\nMessage Details:\n' + JSON.stringify({
-                queueName: queueName,
-                messageId: this.generateMessageId(),
-                body: messageBody,
-                properties: messageProps,
-                timestamp: new Date().toISOString(),
-                status: 'Simulated (Ready for Integration)'
-            }, null, 2), 'success');
-        }, 1000);
-    }
-
-    generateMessageId() {
-        return 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-    }
-
-    showOutput(message, type = 'info') {
-        const output = document.getElementById('sbOutput');
-        const colors = {
-            success: '#51cf66',
-            error: '#ff6b6b',
-            info: 'var(--text-primary)',
-            warning: '#ffd43b'
-        };
-        
-        output.innerHTML = `<pre style="color: ${colors[type]};">${this.escapeHtml(message)}</pre>`;
-    }
-
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    forget() {
+        this.storage.clearConfig('servicebus-sender');
+        this.storage.clearHistory('servicebus-sender');
+        this.log('Saved connections cleared from local storage.', 'ok');
+        toast('Saved connections cleared');
     }
 }

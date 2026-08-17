@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Parquet viewer test</title>
+<style>
+  body { font-family: ui-monospace, Consolas, monospace; padding: 1.5rem; background: #14140f; color: #ede9e0; font-size: 13px; }
+  .pass { color: #4ade80; } .fail { color: #f87171; } .info { color: #93c5fd; }
+  pre { white-space: pre-wrap; line-height: 1.55; }
+</style>
+</head>
+<body>
+<h1 style="font-size:1.1rem">Parquet viewer - real file test</h1>
+<pre id="out">running...</pre>
+<script type="module">
+const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const out = document.getElementById('out');
+const lines = [];
+let pass = 0, fail = 0;
+
+function check(label, condition, detail = '') {
+  if (condition) { pass++; lines.push(`<span class="pass">ok   ${esc(label)}</span>`); }
+  else { fail++; lines.push(`<span class="fail">FAIL ${esc(label)} ${esc(detail)}</span>`); }
+}
+
+const FIXTURES = [
+  { file: 'users_snappy.parquet', rows: 5000, cols: 9, groups: 4, codec: 'SNAPPY' },
+  { file: 'users_part2.parquet',  rows: 2000, cols: 9, groups: 1, codec: 'SNAPPY' },
+  { file: 'users_zstd.parquet',   rows: 2000, cols: 9, groups: 1, codec: 'ZSTD' },
+  { file: 'employees_gzip.parquet', rows: 100, cols: 4, groups: 1, codec: 'GZIP' },
+  // 3 top-level columns (id, tags, meta) even though there are 4 physical leaves
+  { file: 'nested_plain.parquet', rows: 3, cols: 3, groups: 1, codec: 'UNCOMPRESSED' },
+];
+
+try {
+  const { ParquetViewerTool } = await import('../js/tools/ParquetViewerTool.js');
+  const { libs } = await import('../js/lib/loader.js');
+  const { columnStats } = await import('../js/lib/tabular.js');
+
+  const hyparquet = await libs.hyparquet();
+  lines.push('<span class="info">hyparquet loaded</span>');
+  let compressors;
+  try { ({ compressors } = await libs.hyparquetCompressors()); lines.push('<span class="info">hyparquet-compressors loaded</span>'); }
+  catch (e) { lines.push(`<span class="fail">compressors failed: ${esc(e.message)}</span>`); }
+
+  const tool = new ParquetViewerTool({ id: 'parquet-viewer', name: 'Parquet Viewer', icon: 'P', category: 'data', description: '' });
+
+  for (const fixture of FIXTURES) {
+    lines.push(`\n<b>${fixture.file}</b>`);
+    try {
+      const buffer = await (await fetch(`./fixtures/${fixture.file}`, { cache: 'reload' })).arrayBuffer();
+      const metadata = hyparquet.parquetMetadata(buffer);
+
+      check(`${fixture.file} row count = ${fixture.rows}`, Number(metadata.num_rows) === fixture.rows, `got ${metadata.num_rows}`);
+      check(`${fixture.file} row groups = ${fixture.groups}`, metadata.row_groups.length === fixture.groups, `got ${metadata.row_groups.length}`);
+
+      const codecs = new Set();
+      for (const g of metadata.row_groups) for (const c of g.columns) if (c.meta_data?.codec) codecs.add(c.meta_data.codec);
+      check(`${fixture.file} codec includes ${fixture.codec}`, codecs.has(fixture.codec), `got ${[...codecs].join(',')}`);
+
+      const columns = tool.topLevelColumns(hyparquet.parquetSchema(metadata));
+      check(`${fixture.file} leaf columns = ${fixture.cols}`, columns.length === fixture.cols, `got ${columns.length}: ${columns.map(c=>c.name).join(',')}`);
+
+      // Actually decode the data pages.
+      const rows = await new Promise((resolve, reject) => {
+        hyparquet.parquetRead({ file: buffer, metadata, compressors, rowFormat: 'object', onComplete: resolve }).catch(reject);
+      });
+      check(`${fixture.file} decoded ${rows.length} rows`, rows.length === fixture.rows, `got ${rows.length}`);
+
+      if (rows.length) {
+        const first = rows[0];
+        lines.push(`<span class="info">     columns: ${esc(columns.map(c => `${c.name}:${c.logical || c.physical}`).join('  '))}</span>`);
+        lines.push(`<span class="info">     row[0]: ${esc(JSON.stringify(first, (k, v) => typeof v === 'bigint' ? `${v}n` : v).slice(0, 200))}</span>`);
+      }
+    } catch (err) {
+      fail++;
+      lines.push(`<span class="fail">FAIL ${esc(fixture.file)} threw: ${esc(err.message)}</span>`);
+    }
+  }
+
+  // ---- exercise the tool's own logic on the loaded files -----------------
+  lines.push('\n<b>tool behaviour</b>');
+
+  tool.files = [];
+  for (const name of ['users_snappy.parquet', 'users_part2.parquet', 'employees_gzip.parquet']) {
+    const buffer = await (await fetch(`./fixtures/${name}`, { cache: 'reload' })).arrayBuffer();
+    const metadata = hyparquet.parquetMetadata(buffer);
+    const rows = await new Promise((resolve, reject) => {
+      hyparquet.parquetRead({ file: buffer, metadata, compressors, rowFormat: 'object', onComplete: resolve }).catch(reject);
+    });
+    tool.files.push({
+      name, size: buffer.byteLength, buffer, metadata, rows,
+      schema: hyparquet.parquetSchema(metadata),
+      columns: tool.topLevelColumns(hyparquet.parquetSchema(metadata)),
+    });
+  }
+
+  // Every displayed column must correspond to a key that actually exists on the
+  // decoded rows -- this is what broke for nested files.
+  {
+    const buffer = await (await fetch('./fixtures/nested_plain.parquet', { cache: 'reload' })).arrayBuffer();
+    const metadata = hyparquet.parquetMetadata(buffer);
+    const cols = tool.topLevelColumns(hyparquet.parquetSchema(metadata)).map(c => c.name);
+    const nestedRows = await new Promise((resolve, reject) => {
+      hyparquet.parquetRead({ file: buffer, metadata, compressors, rowFormat: 'object', onComplete: resolve }).catch(reject);
+    });
+    const rowKeys = Object.keys(nestedRows[0]);
+    check(`nested columns match row keys (${cols.join(',')})`,
+      cols.length === rowKeys.length && cols.every(c => rowKeys.includes(c)),
+      `cols=${cols.join(',')} rowKeys=${rowKeys.join(',')}`);
+    const types = tool.topLevelColumns(hyparquet.parquetSchema(metadata)).map(c => c.logical);
+    check(`nested types summarised (${types.join(' | ')})`,
+      types.some(t => t.startsWith('LIST<')) && types.some(t => t.startsWith('STRUCT{')));
+  }
+
+  tool.activeIndex = 0;
+  check('baseRows returns the active file', tool.baseRows().length === 5000, `got ${tool.baseRows().length}`);
+
+  tool.combined = true;
+  check('combined stacks all three files', tool.baseRows().length === 7100, `got ${tool.baseRows().length}`);
+  check('combined adds a __file column', tool.activeColumns().some(c => c.name === '__file'));
+  tool.combined = false;
+
+  // filters
+  const { parseFilter } = await import('../js/tools/ParquetViewerTool.js');
+  const rows = tool.files[0].rows;
+
+  const gt = rows.filter(parseFilter('age > 60'));
+  const manual = rows.filter(r => r.age !== null && r.age !== undefined && Number(r.age) > 60);
+  check(`filter "age > 60" matches manual count (${manual.length})`, gt.length === manual.length, `got ${gt.length}`);
+
+  const eq = rows.filter(parseFilter("city = 'London'"));
+  const eqManual = rows.filter(r => r.city === 'London');
+  check(`filter "city = 'London'" (${eqManual.length})`, eq.length === eqManual.length, `got ${eq.length}`);
+
+  const isNull = rows.filter(parseFilter('age IS NULL'));
+  const nullManual = rows.filter(r => r.age === null || r.age === undefined);
+  check(`filter "age IS NULL" (${nullManual.length})`, isNull.length === nullManual.length, `got ${isNull.length}`);
+
+  const andFilter = rows.filter(parseFilter("age > 60 AND city = 'London'"));
+  const andManual = rows.filter(r => r.age != null && Number(r.age) > 60 && r.city === 'London');
+  check(`filter AND combination (${andManual.length})`, andFilter.length === andManual.length, `got ${andFilter.length}`);
+
+  const inFilter = rows.filter(parseFilter("city IN ('London', 'Tokyo')"));
+  const inManual = rows.filter(r => r.city === 'London' || r.city === 'Tokyo');
+  check(`filter IN list (${inManual.length})`, inFilter.length === inManual.length, `got ${inFilter.length}`);
+
+  const likeFilter = rows.filter(parseFilter("name LIKE 'user_000%'"));
+  check(`filter LIKE prefix (${likeFilter.length})`, likeFilter.length > 0 && likeFilter.every(r => r.name.startsWith('user_000')));
+
+  let filterRejected = false;
+  try { parseFilter('age >'); } catch { filterRejected = true; }
+  check('malformed filter is rejected', filterRejected);
+
+  // column stats against a manual computation
+  const ages = rows.map(r => r.age);
+  const stats = columnStats(ages);
+  const present = ages.filter(a => a !== null && a !== undefined).map(Number);
+  check(`stats null count (${stats.nulls})`, stats.nulls === ages.length - present.length);
+  check('stats min', stats.numeric.min === Math.min(...present), `got ${stats.numeric.min}`);
+  check('stats max', stats.numeric.max === Math.max(...present), `got ${stats.numeric.max}`);
+  const meanManual = present.reduce((a, b) => a + b, 0) / present.length;
+  check('stats mean', Math.abs(stats.numeric.mean - meanManual) < 1e-9, `got ${stats.numeric.mean} vs ${meanManual}`);
+
+  // schema comparison should notice employees_gzip differs
+  const compare = tool.renderCompare();
+  check('compare view flags the schema mismatch', compare.includes('differ between files'));
+
+  // render paths must not throw
+  for (const view of ['renderFileMetadata', 'renderSchema', 'renderColumnStats', 'renderCompare']) {
+    try {
+      const html = tool[view]();
+      check(`${view}() returns markup`, typeof html === 'string' && html.length > 100, `${html?.length} chars`);
+    } catch (err) {
+      fail++;
+      lines.push(`<span class="fail">FAIL ${view}() threw: ${esc(err.message)}</span>`);
+    }
+  }
+
+} catch (err) {
+  fail++;
+  lines.push(`<span class="fail">FATAL ${esc(err.message)}\n${esc(err.stack)}</span>`);
+}
+
+lines.push(`\n<b>${pass} passed, ${fail} failed</b>`);
+lines.push(fail === 0 ? '<span class="pass">ALL GOOD</span>' : '<span class="fail">FAILURES PRESENT</span>');
+out.innerHTML = lines.join('\n');
+window.__done = true;
+</script>
+</body>
+</html>

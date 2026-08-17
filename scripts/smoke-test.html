@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tool smoke test</title>
+<style>
+  body { font-family: ui-monospace, Consolas, monospace; padding: 1.5rem; background: #14140f; color: #ede9e0; font-size: 13px; }
+  .pass { color: #4ade80; } .fail { color: #f87171; } .skip { color: #fbbf24; }
+  pre { white-space: pre-wrap; line-height: 1.55; }
+  h1 { font-size: 1.1rem; }
+</style>
+</head>
+<body>
+<h1>Tool smoke test - runs every spec tool against its own sample input</h1>
+<pre id="out">running...</pre>
+<script type="module">
+// Force-refresh every module through the HTTP cache before importing, so the
+// test can never pass or fail against a stale copy of the source.
+const MODULES = [
+  '../js/tools/registry.js',
+  '../js/core/BaseTool.js', '../js/core/SimpleTool.js',
+  '../js/lib/bytes.js', '../js/lib/hashes.js', '../js/lib/tabular.js',
+  '../js/lib/loader.js', '../js/lib/wordlist.js', '../js/lib/servicebus.js',
+  '../js/ui/toast.js',
+  '../js/tools/specs/text.js', '../js/tools/specs/url.js', '../js/tools/specs/web.js',
+  '../js/tools/specs/data.js', '../js/tools/specs/encoding.js', '../js/tools/specs/crypto.js',
+  '../js/tools/specs/generators.js', '../js/tools/specs/misc.js', '../js/tools/specs/qr.js',
+  '../js/tools/specs/ai.js', '../js/tools/specs/codegen.js', '../js/tools/specs/devx.js',
+  '../js/tools/specs/devops.js', '../js/tools/specs/diagram.js',
+  '../js/lib/sanitize.js',
+  '../js/tools/ParquetViewerTool.js', '../js/tools/DiffCheckerTool.js',
+  '../js/tools/MermaidViewerTool.js', '../js/tools/CsvToExcelTool.js',
+  '../js/tools/MarkdownViewerTool.js',
+  '../js/tools/ServiceBusSenderTool.js', '../js/tools/ServiceBusListenerTool.js',
+  '../js/tools/AgentTool.js',
+];
+await Promise.all(MODULES.map((url) => fetch(url, { cache: 'reload' }).catch(() => {})));
+
+const { TOOLS, CATEGORIES } = await import('../js/tools/registry.js');
+
+const out = document.getElementById('out');
+const lines = [];
+let pass = 0, fail = 0, skip = 0;
+
+// Tool output routinely contains markup; escape it before it goes near innerHTML.
+const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// Tools that legitimately cannot run headlessly.
+const SKIP = {
+  'my-ip': 'makes an external network request',
+  'base64-file': 'needs a chosen file',
+  'qr-reader': 'needs a chosen image',
+};
+
+// A stand-in for the SimpleTool instance that a few specs touch for element ids.
+const fakeTool = { id_: (n) => `test_${n}`, ns: 'test' };
+
+function defaultOptions(spec) {
+  const options = {};
+  for (const o of spec.options || []) {
+    options[o.id] = o.default !== undefined ? o.default
+      : o.type === 'checkbox' ? false
+      : o.type === 'select' ? (typeof o.choices[0] === 'string' ? o.choices[0] : o.choices[0].value)
+      : o.type === 'number' ? 0 : '';
+  }
+  return options;
+}
+
+lines.push(`${TOOLS.length} tools across ${Object.keys(CATEGORIES).length} categories\n`);
+
+for (const tool of TOOLS) {
+  const label = `${tool.id.padEnd(24)} ${tool.category.padEnd(11)}`;
+
+  if (SKIP[tool.id]) { skip++; lines.push(`<span class="skip">skip ${label} ${esc(SKIP[tool.id])}</span>`); continue; }
+
+  if (tool.toolClass) {
+    // Bespoke tools: check they construct and render markup without throwing.
+    try {
+      const instance = new tool.toolClass({ ...tool });
+      const html = instance.render();
+      if (typeof html !== 'string' || html.length < 50) throw new Error('render() produced nothing useful');
+      if (!html.includes('tool-interface')) throw new Error('render() is missing the .tool-interface wrapper');
+      pass++;
+      lines.push(`<span class="pass">ok   ${label} class renders (${html.length} chars)</span>`);
+    } catch (err) {
+      fail++;
+      lines.push(`<span class="fail">FAIL ${label} ${esc(err.message)}</span>`);
+    }
+    continue;
+  }
+
+  const spec = tool.spec;
+  if (!spec) { fail++; lines.push(`<span class="fail">FAIL ${label} no spec and no toolClass</span>`); continue; }
+
+  const input = spec.input?.sample ?? spec.input?.placeholder ?? '';
+  const options = defaultOptions(spec);
+
+  try {
+    const result = await spec.run({ input, options, bytes: null, fileName: '', tool: fakeTool });
+    const output = typeof result === 'string' ? result : (result?.output ?? '');
+
+    if (spec.layout === 'output' || input) {
+      if (output === '' || output === null || output === undefined) {
+        throw new Error('produced empty output for its own sample input');
+      }
+    }
+    pass++;
+    const preview = String(output).replace(/\s+/g, ' ').slice(0, 62);
+    lines.push(`<span class="pass">ok   ${label} ${esc(preview)}</span>`);
+  } catch (err) {
+    fail++;
+    lines.push(`<span class="fail">FAIL ${label} ${esc(err.message)}</span>`);
+  }
+}
+
+lines.push(`\n<b>${pass} passed, ${fail} failed, ${skip} skipped</b>`);
+lines.push(fail === 0 ? '<span class="pass">ALL GOOD</span>' : '<span class="fail">FAILURES PRESENT</span>');
+out.innerHTML = lines.join('\n');
+window.__done = true;
+</script>
+</body>
+</html>

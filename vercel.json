@@ -1,7 +1,35 @@
 {
-  "buildCommand": "echo 'No build needed - static site'",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "echo 'No build step required'",
   "outputDirectory": ".",
-  "installCommand": "echo 'No dependencies to install'",
+  "installCommand": "echo 'No dependencies'",
   "framework": null,
-  "devCommand": "python3 -m http.server 8000"
+  "functions": {
+    "api/*.js": {
+      "runtime": "@vercel/node@3.2.0",
+      "maxDuration": 60
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    },
+    {
+      "source": "/js/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }
+      ]
+    }
+  ]
 }

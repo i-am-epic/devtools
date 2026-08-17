@@ -1,0 +1,5603 @@
+{
+ "generatedAt": "2026-08-17T08:56:23.084Z",
+ "categories": {
+  "ai": {
+   "name": "AI & LLM",
+   "icon": "✳",
+   "order": 1
+  },
+  "devx": {
+   "name": "Developer Utilities",
+   "icon": "⚙",
+   "order": 2
+  },
+  "devops": {
+   "name": "DevOps & Config",
+   "icon": "🐳",
+   "order": 3
+  },
+  "codegen": {
+   "name": "JSON Power Tools",
+   "icon": "{→}",
+   "order": 4
+  },
+  "text": {
+   "name": "Text",
+   "icon": "¶",
+   "order": 5
+  },
+  "url": {
+   "name": "URL",
+   "icon": "🔗",
+   "order": 6
+  },
+  "web": {
+   "name": "HTML, CSS & JS",
+   "icon": "</>",
+   "order": 7
+  },
+  "json": {
+   "name": "JSON, XML & YAML",
+   "icon": "{ }",
+   "order": 8
+  },
+  "data": {
+   "name": "Data & Tables",
+   "icon": "▦",
+   "order": 9
+  },
+  "sql": {
+   "name": "SQL",
+   "icon": "SQL",
+   "order": 10
+  },
+  "crypto": {
+   "name": "Hashing & Crypto",
+   "icon": "#",
+   "order": 11
+  },
+  "encoding": {
+   "name": "Encoding",
+   "icon": "b64",
+   "order": 12
+  },
+  "generators": {
+   "name": "Generators",
+   "icon": "🎲",
+   "order": 13
+  },
+  "image": {
+   "name": "Diagrams & Colour",
+   "icon": "🎨",
+   "order": 14
+  },
+  "time": {
+   "name": "Time & Scheduling",
+   "icon": "🕐",
+   "order": 15
+  },
+  "network": {
+   "name": "Network & Client",
+   "icon": "🌐",
+   "order": 16
+  },
+  "cloud": {
+   "name": "Azure Service Bus",
+   "icon": "☁",
+   "order": 17
+  },
+  "agents": {
+   "name": "Nik Agents",
+   "icon": "🤖",
+   "order": 18
+  }
+ },
+ "tools": [
+  {
+   "id": "chat-payload",
+   "name": "Chat API Payload Builder",
+   "description": "Turn a system prompt and a conversation into a ready-to-send request body.",
+   "category": "ai",
+   "icon": "💬",
+   "keywords": [
+    "openai",
+    "anthropic",
+    "claude",
+    "chat",
+    "completion",
+    "messages",
+    "api",
+    "payload",
+    "request",
+    "curl",
+    "json",
+    "ai"
+   ],
+   "lede": "Write the conversation in plain text; get correct JSON for the OpenAI or Anthropic API, plus a curl command.",
+   "footnote": "",
+   "inputLabel": "Conversation — prefix lines with system:, user: or assistant:",
+   "outputLabel": "Request body",
+   "sample": "system: You are a concise assistant. Answer in British English.\nuser: What is the difference between a queue and a topic?\nassistant: A queue delivers each message to exactly one consumer.\nuser: And a topic?",
+   "options": [
+    {
+     "id": "provider",
+     "label": "API shape",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "OpenAI — /v1/chat/completions",
+      "Anthropic — /v1/messages"
+     ]
+    },
+    {
+     "id": "model",
+     "label": "Model",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "temperature",
+     "label": "Temperature",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "maxTokens",
+     "label": "Max output tokens",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "stream",
+     "label": "Stream the response",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "curl",
+     "label": "Also show a curl command",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "jsonl-tools",
+   "name": "JSONL Toolkit",
+   "description": "Validate, convert and inspect JSON Lines — the format fine-tuning and log pipelines use.",
+   "category": "ai",
+   "icon": "⋮",
+   "keywords": [
+    "jsonl",
+    "ndjson",
+    "json lines",
+    "fine-tune",
+    "finetune",
+    "dataset",
+    "training",
+    "openai",
+    "convert",
+    "validate",
+    "ai",
+    "logs"
+   ],
+   "lede": "JSONL is one JSON document per line. This validates every line individually and tells you exactly which one is broken.",
+   "footnote": "",
+   "inputLabel": "JSONL or a JSON array",
+   "outputLabel": "Result",
+   "sample": "{\"messages\":[{\"role\":\"user\",\"content\":\"Hi\"},{\"role\":\"assistant\",\"content\":\"Hello\"}]}\n{\"messages\":[{\"role\":\"user\",\"content\":\"Bye\"},{\"role\":\"assistant\",\"content\":\"Goodbye\"}]}\n{\"messages\":[{\"role\":\"user\",\"content\":\"broken\"}",
+   "options": [
+    {
+     "id": "mode",
+     "label": "Operation",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Validate and report",
+      "JSONL → JSON array",
+      "JSON array → JSONL",
+      "Pretty-print each line"
+     ]
+    },
+    {
+     "id": "skipInvalid",
+     "label": "Skip invalid lines when converting",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "llm-cost",
+   "name": "LLM Cost Calculator",
+   "description": "Estimate what a prompt, a batch or a month of traffic will cost.",
+   "category": "ai",
+   "icon": "$",
+   "keywords": [
+    "llm",
+    "cost",
+    "price",
+    "pricing",
+    "token",
+    "budget",
+    "openai",
+    "claude",
+    "gpt",
+    "estimate",
+    "spend",
+    "ai"
+   ],
+   "lede": "Paste your prompt to count its tokens, set the rates, and see the cost per call and at volume.",
+   "footnote": "",
+   "inputLabel": "Prompt (optional — or type a token count in the options)",
+   "outputLabel": "Breakdown",
+   "sample": "Summarise the attached support ticket and classify it as bug, question or feature request.",
+   "options": [
+    {
+     "id": "preset",
+     "label": "Rate preset",
+     "type": "select",
+     "hint": "Indicative list prices — always confirm against the provider.",
+     "choices": [
+      "Custom — enter your own rates",
+      "GPT-4o",
+      "GPT-4o mini",
+      "GPT-4 Turbo",
+      "GPT-3.5 Turbo",
+      "Claude Sonnet",
+      "Claude Haiku",
+      "Claude Opus",
+      "Gemini Flash",
+      "Gemini Pro"
+     ]
+    },
+    {
+     "id": "inputRate",
+     "label": "Input $ / 1M tokens",
+     "type": "number",
+     "hint": "Leave 0 to use the preset",
+     "choices": []
+    },
+    {
+     "id": "outputRate",
+     "label": "Output $ / 1M tokens",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "inputTokens",
+     "label": "Input tokens (0 = measure the text)",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "outputTokens",
+     "label": "Expected output tokens",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "calls",
+     "label": "Calls per day",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "encoding",
+     "label": "Encoding for measuring",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "o200k_base — GPT-4o, GPT-4.1, o1",
+      "cl100k_base — GPT-4, GPT-3.5, embeddings"
+     ]
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "token-counter",
+   "name": "LLM Token Counter",
+   "description": "Count tokens exactly with the real BPE tokenizer, and see how the text splits.",
+   "category": "ai",
+   "icon": "⧉",
+   "keywords": [
+    "token",
+    "tokens",
+    "tokenizer",
+    "llm",
+    "gpt",
+    "openai",
+    "context",
+    "window",
+    "bpe",
+    "cl100k",
+    "o200k",
+    "prompt",
+    "count",
+    "claude",
+    "ai"
+   ],
+   "lede": "Real BPE tokenisation running in your browser — not a characters-divided-by-four guess. Nothing is sent anywhere.",
+   "footnote": "Exact for OpenAI models using these encodings. Anthropic, Google and Meta use different tokenizers and do not publish a browser-usable one — for those, treat this as a close estimate (usually within about 10%). Chat APIs also add a few tokens per message for role framing, which this does not count.",
+   "inputLabel": "Text",
+   "outputLabel": "Token IDs",
+   "sample": "You are a helpful assistant. Summarise the following in three bullet points, using British English spelling and keeping each bullet under twenty words.",
+   "options": [
+    {
+     "id": "encoding",
+     "label": "Encoding",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "o200k_base — GPT-4o, GPT-4.1, o1",
+      "cl100k_base — GPT-4, GPT-3.5, embeddings"
+     ]
+    },
+    {
+     "id": "contextWindow",
+     "label": "Context window to compare against",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "showPieces",
+     "label": "Show how the text splits",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "prompt-template",
+   "name": "Prompt Template Renderer",
+   "description": "Fill {{variables}} in a prompt template and see the token cost of the result.",
+   "category": "ai",
+   "icon": "{{}}",
+   "keywords": [
+    "prompt",
+    "template",
+    "variable",
+    "placeholder",
+    "llm",
+    "render",
+    "jinja",
+    "mustache",
+    "interpolate",
+    "ai"
+   ],
+   "lede": "Keeps prompt templates and their test values in one place, and tells you which placeholders you forgot.",
+   "footnote": "",
+   "inputLabel": "Template",
+   "outputLabel": "Rendered prompt",
+   "sample": "You are a {{role}} reviewing a {{artifact}}.\n\nFocus on: {{focus}}\n\nRespond in {{language}} using at most {{limit}} words.",
+   "options": [
+    {
+     "id": "variables",
+     "label": "Variables (JSON)",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "syntax",
+     "label": "Placeholder syntax",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "{{name}} — Mustache / Jinja",
+      "{name} — Python format",
+      "${name} — shell / JS template"
+     ]
+    },
+    {
+     "id": "strict",
+     "label": "Fail if a placeholder has no value",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "env-converter",
+   "name": ".env Converter",
+   "description": "Convert between .env, JSON, YAML, docker-compose and shell exports.",
+   "category": "devx",
+   "icon": "$ENV",
+   "keywords": [
+    "env",
+    "dotenv",
+    "environment",
+    "variable",
+    "docker",
+    "compose",
+    "kubernetes",
+    "configmap",
+    "yaml",
+    "json",
+    "export",
+    "shell",
+    "convert",
+    "secrets"
+   ],
+   "lede": "The conversion you do by hand every time you move config between a .env file, a compose file and a Kubernetes manifest.",
+   "footnote": "A ConfigMap is <strong>not</strong> a secret — its values are stored unencrypted and are visible to anyone who can read the namespace. Put credentials in a Secret (or an external secret store) instead.",
+   "inputLabel": ".env (or JSON — it detects which)",
+   "outputLabel": "Converted",
+   "sample": "# application\nNODE_ENV=production\nPORT=8080\nLOG_LEVEL=debug\n\n# database\nDATABASE_URL=\"postgres://user:pass@db:5432/app\"\nDB_POOL_SIZE=10\nFEATURE_FLAGS=a,b,c",
+   "options": [
+    {
+     "id": "target",
+     "label": "Convert to",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "JSON",
+      "YAML",
+      "docker-compose environment",
+      "Kubernetes ConfigMap",
+      "Kubernetes container env[]",
+      "Shell exports",
+      "Dockerfile ENV",
+      ".env (normalise)",
+      "Terraform tfvars"
+     ]
+    },
+    {
+     "id": "sortKeys",
+     "label": "Sort keys",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "maskSecrets",
+     "label": "Mask values that look secret",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "cidr-calculator",
+   "name": "CIDR / Subnet Calculator",
+   "description": "Work out network, broadcast, host range and size from a CIDR block.",
+   "category": "devx",
+   "icon": "/24",
+   "keywords": [
+    "cidr",
+    "subnet",
+    "netmask",
+    "network",
+    "ip",
+    "ipv4",
+    "range",
+    "vpc",
+    "vnet",
+    "broadcast",
+    "wildcard",
+    "calculator",
+    "firewall"
+   ],
+   "lede": "Also tells you whether an address falls inside the block — the question you actually have when debugging a security group.",
+   "footnote": "",
+   "inputLabel": "CIDR block",
+   "outputLabel": "Details",
+   "sample": "10.42.0.0/20",
+   "options": [
+    {
+     "id": "contains",
+     "label": "Does this address fall inside?",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "split",
+     "label": "Split into /n subnets (0 = no)",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "curl-converter",
+   "name": "cURL Converter",
+   "description": "Turn a curl command into fetch, Python, Go, PowerShell or HTTPie.",
+   "category": "devx",
+   "icon": "⤵",
+   "keywords": [
+    "curl",
+    "convert",
+    "fetch",
+    "python",
+    "requests",
+    "go",
+    "powershell",
+    "httpie",
+    "http",
+    "request",
+    "api",
+    "devtools",
+    "copy as curl"
+   ],
+   "lede": "Paste what you copied from the browser network tab (\"Copy as cURL\") and get working code in another language.",
+   "footnote": "",
+   "inputLabel": "curl command",
+   "outputLabel": "Code",
+   "sample": "curl -X POST 'https://api.example.com/v1/orders' \\\n  -H 'content-type: application/json' \\\n  -H 'authorization: Bearer TOKEN' \\\n  -d '{\"item\":\"widget\",\"qty\":3}'",
+   "options": [
+    {
+     "id": "target",
+     "label": "Convert to",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "JavaScript — fetch",
+      "Python — requests",
+      "Go — net/http",
+      "PowerShell — Invoke-RestMethod",
+      "HTTPie"
+     ]
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "duration-converter",
+   "name": "Duration Converter",
+   "description": "Convert between 1h30m, 5400s, ISO 8601 durations and milliseconds.",
+   "category": "devx",
+   "icon": "⏳",
+   "keywords": [
+    "duration",
+    "time",
+    "seconds",
+    "milliseconds",
+    "iso 8601",
+    "timeout",
+    "ttl",
+    "convert",
+    "human",
+    "go duration",
+    "cache-control"
+   ],
+   "lede": "Accepts Go-style (1h30m), plain seconds, ISO 8601 (PT1H30M) and colon notation (01:30:00).",
+   "footnote": "",
+   "inputLabel": "Durations — one per line",
+   "outputLabel": "Conversions",
+   "sample": "1h30m\n5400\nPT2H15M\n00:45:30\n90000ms\n7d",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "http-reference",
+   "name": "HTTP Reference",
+   "description": "Searchable status codes and MIME types, with what they actually mean.",
+   "category": "devx",
+   "icon": "404",
+   "keywords": [
+    "http",
+    "status",
+    "code",
+    "mime",
+    "content-type",
+    "reference",
+    "404",
+    "500",
+    "429",
+    "422",
+    "media type",
+    "header"
+   ],
+   "lede": "Type a code, a word or a file extension.",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "Matches",
+   "sample": "",
+   "options": [
+    {
+     "id": "query",
+     "label": "Search",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "what",
+     "label": "Show",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Status codes and MIME types",
+      "Status codes only",
+      "MIME types only"
+     ]
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "id-decoder",
+   "name": "ID Decoder",
+   "description": "Pull the timestamp out of a UUID, ULID, ObjectId or Snowflake ID.",
+   "category": "devx",
+   "icon": "🆔",
+   "keywords": [
+    "uuid",
+    "ulid",
+    "snowflake",
+    "objectid",
+    "mongodb",
+    "discord",
+    "twitter",
+    "id",
+    "decode",
+    "timestamp",
+    "when",
+    "created",
+    "guid"
+   ],
+   "lede": "Most identifiers you meet in a database or a log carry a creation time. Paste one and this works out which format it is and when it was made.",
+   "footnote": "",
+   "inputLabel": "Identifier",
+   "outputLabel": "Details",
+   "sample": "01912d7c-8f00-7c1e-9d4b-2f3a5b6c7d8e",
+   "options": [
+    {
+     "id": "snowflakeEpoch",
+     "label": "Snowflake epoch",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Discord",
+      "Twitter / X",
+      "Instagram",
+      "Unix epoch (0)"
+     ]
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "jwt-signer",
+   "name": "JWT Signer",
+   "description": "Build and sign a JSON Web Token with HS256, HS384 or HS512.",
+   "category": "devx",
+   "icon": "JWT+",
+   "keywords": [
+    "jwt",
+    "sign",
+    "create",
+    "generate",
+    "token",
+    "hs256",
+    "hmac",
+    "bearer",
+    "auth",
+    "test",
+    "fixture"
+   ],
+   "lede": "For creating test tokens against a service you control. Pairs with the JWT Decoder.",
+   "footnote": "HS256 secrets should be at least 256 bits of real entropy — a short passphrase is brute-forceable offline from a single captured token. Tokens minted here are for testing; do not use this to issue anything a real user relies on, and never paste a production signing secret into a web page.",
+   "inputLabel": "Payload (claims) as JSON",
+   "outputLabel": "Signed token",
+   "sample": "{\n  \"sub\": \"1234567890\",\n  \"name\": \"Test User\",\n  \"role\": \"admin\"\n}",
+   "options": [
+    {
+     "id": "algorithm",
+     "label": "Algorithm",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "HS256",
+      "HS384",
+      "HS512"
+     ]
+    },
+    {
+     "id": "secret",
+     "label": "Secret",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "expiresIn",
+     "label": "Expires in (seconds, 0 = no exp)",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "addIat",
+     "label": "Add iat (issued at)",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "issuer",
+     "label": "Issuer (iss), optional",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "audience",
+     "label": "Audience (aud), optional",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "k8s-quantity",
+   "name": "Kubernetes Quantity Converter",
+   "description": "Translate 512Mi, 1.5Gi, 250m and friends into numbers you can reason about.",
+   "category": "devx",
+   "icon": "☸",
+   "keywords": [
+    "kubernetes",
+    "k8s",
+    "quantity",
+    "memory",
+    "cpu",
+    "millicores",
+    "mi",
+    "gi",
+    "limits",
+    "requests",
+    "resources",
+    "convert",
+    "container"
+   ],
+   "lede": "Mi is 1024-based, M is 1000-based, and mixing them up is how you end up with a pod that OOMs. One line per quantity.",
+   "footnote": "",
+   "inputLabel": "Quantities — one per line",
+   "outputLabel": "Conversions",
+   "sample": "512Mi\n1.5Gi\n2G\n250m\n1500m\n4",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "line-ending-inspector",
+   "name": "Line Ending & Whitespace Inspector",
+   "description": "Find CRLF/LF mixes, BOMs, trailing spaces and tab/space inconsistency.",
+   "category": "devx",
+   "icon": "¶⏎",
+   "keywords": [
+    "crlf",
+    "lf",
+    "line ending",
+    "newline",
+    "bom",
+    "whitespace",
+    "trailing",
+    "tabs",
+    "spaces",
+    "indent",
+    "git",
+    "diff",
+    "encoding",
+    "windows",
+    "unix"
+   ],
+   "lede": "The reason a diff shows every line as changed, or a shell script fails with a mysterious \\r. Paste the file to see what is really in it.",
+   "footnote": "",
+   "inputLabel": "File content",
+   "outputLabel": "Report",
+   "sample": "first line\r\nsecond line\nthird line with trailing space   \n\tfourth line indented with a tab\n    fifth line indented with spaces\n",
+   "options": [
+    {
+     "id": "convert",
+     "label": "Also convert to",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Report only",
+      "LF (Unix)",
+      "CRLF (Windows)",
+      "LF + strip trailing whitespace"
+     ]
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "markdown-table",
+   "name": "Markdown Table Formatter",
+   "description": "Align a Markdown table, or build one from CSV, TSV or JSON.",
+   "category": "devx",
+   "icon": "▤",
+   "keywords": [
+    "markdown",
+    "table",
+    "format",
+    "align",
+    "csv",
+    "tsv",
+    "json",
+    "readme",
+    "pretty",
+    "pipe",
+    "github"
+   ],
+   "lede": "Paste a ragged Markdown table to line it up, or paste CSV/TSV/JSON to turn it into one.",
+   "footnote": "",
+   "inputLabel": "Markdown table, CSV, TSV or JSON array",
+   "outputLabel": "Markdown",
+   "sample": "| Tool | Language | Notes |\n|---|---|---|\n| Parquet viewer | JS | reads real files |\n| Service Bus | Python + Node | needs the relay |\n| Hashes | JS | verified against hashlib |",
+   "options": [
+    {
+     "id": "align",
+     "label": "Column alignment",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Keep existing",
+      "All left",
+      "All centre",
+      "All right",
+      "Auto — numbers right"
+     ]
+    },
+    {
+     "id": "compact",
+     "label": "Compact (no padding)",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "mock-data",
+   "name": "Mock Data Generator",
+   "description": "Generate realistic test rows as JSON, CSV or SQL inserts.",
+   "category": "devx",
+   "icon": "🎭",
+   "keywords": [
+    "mock",
+    "fake",
+    "test data",
+    "seed",
+    "sample",
+    "faker",
+    "dummy",
+    "generate",
+    "fixture",
+    "csv",
+    "sql",
+    "insert",
+    "json"
+   ],
+   "lede": "Pick the fields you need and get however many rows, ready to paste into a seed script or a test.",
+   "footnote": "The names are borrowed from computing pioneers, and the addresses and phone numbers are structurally valid but fictional. Do not use generated emails to send anything.",
+   "inputLabel": "",
+   "outputLabel": "Data",
+   "sample": "",
+   "options": [
+    {
+     "id": "fields",
+     "label": "Fields (comma separated)",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "rows",
+     "label": "Rows",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "format",
+     "label": "Format",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "JSON",
+      "JSON Lines",
+      "CSV",
+      "SQL INSERT"
+     ]
+    },
+    {
+     "id": "table",
+     "label": "Table name (SQL)",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "semver-checker",
+   "name": "Semver Checker",
+   "description": "Compare versions and test them against ranges like ^1.2.0 or >=2 <3.",
+   "category": "devx",
+   "icon": "1.2",
+   "keywords": [
+    "semver",
+    "version",
+    "compare",
+    "range",
+    "caret",
+    "tilde",
+    "npm",
+    "dependency",
+    "satisfies",
+    "prerelease",
+    "upgrade"
+   ],
+   "lede": "Answers \"does this version match that range\" without installing anything — including the prerelease rules people get wrong.",
+   "footnote": "",
+   "inputLabel": "Versions — one per line",
+   "outputLabel": "Result",
+   "sample": "1.2.3\n1.9.0\n2.0.0\n2.0.0-beta.1\n0.5.2\n1.2.3+build.7",
+   "options": [
+    {
+     "id": "range",
+     "label": "Range to test against",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "sort",
+     "label": "Sort by precedence",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "unicode-inspector",
+   "name": "Unicode Inspector",
+   "description": "Reveal invisible characters, smart quotes and homoglyphs hiding in text.",
+   "category": "devx",
+   "icon": "U+",
+   "keywords": [
+    "unicode",
+    "codepoint",
+    "invisible",
+    "zero width",
+    "zwsp",
+    "homoglyph",
+    "bom",
+    "nbsp",
+    "whitespace",
+    "escape",
+    "character",
+    "utf8",
+    "emoji",
+    "debug"
+   ],
+   "lede": "When a string comparison fails for no visible reason, the answer is usually in here — a non-breaking space, a smart quote, a zero-width joiner or a Cyrillic lookalike.",
+   "footnote": "",
+   "inputLabel": "Text",
+   "outputLabel": "Character breakdown",
+   "sample": "Hello​world — \"smart quotes\" and a non-breaking space, plus Cyrillic а",
+   "options": [
+    {
+     "id": "onlySuspicious",
+     "label": "Only show suspicious characters",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "limit",
+     "label": "Max characters to list",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "gitignore-generator",
+   "name": ".gitignore Generator",
+   "description": "Build a .gitignore from stacks, and check what a pattern would match.",
+   "category": "devops",
+   "icon": "🚫",
+   "keywords": [
+    "gitignore",
+    "git",
+    "ignore",
+    "generate",
+    "template",
+    "node",
+    "python",
+    "dotnet",
+    "java",
+    "go",
+    "rust",
+    "devops",
+    "pattern"
+   ],
+   "lede": "Pick the stacks you use — the common editor, OS and secret patterns are always included.",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": ".gitignore",
+   "sample": "",
+   "options": [
+    {
+     "id": "stacks",
+     "label": "Stacks (comma separated)",
+     "type": "text",
+     "hint": "node, python, dotnet, java, go, rust, php, ruby, flutter, terraform, docker",
+     "choices": []
+    },
+    {
+     "id": "includeSecrets",
+     "label": "Secret and credential patterns",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "includeEditors",
+     "label": "Editor and OS files",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "compose-validator",
+   "name": "Docker Compose Validator",
+   "description": "Validate a compose file and flag port clashes, missing images and risky settings.",
+   "category": "devops",
+   "icon": "🐙",
+   "keywords": [
+    "docker",
+    "compose",
+    "docker-compose",
+    "validate",
+    "lint",
+    "yaml",
+    "services",
+    "ports",
+    "volumes",
+    "check",
+    "devops"
+   ],
+   "lede": "Parses the YAML, then checks the things a schema will not: duplicate host ports, services depending on names that do not exist, and containers given more privilege than they need.",
+   "footnote": "",
+   "inputLabel": "docker-compose.yml",
+   "outputLabel": "Report",
+   "sample": "version: \"3.8\"\nservices:\n  web:\n    image: nginx:latest\n    ports:\n      - \"8080:80\"\n    depends_on:\n      - api\n    environment:\n      - DB_PASSWORD=hunter2\n  api:\n    build: .\n    ports:\n      - \"8080:3000\"\n    privileged: true\n    volumes:\n      - /:/host\n    restart: always\n  worker:\n    image: myapp/worker\n    depends_on:\n      - queue\n",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "dockerfile-linter",
+   "name": "Dockerfile Linter",
+   "description": "Catch cache-busting layer order, missing USER, latest tags and other Dockerfile mistakes.",
+   "category": "devops",
+   "icon": "🐳",
+   "keywords": [
+    "docker",
+    "dockerfile",
+    "lint",
+    "check",
+    "best practice",
+    "hadolint",
+    "image",
+    "layer",
+    "cache",
+    "security",
+    "container",
+    "build",
+    "devops"
+   ],
+   "lede": "The checks that actually bite: images that rebuild from scratch on every code change, containers running as root, and unpinned tags.",
+   "footnote": "These are heuristics over the instruction list, not a full parse — heredocs, line continuations inside strings and BuildKit-specific syntax may confuse them. For CI, run <code>hadolint</code> as well.",
+   "inputLabel": "Dockerfile",
+   "outputLabel": "Report",
+   "sample": "FROM node:latest\n\nWORKDIR /app\n\nCOPY . .\nRUN npm install\nRUN apt-get update\nRUN apt-get install -y curl\n\nADD https://example.com/tool.tar.gz /tmp/\n\nENV API_KEY=sk-supersecret\n\nEXPOSE 3000\nCMD npm start",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "gha-validator",
+   "name": "GitHub Actions Checker",
+   "description": "Lint a workflow for unpinned actions, script injection and missing permissions.",
+   "category": "devops",
+   "icon": "⚡",
+   "keywords": [
+    "github actions",
+    "workflow",
+    "ci",
+    "cd",
+    "yaml",
+    "validate",
+    "lint",
+    "pipeline",
+    "security",
+    "pin",
+    "permissions",
+    "devops",
+    "gha"
+   ],
+   "lede": "Includes the script-injection check — interpolating <code>${{ github.event... }}</code> straight into a run block lets a pull request title execute code in your runner.",
+   "footnote": "",
+   "inputLabel": "Workflow YAML",
+   "outputLabel": "Report",
+   "sample": "name: CI\non:\n  pull_request_target:\n    branches: [main]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: some/action@main\n      - name: Greet\n        run: echo \"Building ${{ github.event.pull_request.title }}\"\n      - name: Deploy\n        run: ./deploy.sh\n        env:\n          TOKEN: ghp_hardcodedtokenvalue123456\n",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "k8s-validator",
+   "name": "Kubernetes Manifest Checker",
+   "description": "Check manifests for missing limits, root containers, latest tags and probe gaps.",
+   "category": "devops",
+   "icon": "☸✓",
+   "keywords": [
+    "kubernetes",
+    "k8s",
+    "manifest",
+    "yaml",
+    "validate",
+    "lint",
+    "deployment",
+    "pod",
+    "security context",
+    "probe",
+    "limits",
+    "requests",
+    "devops",
+    "helm"
+   ],
+   "lede": "Handles multi-document YAML. Checks the production readiness items that reviews usually catch late — resource limits, probes, security context and image pinning.",
+   "footnote": "This checks structure and production-readiness conventions. It does <strong>not</strong> validate against the Kubernetes OpenAPI schema — for that use <code>kubectl apply --dry-run=server</code>, <code>kubeconform</code> or <code>kubeval</code>.",
+   "inputLabel": "Kubernetes YAML",
+   "outputLabel": "Report",
+   "sample": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: api\n  template:\n    metadata:\n      labels:\n        app: api\n    spec:\n      containers:\n        - name: api\n          image: myrepo/api:latest\n          ports:\n            - containerPort: 8080\n          env:\n            - name: DB_PASSWORD\n              value: hunter2\n",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "k8s-secret",
+   "name": "Kubernetes Secret Decoder",
+   "description": "Decode or build the base64 data block of a Kubernetes Secret.",
+   "category": "devops",
+   "icon": "🔑☸",
+   "keywords": [
+    "kubernetes",
+    "k8s",
+    "secret",
+    "base64",
+    "decode",
+    "encode",
+    "data",
+    "stringData",
+    "manifest",
+    "devops"
+   ],
+   "lede": "Paste a Secret manifest to read its values, or paste key=value pairs to build one.",
+   "footnote": "Decoding happens in your browser and nothing is transmitted — but a real production secret pasted into any web page is a secret you should now rotate.",
+   "inputLabel": "Secret YAML, or KEY=value lines",
+   "outputLabel": "Result",
+   "sample": "apiVersion: v1\nkind: Secret\nmetadata:\n  name: app-secrets\ntype: Opaque\ndata:\n  DB_PASSWORD: aHVudGVyMg==\n  API_KEY: c2stbGl2ZS1hYmNkZWY=\n  EMPTY: \"\"",
+   "options": [
+    {
+     "id": "direction",
+     "label": "Direction",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Decode — Secret YAML → plain values",
+      "Encode — KEY=value → Secret YAML"
+     ]
+    },
+    {
+     "id": "name",
+     "label": "Secret name (when encoding)",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "stringData",
+     "label": "Use stringData (no base64)",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "yaml-formatter",
+   "name": "YAML Beautifier",
+   "description": "Reformat and normalise YAML with consistent indentation and quoting.",
+   "category": "devops",
+   "icon": "Y{}",
+   "keywords": [
+    "yaml",
+    "yml",
+    "format",
+    "beautify",
+    "pretty",
+    "indent",
+    "normalise",
+    "normalize",
+    "sort",
+    "lint",
+    "clean",
+    "kubernetes",
+    "compose",
+    "ansible",
+    "devops"
+   ],
+   "lede": "Parses the YAML then re-emits it, so the output is guaranteed to be equivalent — and anything that will not parse is reported instead of silently mangled.",
+   "footnote": "Re-emitting normalises the document: comments are <strong>not</strong> preserved, because YAML comments are not part of the parsed data. If you need comments kept, format by hand or use a comment-preserving tool such as <code>yq</code>.",
+   "inputLabel": "YAML",
+   "outputLabel": "Formatted",
+   "sample": "name:    my-service\nreplicas: 3\nimage:   \"nginx:1.25\"\nenv:\n    - name: LOG_LEVEL\n      value: debug\n    - name: PORT\n      value: \"8080\"\nresources:\n      limits: {cpu: 500m, memory: 512Mi}\n      requests: {cpu: 250m, memory: 256Mi}\nenabled: yes\nempty:\n",
+   "options": [
+    {
+     "id": "indent",
+     "label": "Indent",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "sortKeys",
+     "label": "Sort keys alphabetically",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "quoteStrings",
+     "label": "Quote every string",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "lineWidth",
+     "label": "Wrap at column (0 = never)",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "explicitStart",
+     "label": "Start documents with ---",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "json-diff",
+   "name": "JSON Diff",
+   "description": "Compare two JSON documents structurally — by path, not by line.",
+   "category": "codegen",
+   "icon": "{≠}",
+   "keywords": [
+    "json",
+    "diff",
+    "compare",
+    "difference",
+    "change",
+    "structural",
+    "merge",
+    "api"
+   ],
+   "lede": "Key order and formatting are ignored; only real differences are reported, each with the path you would use to reach it.",
+   "footnote": "",
+   "inputLabel": "Original JSON",
+   "outputLabel": "Differences",
+   "sample": "{\n  \"name\": \"service\",\n  \"replicas\": 3,\n  \"ports\": [8080, 8443],\n  \"env\": { \"LOG_LEVEL\": \"info\", \"REGION\": \"eu-west-1\" }\n}",
+   "options": [
+    {
+     "id": "other",
+     "label": "Compare against (paste JSON here)",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "json-schema-generator",
+   "name": "JSON Schema Generator",
+   "description": "Infer a JSON Schema (draft 2020-12) from an example document.",
+   "category": "codegen",
+   "icon": "⊨",
+   "keywords": [
+    "json schema",
+    "schema",
+    "validate",
+    "draft",
+    "openapi",
+    "generate",
+    "infer",
+    "contract"
+   ],
+   "lede": "Turns a sample payload into a schema you can validate against, detecting formats like date-time, email, uri and uuid.",
+   "footnote": "",
+   "inputLabel": "JSON sample",
+   "outputLabel": "JSON Schema",
+   "sample": "{\n  \"id\": 1042,\n  \"name\": \"Ada Lovelace\",\n  \"active\": true,\n  \"score\": 91.5,\n  \"joined\": \"2024-03-01T09:30:00Z\",\n  \"tags\": [\"maths\", \"computing\"],\n  \"address\": { \"city\": \"London\", \"postcode\": \"W1A 1AA\" },\n  \"orders\": [\n    { \"ref\": \"A-1\", \"total\": 25.5, \"shipped\": true },\n    { \"ref\": \"A-2\", \"total\": 10, \"shipped\": false, \"note\": \"gift\" }\n  ]\n}",
+   "options": [
+    {
+     "id": "required",
+     "label": "Mark present properties as required",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "formats",
+     "label": "Detect string formats",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "examples",
+     "label": "Include examples",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "additional",
+     "label": "Forbid additional properties",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "title",
+     "label": "Title",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "json-to-types",
+   "name": "JSON to Types",
+   "description": "Generate TypeScript, Python, Go, C#, Rust or Java models from a JSON sample.",
+   "category": "codegen",
+   "icon": "{ }→",
+   "keywords": [
+    "json",
+    "typescript",
+    "interface",
+    "type",
+    "python",
+    "dataclass",
+    "go",
+    "struct",
+    "csharp",
+    "c#",
+    "record",
+    "rust",
+    "serde",
+    "java",
+    "pojo",
+    "generate",
+    "model",
+    "class",
+    "codegen"
+   ],
+   "lede": "Paste a real API response and get typed models. Arrays of objects are merged, so a field missing from some elements becomes optional rather than producing several near-identical types.",
+   "footnote": "Types are inferred from one sample, so anything absent from it cannot be known — a field that is always null here becomes <code>null</code>/<code>None</code>, and a field the API sometimes omits will only be optional if your sample actually varies. Treat the output as a strong first draft, not a contract.",
+   "inputLabel": "JSON sample",
+   "outputLabel": "Generated types",
+   "sample": "{\n  \"id\": 1042,\n  \"name\": \"Ada Lovelace\",\n  \"active\": true,\n  \"score\": 91.5,\n  \"joined\": \"2024-03-01T09:30:00Z\",\n  \"tags\": [\"maths\", \"computing\"],\n  \"address\": { \"city\": \"London\", \"postcode\": \"W1A 1AA\" },\n  \"orders\": [\n    { \"ref\": \"A-1\", \"total\": 25.5, \"shipped\": true },\n    { \"ref\": \"A-2\", \"total\": 10, \"shipped\": false, \"note\": \"gift\" }\n  ]\n}",
+   "options": [
+    {
+     "id": "language",
+     "label": "Language",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "TypeScript",
+      "Python (dataclass)",
+      "Go (struct)",
+      "C# (record)",
+      "Rust (serde)",
+      "Java (record)"
+     ]
+    },
+    {
+     "id": "rootName",
+     "label": "Root type name",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "readonly",
+     "label": "TypeScript: emit type aliases instead of interfaces",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "jsonpath",
+   "name": "JSONPath Evaluator",
+   "description": "Query a JSON document with JSONPath and see exactly what matches.",
+   "category": "codegen",
+   "icon": "$.",
+   "keywords": [
+    "jsonpath",
+    "json",
+    "query",
+    "path",
+    "filter",
+    "extract",
+    "search",
+    "select",
+    "jq"
+   ],
+   "lede": "Supports $.a.b, [*], [0], [1:3], recursive .., and simple filters like [?(@.total > 10)].",
+   "footnote": "",
+   "inputLabel": "JSON",
+   "outputLabel": "Matches",
+   "sample": "{\n  \"id\": 1042,\n  \"name\": \"Ada Lovelace\",\n  \"active\": true,\n  \"score\": 91.5,\n  \"joined\": \"2024-03-01T09:30:00Z\",\n  \"tags\": [\"maths\", \"computing\"],\n  \"address\": { \"city\": \"London\", \"postcode\": \"W1A 1AA\" },\n  \"orders\": [\n    { \"ref\": \"A-1\", \"total\": 25.5, \"shipped\": true },\n    { \"ref\": \"A-2\", \"total\": 10, \"shipped\": false, \"note\": \"gift\" }\n  ]\n}",
+   "options": [
+    {
+     "id": "path",
+     "label": "JSONPath",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "flatten",
+     "label": "Unwrap a single match",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "case-converter",
+   "name": "Case Converter",
+   "description": "Convert between camelCase, snake_case, kebab-case, Title Case, CONSTANT_CASE and more.",
+   "category": "text",
+   "icon": "Aa",
+   "keywords": [
+    "case",
+    "camel",
+    "snake",
+    "kebab",
+    "pascal",
+    "upper",
+    "lower",
+    "title",
+    "constant"
+   ],
+   "lede": "Pick a target case — the conversion understands existing camelCase and snake_case boundaries.",
+   "footnote": "",
+   "inputLabel": "Text",
+   "outputLabel": "Converted",
+   "sample": "hello world example text",
+   "options": [
+    {
+     "id": "target",
+     "label": "Convert to",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "lowercase",
+      "UPPERCASE",
+      "Title Case",
+      "Sentence case",
+      "camelCase",
+      "PascalCase",
+      "snake_case",
+      "CONSTANT_CASE",
+      "kebab-case",
+      "dot.case",
+      "path/case",
+      "aLtErNaTiNg",
+      "iNVERSE cASE"
+     ]
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "hex-to-text",
+   "name": "HEX to Text",
+   "description": "Decode hexadecimal bytes back into readable text.",
+   "category": "text",
+   "icon": "x0",
+   "keywords": [
+    "hex",
+    "hexadecimal",
+    "decode",
+    "text",
+    "bytes"
+   ],
+   "lede": "Separators, 0x prefixes and \\x escapes are all handled — just paste whatever you have.",
+   "footnote": "",
+   "inputLabel": "Hexadecimal",
+   "outputLabel": "Text",
+   "sample": "48 65 6c 6c 6f 2c 20 77 6f 72 6c 64",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "line-sorter",
+   "name": "Line Sorter",
+   "description": "Sort, reverse, shuffle, de-duplicate and number lines of text.",
+   "category": "text",
+   "icon": "↓≡",
+   "keywords": [
+    "sort",
+    "line",
+    "alphabetical",
+    "reverse",
+    "shuffle",
+    "unique",
+    "dedupe",
+    "natural"
+   ],
+   "lede": "Reorder lines however you need. Natural sort keeps file2 before file10.",
+   "footnote": "",
+   "inputLabel": "Lines",
+   "outputLabel": "Result",
+   "sample": "banana\napple\nfile10\nfile2\nCherry\napple",
+   "options": [
+    {
+     "id": "mode",
+     "label": "Operation",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Sort A → Z",
+      "Sort Z → A",
+      "Natural sort (file2 < file10)",
+      "Sort by length",
+      "Reverse order",
+      "Shuffle",
+      "Keep order"
+     ]
+    },
+    {
+     "id": "ignoreCase",
+     "label": "Ignore case",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "unique",
+     "label": "Remove duplicates",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "trim",
+     "label": "Trim each line",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "dropBlank",
+     "label": "Drop blank lines",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "number",
+     "label": "Add line numbers",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "lorem-ipsum",
+   "name": "Lorem Ipsum Generator",
+   "description": "Generate placeholder paragraphs, sentences, words or list items.",
+   "category": "text",
+   "icon": "¶+",
+   "keywords": [
+    "lorem",
+    "ipsum",
+    "placeholder",
+    "dummy",
+    "filler",
+    "text"
+   ],
+   "lede": "Classic filler text for mockups.",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "Lorem ipsum",
+   "sample": "",
+   "options": [
+    {
+     "id": "unit",
+     "label": "Generate",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Paragraphs",
+      "Sentences",
+      "Words",
+      "List items"
+     ]
+    },
+    {
+     "id": "count",
+     "label": "How many",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "classic",
+     "label": "Start with \"Lorem ipsum dolor sit amet\"",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "html",
+     "label": "Wrap in HTML tags",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "regex-tester",
+   "name": "Regex Tester",
+   "description": "Test a regular expression against sample text and inspect every match and group.",
+   "category": "text",
+   "icon": ".*",
+   "keywords": [
+    "regex",
+    "regexp",
+    "regular expression",
+    "match",
+    "pattern",
+    "test",
+    "capture",
+    "group"
+   ],
+   "lede": "Uses the browser's own JavaScript regex engine, so what you see here is what your code will do.",
+   "footnote": "",
+   "inputLabel": "Test text",
+   "outputLabel": "Matches",
+   "sample": "Contact ada@example.com or grace@navy.mil.\nBackup: hopper+test@example.co.uk",
+   "options": [
+    {
+     "id": "pattern",
+     "label": "Pattern",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "flags",
+     "label": "Flags",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "replace",
+     "label": "Replacement (optional)",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "string-escaper",
+   "name": "String Escaper",
+   "description": "Escape and unescape strings for JavaScript, JSON, SQL, XML, HTML and shell.",
+   "category": "text",
+   "icon": "\\n",
+   "keywords": [
+    "escape",
+    "unescape",
+    "string",
+    "quote",
+    "javascript",
+    "json",
+    "sql",
+    "shell"
+   ],
+   "lede": "One place for every \"how do I quote this\" question.",
+   "footnote": "SQL escaping here doubles single quotes, which is the standard literal form. It is <strong>not</strong> a substitute for parameterised queries — always bind user input as a parameter.",
+   "inputLabel": "Input",
+   "outputLabel": "Result",
+   "sample": "He said \"hello\"\\nand left.",
+   "options": [
+    {
+     "id": "target",
+     "label": "Format",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "JavaScript / TypeScript",
+      "JSON string",
+      "SQL single-quoted literal",
+      "POSIX shell single quotes",
+      "CSV field",
+      "Regular expression literal"
+     ]
+    },
+    {
+     "id": "direction",
+     "label": "Direction",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Escape",
+      "Unescape"
+     ]
+    },
+    {
+     "id": "quotes",
+     "label": "Include surrounding quotes",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "diff-checker",
+   "name": "Text Diff",
+   "description": "Compare two texts with real insert/delete detection and a unified diff export.",
+   "category": "text",
+   "icon": "±",
+   "keywords": [
+    "diff",
+    "compare",
+    "difference",
+    "text",
+    "merge",
+    "patch",
+    "changes",
+    "lcs"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": false,
+   "bespoke": true
+  },
+  {
+   "id": "text-to-hex",
+   "name": "Text to HEX",
+   "description": "Convert text into its hexadecimal byte representation.",
+   "category": "text",
+   "icon": "0x",
+   "keywords": [
+    "hex",
+    "hexadecimal",
+    "text",
+    "encode",
+    "bytes"
+   ],
+   "lede": "UTF-8 encodes the text, then renders each byte as hex.",
+   "footnote": "",
+   "inputLabel": "Text",
+   "outputLabel": "Hexadecimal",
+   "sample": "Hello, world",
+   "options": [
+    {
+     "id": "separator",
+     "label": "Separator",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Space (48 65 6c)",
+      "None (48656c)",
+      "Colon (48:65:6c)",
+      "Dash (48-65-6c)",
+      "Escaped (\\x48\\x65)",
+      "C array (0x48, 0x65)"
+     ]
+    },
+    {
+     "id": "upper",
+     "label": "Uppercase",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "whitespace-remover",
+   "name": "Whitespace Remover",
+   "description": "Trim trailing spaces, collapse runs of whitespace, strip blank lines and convert tabs.",
+   "category": "text",
+   "icon": "⎵",
+   "keywords": [
+    "whitespace",
+    "trim",
+    "space",
+    "tab",
+    "blank",
+    "indent",
+    "strip"
+   ],
+   "lede": "Clean up messy indentation and stray spaces without touching the content itself.",
+   "footnote": "",
+   "inputLabel": "Text",
+   "outputLabel": "Cleaned",
+   "sample": "   leading and trailing   \n\n\n\ttabbed    line   here\n   \nlast line\t\t",
+   "options": [
+    {
+     "id": "trimEnd",
+     "label": "Trim line ends",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "trimStart",
+     "label": "Trim line starts",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "collapse",
+     "label": "Collapse repeated spaces",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "blank",
+     "label": "Remove blank lines",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "squeezeBlank",
+     "label": "Max one blank line",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "tabs",
+     "label": "Tabs",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Leave tabs alone",
+      "Tab → 2 spaces",
+      "Tab → 4 spaces",
+      "Leading spaces → tabs"
+     ]
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "word-counter",
+   "name": "Word Counter",
+   "description": "Count words, characters, sentences, paragraphs and reading time as you type.",
+   "category": "text",
+   "icon": "¶",
+   "keywords": [
+    "word",
+    "count",
+    "character",
+    "letter",
+    "line",
+    "reading time"
+   ],
+   "lede": "Live counts for words, characters, lines, sentences and paragraphs, plus an estimated reading time.",
+   "footnote": "",
+   "inputLabel": "Text",
+   "outputLabel": "Breakdown",
+   "sample": "The quick brown fox jumps over the lazy dog.\n\nPack my box with five dozen liquor jugs. How vexingly quick daft zebras jump!",
+   "options": [
+    {
+     "id": "wpm",
+     "label": "Reading speed (wpm)",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "query-builder",
+   "name": "Query String Builder",
+   "description": "Convert between a query string and a readable key/value list or JSON.",
+   "category": "url",
+   "icon": "?=",
+   "keywords": [
+    "query",
+    "string",
+    "params",
+    "json",
+    "build",
+    "convert"
+   ],
+   "lede": "Paste a query string to expand it, or paste JSON / key=value lines to build one.",
+   "footnote": "",
+   "inputLabel": "Query string, JSON or key=value lines",
+   "outputLabel": "Result",
+   "sample": "utm_source=newsletter&utm_medium=email&page=2&q=blue shoes",
+   "options": [
+    {
+     "id": "direction",
+     "label": "Convert",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Query string → JSON",
+      "JSON / lines → query string"
+     ]
+    },
+    {
+     "id": "encode",
+     "label": "Percent-encode values when building",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "slug-generator",
+   "name": "Slug Generator",
+   "description": "Turn any text into a clean, SEO-friendly URL slug.",
+   "category": "url",
+   "icon": "/-/",
+   "keywords": [
+    "slug",
+    "slugify",
+    "url",
+    "seo",
+    "permalink",
+    "kebab"
+   ],
+   "lede": "Accents are folded to ASCII, punctuation is dropped and words are joined by a separator.",
+   "footnote": "",
+   "inputLabel": "Text",
+   "outputLabel": "Slug",
+   "sample": "  Crème Brûlée & Café — 10 Best Recipes (2026)!  ",
+   "options": [
+    {
+     "id": "separator",
+     "label": "Separator",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Hyphen (-)",
+      "Underscore (_)",
+      "Dot (.)"
+     ]
+    },
+    {
+     "id": "lower",
+     "label": "Lowercase",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "perLine",
+     "label": "Slug each line separately",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "maxLength",
+     "label": "Max length (0 = no limit)",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "url-decoder",
+   "name": "URL Decoder",
+   "description": "Decode percent-encoded URLs and query strings back to readable text.",
+   "category": "url",
+   "icon": "%→",
+   "keywords": [
+    "url",
+    "decode",
+    "percent",
+    "unescape",
+    "querystring",
+    "uri"
+   ],
+   "lede": "Handles + as space and can decode repeatedly for double-encoded values.",
+   "footnote": "",
+   "inputLabel": "Encoded text",
+   "outputLabel": "Decoded",
+   "sample": "blue%20shoes%20%26%20socks%3Fsize%3D42",
+   "options": [
+    {
+     "id": "plus",
+     "label": "Treat + as space",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "repeat",
+     "label": "Decode repeatedly (double-encoded)",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "url-encoder",
+   "name": "URL Encoder",
+   "description": "Percent-encode text so it is safe inside a URL or query string.",
+   "category": "url",
+   "icon": "%",
+   "keywords": [
+    "url",
+    "encode",
+    "percent",
+    "escape",
+    "querystring",
+    "uri"
+   ],
+   "lede": "Component encoding escapes &, =, ? and / — use it for query values. Full-URI encoding leaves URL structure intact.",
+   "footnote": "",
+   "inputLabel": "Text",
+   "outputLabel": "Encoded",
+   "sample": "blue shoes & socks?size=42",
+   "options": [
+    {
+     "id": "mode",
+     "label": "Encoding",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Component (encodeURIComponent)",
+      "Full URI (encodeURI)",
+      "Form / query (spaces as +)",
+      "Every non-alphanumeric byte"
+     ]
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "url-parser",
+   "name": "URL Parser",
+   "description": "Break a URL into protocol, host, port, path, query parameters and fragment.",
+   "category": "url",
+   "icon": "🔗",
+   "keywords": [
+    "url",
+    "parse",
+    "query",
+    "string",
+    "parameter",
+    "host",
+    "origin"
+   ],
+   "lede": "Splits a URL into every component and expands the query string into a readable table.",
+   "footnote": "",
+   "inputLabel": "URL",
+   "outputLabel": "Components",
+   "sample": "https://user:pw@shop.example.com:8443/catalog/items?q=blue+shoes&size=42&tags=a&tags=b#reviews",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "css-beautifier",
+   "name": "CSS Beautifier",
+   "description": "Format CSS with consistent indentation and one declaration per line.",
+   "category": "web",
+   "icon": "{ }",
+   "keywords": [
+    "css",
+    "format",
+    "beautify",
+    "pretty",
+    "indent",
+    "style"
+   ],
+   "lede": "Readable CSS with predictable spacing.",
+   "footnote": "",
+   "inputLabel": "CSS",
+   "outputLabel": "Formatted",
+   "sample": ".card{background:#fff;border-radius:8px}.card h2{font-size:1.2rem;margin:0 0 8px}@media(max-width:600px){.card{padding:8px}}",
+   "options": [
+    {
+     "id": "indent",
+     "label": "Indent size",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "css-validator",
+   "name": "CSS Checker",
+   "description": "Check CSS for unbalanced braces, dropped rules and empty selectors.",
+   "category": "web",
+   "icon": "{✓}",
+   "keywords": [
+    "css",
+    "validate",
+    "check",
+    "lint",
+    "syntax",
+    "error"
+   ],
+   "lede": "Runs your CSS through the browser's own parser and reports what it refused to accept.",
+   "footnote": "",
+   "inputLabel": "CSS",
+   "outputLabel": "Report",
+   "sample": ".good { color: red; }\n.bad { color: ; }\n.empty { }\n.unclosed { background: blue;",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "css-minifier",
+   "name": "CSS Minifier",
+   "description": "Compress CSS by removing comments, whitespace and redundant syntax.",
+   "category": "web",
+   "icon": "{·}",
+   "keywords": [
+    "css",
+    "minify",
+    "compress",
+    "shrink",
+    "production"
+   ],
+   "lede": "Safe textual minification — no property reordering or selector merging.",
+   "footnote": "",
+   "inputLabel": "CSS",
+   "outputLabel": "Minified",
+   "sample": "/* card styles */\n.card {\n    background: #ffffff;\n    border-radius: 8px;\n    padding: 0px;\n}\n",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "html-validator",
+   "name": "HTML Checker",
+   "description": "Find unclosed tags, mismatched nesting, duplicate ids and accessibility gaps.",
+   "category": "web",
+   "icon": "<✓>",
+   "keywords": [
+    "html",
+    "validate",
+    "check",
+    "lint",
+    "unclosed",
+    "nesting",
+    "accessibility"
+   ],
+   "lede": "A structural check that runs entirely in your browser.",
+   "footnote": "This checks document structure, duplicate ids and a few common accessibility mistakes. It is not a full W3C conformance validator — it does not check every attribute against the HTML specification.",
+   "inputLabel": "HTML",
+   "outputLabel": "Report",
+   "sample": "<div id=\"main\">\n  <p>First paragraph\n  <img src=\"a.png\">\n  <a href=\"x\" target=\"_blank\">link</a>\n  <span id=\"main\">duplicate id</span>\n</div>\n</section>",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "html-decoder",
+   "name": "HTML Decoder",
+   "description": "Turn HTML entities back into the characters they represent.",
+   "category": "web",
+   "icon": "#&",
+   "keywords": [
+    "html",
+    "entity",
+    "decode",
+    "unescape"
+   ],
+   "lede": "Understands named entities (&amp;), decimal (&#38;) and hexadecimal (&#x26;).",
+   "footnote": "",
+   "inputLabel": "Encoded HTML",
+   "outputLabel": "Decoded",
+   "sample": "&lt;p&gt;Caf&#233; &amp; cr&#xE8;me &mdash; 5 &lt; 10&lt;/p&gt;",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "html-encoder",
+   "name": "HTML Encoder",
+   "description": "Convert characters into HTML entities, including non-ASCII.",
+   "category": "web",
+   "icon": "&#",
+   "keywords": [
+    "html",
+    "entity",
+    "encode",
+    "ampersand",
+    "special characters"
+   ],
+   "lede": "Encodes every character that has an entity form. Use HTML Escape instead if you only need the XSS-relevant five.",
+   "footnote": "",
+   "inputLabel": "Text",
+   "outputLabel": "Encoded",
+   "sample": "<p>Café & crème — 5 < 10</p>",
+   "options": [
+    {
+     "id": "named",
+     "label": "Prefer named entities (&amp; over &#38;)",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "nonAscii",
+     "label": "Encode non-ASCII characters too",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "html-escape",
+   "name": "HTML Escape",
+   "description": "Escape the five characters that matter for injection safety.",
+   "category": "web",
+   "icon": "&!",
+   "keywords": [
+    "html",
+    "escape",
+    "xss",
+    "sanitize",
+    "inject",
+    "security"
+   ],
+   "lede": "Escapes & < > \" and ' — the set you need when interpolating untrusted text into markup.",
+   "footnote": "Escaping is context-sensitive. This is correct for text nodes and quoted attribute values, but <strong>not</strong> sufficient inside &lt;script&gt;, style blocks, or unquoted attributes. Prefer your framework's built-in escaping where possible.",
+   "inputLabel": "Text",
+   "outputLabel": "Escaped",
+   "sample": "<script>alert(\"xss\")</script>",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "html-formatter",
+   "name": "HTML Formatter",
+   "description": "Beautify HTML with consistent indentation and readable line breaks.",
+   "category": "web",
+   "icon": "<>",
+   "keywords": [
+    "html",
+    "format",
+    "beautify",
+    "pretty",
+    "indent"
+   ],
+   "lede": "Re-indents HTML so nesting is obvious. Content of <pre> and <textarea> is preserved.",
+   "footnote": "",
+   "inputLabel": "HTML",
+   "outputLabel": "Formatted",
+   "sample": "<div class=\"card\"><h2>Title</h2><p>Some <b>bold</b> text.</p><ul><li>one</li><li>two</li></ul></div>",
+   "options": [
+    {
+     "id": "indent",
+     "label": "Indent size",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "wrap",
+     "label": "Wrap at column (0 = never)",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "html-minifier",
+   "name": "HTML Minifier",
+   "description": "Strip comments and redundant whitespace to shrink HTML for production.",
+   "category": "web",
+   "icon": "<·>",
+   "keywords": [
+    "html",
+    "minify",
+    "compress",
+    "shrink",
+    "production"
+   ],
+   "lede": "Collapses whitespace between tags. Script, style, pre and textarea contents are left untouched.",
+   "footnote": "",
+   "inputLabel": "HTML",
+   "outputLabel": "Minified",
+   "sample": "<!-- a comment -->\n<div class=\"card\">\n    <h2>Title</h2>\n    <p>Some   text.</p>\n</div>",
+   "options": [
+    {
+     "id": "comments",
+     "label": "Remove comments",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "html-stripper",
+   "name": "HTML Stripper",
+   "description": "Extract the plain text content from HTML markup.",
+   "category": "web",
+   "icon": "<⌫",
+   "keywords": [
+    "html",
+    "strip",
+    "tags",
+    "plain text",
+    "extract",
+    "remove"
+   ],
+   "lede": "Parses the markup and returns just the readable text.",
+   "footnote": "",
+   "inputLabel": "HTML",
+   "outputLabel": "Plain text",
+   "sample": "<article><h1>Title</h1><p>Hello <b>world</b>, this is <a href=\"#\">a link</a>.</p><script>ignored()</script></article>",
+   "options": [
+    {
+     "id": "keepBreaks",
+     "label": "Keep block-level line breaks",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "keepLinks",
+     "label": "Append link URLs",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "html-to-markdown",
+   "name": "HTML to Markdown",
+   "description": "Convert HTML markup into clean Markdown.",
+   "category": "web",
+   "icon": "M↑",
+   "keywords": [
+    "html",
+    "markdown",
+    "md",
+    "convert",
+    "turndown"
+   ],
+   "lede": "Headings, lists, links, tables, code blocks and emphasis are all mapped across.",
+   "footnote": "",
+   "inputLabel": "HTML",
+   "outputLabel": "Markdown",
+   "sample": "<h1>Release notes</h1>\n<p>Shipped <strong>three</strong> things:</p>\n<ul><li>Parquet viewer</li><li>Service Bus tools</li></ul>\n<pre><code>const answer = 42;</code></pre>",
+   "options": [
+    {
+     "id": "headingStyle",
+     "label": "Heading style",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "# ATX",
+      "Underlined (setext)"
+     ]
+    },
+    {
+     "id": "bulletMarker",
+     "label": "Bullet marker",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "- dash",
+      "* asterisk",
+      "+ plus"
+     ]
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "html-unescape",
+   "name": "HTML Unescape",
+   "description": "Reverse HTML escaping back to the original characters.",
+   "category": "web",
+   "icon": "!&",
+   "keywords": [
+    "html",
+    "unescape",
+    "decode",
+    "entity"
+   ],
+   "lede": "The inverse of HTML Escape.",
+   "footnote": "",
+   "inputLabel": "Escaped text",
+   "outputLabel": "Unescaped",
+   "sample": "&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "js-beautifier",
+   "name": "JavaScript Beautifier",
+   "description": "Format JavaScript and TypeScript with consistent indentation.",
+   "category": "web",
+   "icon": "JS",
+   "keywords": [
+    "javascript",
+    "format",
+    "beautify",
+    "pretty",
+    "indent",
+    "js",
+    "typescript"
+   ],
+   "lede": "Readable formatting for minified or badly indented source.",
+   "footnote": "",
+   "inputLabel": "JavaScript",
+   "outputLabel": "Formatted",
+   "sample": "function greet(name){if(!name){return\"hello\"}else{return\"hello \"+name}}const xs=[1,2,3].map(n=>n*2);",
+   "options": [
+    {
+     "id": "indent",
+     "label": "Indent size",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "braceStyle",
+     "label": "Brace style",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Collapse (K&R)",
+      "Expand (Allman)",
+      "Preserve inline"
+     ]
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "js-escape",
+   "name": "JavaScript Escape",
+   "description": "Escape a string so it can be embedded in JavaScript source.",
+   "category": "web",
+   "icon": "JS\\",
+   "keywords": [
+    "javascript",
+    "escape",
+    "string",
+    "quote",
+    "literal"
+   ],
+   "lede": "Escapes quotes, backslashes, newlines and control characters.",
+   "footnote": "",
+   "inputLabel": "Text",
+   "outputLabel": "Escaped",
+   "sample": "Line one\nHe said \"hi\" — it's fine\tdone",
+   "options": [
+    {
+     "id": "quote",
+     "label": "Quote style",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "No wrapping quotes",
+      "Single quotes '…'",
+      "Double quotes \"…\"",
+      "Template literal `…`"
+     ]
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "js-minifier",
+   "name": "JavaScript Minifier",
+   "description": "Minify JavaScript with Terser — mangling, dead-code removal and compression.",
+   "category": "web",
+   "icon": "JS·",
+   "keywords": [
+    "javascript",
+    "minify",
+    "compress",
+    "terser",
+    "uglify",
+    "production"
+   ],
+   "lede": "Real minification via Terser, running locally in your browser.",
+   "footnote": "",
+   "inputLabel": "JavaScript",
+   "outputLabel": "Minified",
+   "sample": "function addNumbers(first, second) {\n    // add them together\n    const result = first + second;\n    return result;\n}\nconsole.log(addNumbers(1, 2));",
+   "options": [
+    {
+     "id": "mangle",
+     "label": "Mangle variable names",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "compress",
+     "label": "Compress / drop dead code",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "module",
+     "label": "Treat as ES module",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "js-unescape",
+   "name": "JavaScript Unescape",
+   "description": "Turn an escaped JavaScript string literal back into raw text.",
+   "category": "web",
+   "icon": "\\JS",
+   "keywords": [
+    "javascript",
+    "unescape",
+    "string",
+    "decode",
+    "literal"
+   ],
+   "lede": "Resolves \\n, \\t, \\uXXXX, \\xNN and escaped quotes.",
+   "footnote": "",
+   "inputLabel": "Escaped string",
+   "outputLabel": "Raw text",
+   "sample": "Line one\\nHe said \\\"hi\\\" \\u2014 it\\u2019s fine\\tdone",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "markdown-viewer",
+   "name": "Markdown Reader",
+   "description": "Open a .md file and read it rendered — tables, task lists, anchors and Mermaid diagrams.",
+   "category": "web",
+   "icon": "M↓",
+   "keywords": [
+    "markdown",
+    "md",
+    "reader",
+    "viewer",
+    "render",
+    "preview",
+    "readme",
+    "file",
+    "mermaid",
+    "toc",
+    "table of contents",
+    "gfm",
+    "github",
+    "docs",
+    "open",
+    "print",
+    "pdf"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": false,
+   "bespoke": true
+  },
+  {
+   "id": "markdown-to-html",
+   "name": "Markdown to HTML",
+   "description": "Render CommonMark and GitHub-flavoured Markdown as HTML.",
+   "category": "web",
+   "icon": "M↓",
+   "keywords": [
+    "markdown",
+    "md",
+    "html",
+    "convert",
+    "render",
+    "commonmark",
+    "gfm"
+   ],
+   "lede": "Tables, task lists, fenced code and autolinks are all supported.",
+   "footnote": "",
+   "inputLabel": "Markdown",
+   "outputLabel": "HTML",
+   "sample": "# Release notes\n\nShipped **three** things:\n\n- [x] Parquet viewer\n- [x] Service Bus tools\n- [ ] Docs\n\n| Tool | Status |\n| ---- | ------ |\n| Hashes | done |\n\n```js\nconst answer = 42;\n```\n",
+   "options": [
+    {
+     "id": "breaks",
+     "label": "Treat single newlines as <br>",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "json-escape",
+   "name": "JSON Escape",
+   "description": "Escape text so it can be used as a JSON string value.",
+   "category": "json",
+   "icon": "{\\}",
+   "keywords": [
+    "json",
+    "escape",
+    "string",
+    "quote"
+   ],
+   "lede": "Escapes quotes, backslashes and control characters.",
+   "footnote": "",
+   "inputLabel": "Text",
+   "outputLabel": "JSON string",
+   "sample": "He said \"hi\"\nSecond line\tTabbed",
+   "options": [
+    {
+     "id": "quotes",
+     "label": "Include surrounding quotes",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "json-formatter",
+   "name": "JSON Formatter & Beautifier",
+   "description": "Format, beautify, validate and inspect JSON.",
+   "category": "json",
+   "icon": "{ }",
+   "keywords": [
+    "json",
+    "format",
+    "formatter",
+    "beautify",
+    "beautifier",
+    "prettify",
+    "pretty print",
+    "validate",
+    "indent",
+    "tree",
+    "unminify",
+    "expand",
+    "sort keys"
+   ],
+   "lede": "Reformats JSON and points at the exact line if it will not parse.",
+   "footnote": "",
+   "inputLabel": "JSON",
+   "outputLabel": "Formatted",
+   "sample": "{\n  \"id\": 42,\n  \"name\": \"Ada Lovelace\",\n  \"active\": true,\n  \"tags\": [\"math\", \"computing\"],\n  \"address\": { \"city\": \"London\", \"postcode\": \"W1\" }\n}",
+   "options": [
+    {
+     "id": "indent",
+     "label": "Indent",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "2 spaces",
+      "4 spaces",
+      "Tab",
+      "Minified"
+     ]
+    },
+    {
+     "id": "sortKeys",
+     "label": "Sort keys alphabetically",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "json-minifier",
+   "name": "JSON Minifier",
+   "description": "Strip all whitespace from JSON to make it as small as possible.",
+   "category": "json",
+   "icon": "{·}",
+   "keywords": [
+    "json",
+    "minify",
+    "compress",
+    "compact",
+    "shrink"
+   ],
+   "lede": "Parses then re-serialises with no spacing, which also validates the input.",
+   "footnote": "",
+   "inputLabel": "JSON",
+   "outputLabel": "Minified",
+   "sample": "{\n  \"id\": 42,\n  \"name\": \"Ada Lovelace\",\n  \"active\": true,\n  \"tags\": [\"math\", \"computing\"],\n  \"address\": { \"city\": \"London\", \"postcode\": \"W1\" }\n}",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "json-to-php",
+   "name": "JSON to PHP Array",
+   "description": "Convert JSON into a PHP array literal.",
+   "category": "json",
+   "icon": "J→P",
+   "keywords": [
+    "json",
+    "php",
+    "array",
+    "convert",
+    "export"
+   ],
+   "lede": "Emits modern short-array syntax with single-quoted strings.",
+   "footnote": "",
+   "inputLabel": "JSON",
+   "outputLabel": "PHP",
+   "sample": "{\n  \"id\": 42,\n  \"name\": \"Ada Lovelace\",\n  \"active\": true,\n  \"tags\": [\"math\", \"computing\"],\n  \"address\": { \"city\": \"London\", \"postcode\": \"W1\" }\n}",
+   "options": [
+    {
+     "id": "indent",
+     "label": "Indent",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "assign",
+     "label": "Wrap in <?php return ...;",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "json-to-xml",
+   "name": "JSON to XML",
+   "description": "Convert JSON into an XML document.",
+   "category": "json",
+   "icon": "J→X",
+   "keywords": [
+    "json",
+    "xml",
+    "convert",
+    "transform"
+   ],
+   "lede": "Keys starting with @ become attributes; #text becomes element content.",
+   "footnote": "",
+   "inputLabel": "JSON",
+   "outputLabel": "XML",
+   "sample": "{\n  \"catalog\": {\n    \"book\": [\n      { \"@id\": \"1\", \"title\": \"XML Guide\", \"price\": 29.99 },\n      { \"@id\": \"2\", \"title\": \"More XML\", \"price\": 35.0 }\n    ]\n  }\n}",
+   "options": [
+    {
+     "id": "indent",
+     "label": "Indent size",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "declaration",
+     "label": "Include <?xml ... ?> declaration",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "rootName",
+     "label": "Root name (used when JSON has several top-level keys)",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "json-to-yaml",
+   "name": "JSON to YAML",
+   "description": "Convert JSON into readable YAML.",
+   "category": "json",
+   "icon": "J→Y",
+   "keywords": [
+    "json",
+    "yaml",
+    "yml",
+    "convert",
+    "transform"
+   ],
+   "lede": "Handy for turning API responses into Kubernetes or CI configuration.",
+   "footnote": "",
+   "inputLabel": "JSON",
+   "outputLabel": "YAML",
+   "sample": "{\n  \"id\": 42,\n  \"name\": \"Ada Lovelace\",\n  \"active\": true,\n  \"tags\": [\"math\", \"computing\"],\n  \"address\": { \"city\": \"London\", \"postcode\": \"W1\" }\n}",
+   "options": [
+    {
+     "id": "indent",
+     "label": "Indent",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "quoteStrings",
+     "label": "Always quote strings",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "flowLevel",
+     "label": "Inline from depth (-1 = never)",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "json-unescape",
+   "name": "JSON Unescape",
+   "description": "Turn an escaped JSON string back into raw text.",
+   "category": "json",
+   "icon": "{/}",
+   "keywords": [
+    "json",
+    "unescape",
+    "decode",
+    "string"
+   ],
+   "lede": "Also useful for reading a JSON document that has been embedded inside another JSON string.",
+   "footnote": "",
+   "inputLabel": "Escaped string",
+   "outputLabel": "Raw text",
+   "sample": "{\\\"name\\\":\\\"test\\\",\\\"line\\\":\\\"one\\\\ntwo\\\"}",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "json-validator",
+   "name": "JSON Validator",
+   "description": "Check JSON for syntax errors and get the exact line and column.",
+   "category": "json",
+   "icon": "{✓}",
+   "keywords": [
+    "json",
+    "validate",
+    "check",
+    "syntax",
+    "error",
+    "lint"
+   ],
+   "lede": "Reports the first syntax error with its position, plus a structure summary when valid.",
+   "footnote": "",
+   "inputLabel": "JSON",
+   "outputLabel": "Result",
+   "sample": "{\n  \"name\": \"test\",\n  \"values\": [1, 2, 3,],\n  \"ok\": true\n}",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "php-to-json",
+   "name": "PHP Array to JSON",
+   "description": "Convert PHP array syntax into JSON.",
+   "category": "json",
+   "icon": "P→J",
+   "keywords": [
+    "php",
+    "array",
+    "json",
+    "convert",
+    "var_export"
+   ],
+   "lede": "Understands both array(...) and short [...] syntax, with comments and trailing commas.",
+   "footnote": "",
+   "inputLabel": "PHP array",
+   "outputLabel": "JSON",
+   "sample": "<?php\nreturn [\n    'name' => 'my-service',\n    'replicas' => 3,\n    'enabled' => true,\n    'ports' => [8080, 8443],\n    'limits' => array('cpu' => '500m', 'memory' => '512Mi'),\n];",
+   "options": [
+    {
+     "id": "indent",
+     "label": "Indent",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "xml-escape",
+   "name": "XML Escape",
+   "description": "Escape the five predefined XML entities.",
+   "category": "json",
+   "icon": "<&",
+   "keywords": [
+    "xml",
+    "escape",
+    "entity",
+    "encode"
+   ],
+   "lede": "Escapes & < > \" and ' — the only entities XML predefines.",
+   "footnote": "",
+   "inputLabel": "Text",
+   "outputLabel": "Escaped",
+   "sample": "Tom & Jerry — \"5 < 10\" said O'Brien",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "xml-formatter",
+   "name": "XML Formatter",
+   "description": "Pretty-print XML with proper indentation and validate it as you go.",
+   "category": "json",
+   "icon": "</>",
+   "keywords": [
+    "xml",
+    "format",
+    "beautify",
+    "pretty",
+    "indent"
+   ],
+   "lede": "Uses the browser XML parser, so malformed documents are reported rather than silently mangled.",
+   "footnote": "",
+   "inputLabel": "XML",
+   "outputLabel": "Formatted",
+   "sample": "<?xml version=\"1.0\"?><catalog><book id=\"1\"><title>XML Guide</title><price currency=\"GBP\">29.99</price></book><book id=\"2\"><title>More XML</title><price currency=\"GBP\">35.00</price></book></catalog>",
+   "options": [
+    {
+     "id": "indent",
+     "label": "Indent size",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "xml-minifier",
+   "name": "XML Minifier",
+   "description": "Remove whitespace between XML elements to shrink the document.",
+   "category": "json",
+   "icon": "<·>",
+   "keywords": [
+    "xml",
+    "minify",
+    "compress",
+    "compact"
+   ],
+   "lede": "Validates first, then strips inter-element whitespace and comments.",
+   "footnote": "",
+   "inputLabel": "XML",
+   "outputLabel": "Minified",
+   "sample": "<?xml version=\"1.0\"?>\n<catalog>\n    <!-- books -->\n    <book id=\"1\">\n        <title>XML Guide</title>\n    </book>\n</catalog>",
+   "options": [
+    {
+     "id": "comments",
+     "label": "Remove comments",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "xml-to-json",
+   "name": "XML to JSON",
+   "description": "Convert an XML document into equivalent JSON.",
+   "category": "json",
+   "icon": "X→J",
+   "keywords": [
+    "xml",
+    "json",
+    "convert",
+    "transform"
+   ],
+   "lede": "Attributes become @-prefixed keys and repeated elements collapse into arrays.",
+   "footnote": "",
+   "inputLabel": "XML",
+   "outputLabel": "JSON",
+   "sample": "<catalog>\n  <book id=\"1\" lang=\"en\">\n    <title>XML Guide</title>\n    <price>29.99</price>\n  </book>\n  <book id=\"2\" lang=\"en\">\n    <title>More XML</title>\n    <price>35.00</price>\n  </book>\n</catalog>",
+   "options": [
+    {
+     "id": "coerce",
+     "label": "Convert numbers and booleans",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "attrPrefix",
+     "label": "Attribute prefix",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "textKey",
+     "label": "Text content key",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "indent",
+     "label": "Indent",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "xml-unescape",
+   "name": "XML Unescape",
+   "description": "Decode XML entities back into plain characters.",
+   "category": "json",
+   "icon": "&>",
+   "keywords": [
+    "xml",
+    "unescape",
+    "entity",
+    "decode"
+   ],
+   "lede": "Handles the five predefined entities plus numeric character references.",
+   "footnote": "",
+   "inputLabel": "Escaped XML",
+   "outputLabel": "Text",
+   "sample": "Tom &amp; Jerry &#8212; &quot;5 &lt; 10&quot; said O&apos;Brien",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "xml-validator",
+   "name": "XML Validator",
+   "description": "Check XML for well-formedness and get the exact error location.",
+   "category": "json",
+   "icon": "<✓>",
+   "keywords": [
+    "xml",
+    "validate",
+    "check",
+    "wellformed",
+    "syntax",
+    "error"
+   ],
+   "lede": "Well-formedness checking via the browser XML parser.",
+   "footnote": "This checks well-formedness (tags balanced, one root, valid characters). It does not validate against a DTD or XSD schema.",
+   "inputLabel": "XML",
+   "outputLabel": "Result",
+   "sample": "<catalog>\n  <book id=\"1\">\n    <title>Unclosed\n  </book>\n</catalog>",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "yaml-to-json",
+   "name": "YAML to JSON",
+   "description": "Convert YAML into JSON, including multi-document files.",
+   "category": "json",
+   "icon": "Y→J",
+   "keywords": [
+    "yaml",
+    "yml",
+    "json",
+    "convert",
+    "transform"
+   ],
+   "lede": "Anchors and aliases are resolved. Multi-document YAML becomes a JSON array.",
+   "footnote": "",
+   "inputLabel": "YAML",
+   "outputLabel": "JSON",
+   "sample": "name: my-service\nreplicas: 3\nenabled: true\nports:\n  - 8080\n  - 8443\nresources:\n  limits:\n    cpu: 500m\n    memory: 512Mi",
+   "options": [
+    {
+     "id": "indent",
+     "label": "Indent",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "yaml-validator",
+   "name": "YAML Validator",
+   "description": "Check YAML syntax and report the failing line.",
+   "category": "json",
+   "icon": "Y✓",
+   "keywords": [
+    "yaml",
+    "yml",
+    "validate",
+    "check",
+    "syntax",
+    "lint",
+    "error"
+   ],
+   "lede": "YAML is whitespace-sensitive and easy to get wrong — this pinpoints where.",
+   "footnote": "",
+   "inputLabel": "YAML",
+   "outputLabel": "Result",
+   "sample": "name: test\nlist:\n  - one\n   - two\nbad: [unclosed",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "csv-to-excel",
+   "name": "CSV to Excel",
+   "description": "Convert CSV data into a downloadable .xlsx workbook.",
+   "category": "data",
+   "icon": "XLS",
+   "keywords": [
+    "csv",
+    "excel",
+    "xlsx",
+    "spreadsheet",
+    "convert",
+    "workbook",
+    "export"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": false,
+   "bespoke": true
+  },
+  {
+   "id": "csv-to-json",
+   "name": "CSV to JSON",
+   "description": "Convert CSV or TSV into JSON, with automatic delimiter detection.",
+   "category": "data",
+   "icon": "C→J",
+   "keywords": [
+    "csv",
+    "tsv",
+    "json",
+    "convert",
+    "transform",
+    "delimiter"
+   ],
+   "lede": "Quoted fields, embedded newlines and doubled quotes are handled correctly.",
+   "footnote": "",
+   "inputLabel": "CSV",
+   "outputLabel": "JSON",
+   "sample": "name,age,city,active\nAda Lovelace,36,London,true\n\"Smith, John\",42,\"New York\",false\nGrace Hopper,85,Arlington,true",
+   "options": [
+    {
+     "id": "delimiter",
+     "label": "Delimiter",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Detect automatically",
+      "Comma",
+      "Semicolon",
+      "Tab",
+      "Pipe"
+     ]
+    },
+    {
+     "id": "header",
+     "label": "First row is a header",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "coerce",
+     "label": "Convert numbers and booleans",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "skipEmpty",
+     "label": "Skip blank rows",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "indent",
+     "label": "Indent",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "json-to-csv",
+   "name": "JSON to CSV",
+   "description": "Flatten a JSON array into CSV, including nested objects.",
+   "category": "data",
+   "icon": "J→C",
+   "keywords": [
+    "json",
+    "csv",
+    "convert",
+    "transform",
+    "flatten",
+    "export"
+   ],
+   "lede": "Nested objects become dotted column names so nothing is lost.",
+   "footnote": "",
+   "inputLabel": "JSON array",
+   "outputLabel": "CSV",
+   "sample": "[\n  { \"name\": \"Ada\", \"age\": 36, \"address\": { \"city\": \"London\" } },\n  { \"name\": \"Grace\", \"age\": 85, \"address\": { \"city\": \"Arlington\" } }\n]",
+   "options": [
+    {
+     "id": "delimiter",
+     "label": "Delimiter",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Comma",
+      "Semicolon",
+      "Tab",
+      "Pipe"
+     ]
+    },
+    {
+     "id": "flatten",
+     "label": "Flatten nested objects",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "header",
+     "label": "Include header row",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "parquet-viewer",
+   "name": "Parquet Viewer",
+   "description": "Open Parquet files, inspect schema and metadata, filter rows and see column statistics.",
+   "category": "data",
+   "icon": "▦",
+   "keywords": [
+    "parquet",
+    "apache parquet",
+    "columnar",
+    "data",
+    "viewer",
+    "schema",
+    "stats",
+    "statistics",
+    "row group",
+    "arrow",
+    "big data",
+    "analytics",
+    "spark",
+    "pandas"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": false,
+   "bespoke": true
+  },
+  {
+   "id": "sql-escape",
+   "name": "SQL Escape",
+   "description": "Escape a string for safe use inside a SQL literal.",
+   "category": "sql",
+   "icon": "'\\'",
+   "keywords": [
+    "sql",
+    "escape",
+    "quote",
+    "literal",
+    "injection"
+   ],
+   "lede": "Doubles single quotes, which is the portable way to write a literal quote in SQL.",
+   "footnote": "<strong>Escaping is not a substitute for parameterised queries.</strong> Use bound parameters (<code>?</code> / <code>$1</code> / <code>@name</code>) for anything that came from a user — that is the only reliable defence against SQL injection. Use this tool for hand-written literals, migrations and seed data.",
+   "inputLabel": "Text",
+   "outputLabel": "Escaped",
+   "sample": "O'Brien said \"it's fine\"",
+   "options": [
+    {
+     "id": "quotes",
+     "label": "Wrap in single quotes",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "backslash",
+     "label": "Also escape backslashes (MySQL)",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "sql-formatter",
+   "name": "SQL Formatter",
+   "description": "Format SQL for readability across many dialects.",
+   "category": "sql",
+   "icon": "SQL",
+   "keywords": [
+    "sql",
+    "format",
+    "beautify",
+    "pretty",
+    "query",
+    "indent",
+    "postgres",
+    "mysql"
+   ],
+   "lede": "Keyword casing and clause breaking tuned per dialect.",
+   "footnote": "",
+   "inputLabel": "SQL",
+   "outputLabel": "Formatted",
+   "sample": "select u.id, u.name, count(o.id) as order_count from users u left join orders o on o.user_id = u.id where u.active = true and u.created_at > '2024-01-01' group by u.id, u.name having count(o.id) > 5 order by order_count desc limit 10;",
+   "options": [
+    {
+     "id": "dialect",
+     "label": "Dialect",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Standard SQL",
+      "PostgreSQL",
+      "MySQL",
+      "SQLite",
+      "SQL Server (T-SQL)",
+      "BigQuery",
+      "Snowflake",
+      "Spark SQL"
+     ]
+    },
+    {
+     "id": "keywordCase",
+     "label": "Keyword case",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "UPPERCASE",
+      "lowercase",
+      "Preserve"
+     ]
+    },
+    {
+     "id": "indent",
+     "label": "Indent size",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "sql-minifier",
+   "name": "SQL Minifier",
+   "description": "Collapse SQL onto a single line and strip comments.",
+   "category": "sql",
+   "icon": "SQL·",
+   "keywords": [
+    "sql",
+    "minify",
+    "compress",
+    "compact",
+    "one line"
+   ],
+   "lede": "Useful for pasting a query into a config file or log line. String literals are preserved.",
+   "footnote": "",
+   "inputLabel": "SQL",
+   "outputLabel": "Minified",
+   "sample": "-- fetch active users\nSELECT\n    id,\n    name  -- display name\nFROM users\nWHERE active = true\n  AND note = 'keep -- this';",
+   "options": [
+    {
+     "id": "comments",
+     "label": "Remove comments",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "bcrypt-checker",
+   "name": "Bcrypt Checker",
+   "description": "Verify whether a password matches a bcrypt hash.",
+   "category": "crypto",
+   "icon": "🔓",
+   "keywords": [
+    "bcrypt",
+    "verify",
+    "check",
+    "compare",
+    "password",
+    "match"
+   ],
+   "lede": "Paste the hash and the candidate password to test them against each other.",
+   "footnote": "",
+   "inputLabel": "Bcrypt hash",
+   "outputLabel": "Result",
+   "sample": "$2a$10$FCNJ8d1MrJeADd4JpAHJYuATO/RpVHKeRFI1kpWux.BGMV4b9IAfK",
+   "options": [
+    {
+     "id": "password",
+     "label": "Password to test",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "bcrypt-generator",
+   "name": "Bcrypt Generator",
+   "description": "Hash a password with bcrypt at a chosen cost factor.",
+   "category": "crypto",
+   "icon": "🔒",
+   "keywords": [
+    "bcrypt",
+    "password",
+    "hash",
+    "salt",
+    "cost",
+    "rounds",
+    "blowfish"
+   ],
+   "lede": "Bcrypt is deliberately slow and salts automatically, which is what makes it suitable for passwords.",
+   "footnote": "Bcrypt silently truncates input at <strong>72 bytes</strong>. If you need to support longer passwords, pre-hash with SHA-256 first, or use argon2id instead. Hashes generated here are computed in your browser and never leave it — but do not paste a real production password into any web page, including this one.",
+   "inputLabel": "Password",
+   "outputLabel": "Bcrypt hash",
+   "sample": "correct horse battery staple",
+   "options": [
+    {
+     "id": "rounds",
+     "label": "Cost factor (rounds)",
+     "type": "number",
+     "hint": "Each +1 doubles the work. 10–12 is typical; 15 takes several seconds.",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "hash-generator",
+   "name": "Hash Generator",
+   "description": "MD5, SHA-1, SHA-2, SHA-3, Keccak and RIPEMD-160 digests of text or a file.",
+   "category": "crypto",
+   "icon": "#",
+   "keywords": [
+    "hash",
+    "checksum",
+    "digest",
+    "md5",
+    "sha1",
+    "sha-1",
+    "sha224",
+    "sha-224",
+    "sha256",
+    "sha-256",
+    "sha384",
+    "sha-384",
+    "sha512",
+    "sha-512",
+    "sha3",
+    "sha-3",
+    "keccak",
+    "ripemd",
+    "ripemd160",
+    "fingerprint",
+    "integrity",
+    "file hash"
+   ],
+   "lede": "Every algorithm is computed at once so you can compare against whichever checksum you were given. Files are hashed locally — nothing is uploaded.",
+   "footnote": "MD5 and SHA-1 are <strong>broken for security purposes</strong> — practical collision attacks exist for both. They are still fine for non-adversarial uses like cache keys, ETags and detecting accidental corruption. For signatures, certificates or password storage use SHA-256 or better (and for passwords specifically, bcrypt/argon2 rather than a raw hash).",
+   "inputLabel": "Text (or use the File button)",
+   "outputLabel": "Digests",
+   "sample": "The quick brown fox jumps over the lazy dog",
+   "options": [
+    {
+     "id": "encoding",
+     "label": "Output encoding",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Hex (lowercase)",
+      "HEX (uppercase)",
+      "Base64",
+      "Base64 URL-safe"
+     ]
+    },
+    {
+     "id": "compare",
+     "label": "Compare against (optional)",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "hmac-generator",
+   "name": "HMAC Generator",
+   "description": "Keyed-hash message authentication codes over any supported digest.",
+   "category": "crypto",
+   "icon": "#🔑",
+   "keywords": [
+    "hmac",
+    "mac",
+    "signature",
+    "sign",
+    "key",
+    "authentication",
+    "webhook",
+    "hmac-md5",
+    "hmac-sha1",
+    "hmac-sha256",
+    "hmac-sha512",
+    "hmac-sha3"
+   ],
+   "lede": "RFC 2104 HMAC. Handy for verifying webhook signatures from Stripe, GitHub, Slack and friends.",
+   "footnote": "When you verify a signature in production code, compare with a <strong>constant-time</strong> equality function (<code>crypto.timingSafeEqual</code>, <code>hmac.compare_digest</code>) rather than <code>===</code>, so an attacker cannot learn the correct value from response timing.",
+   "inputLabel": "Message",
+   "outputLabel": "HMAC",
+   "sample": "The quick brown fox jumps over the lazy dog",
+   "options": [
+    {
+     "id": "algorithm",
+     "label": "Algorithm",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "MD5",
+      "SHA-1",
+      "SHA-224",
+      "SHA-256",
+      "SHA-384",
+      "SHA-512",
+      "SHA3-224",
+      "SHA3-256",
+      "SHA3-384",
+      "SHA3-512",
+      "RIPEMD-160"
+     ]
+    },
+    {
+     "id": "key",
+     "label": "Secret key",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "keyEncoding",
+     "label": "Key is",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Plain text (UTF-8)",
+      "Hexadecimal",
+      "Base64"
+     ]
+    },
+    {
+     "id": "encoding",
+     "label": "Output encoding",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Hex (lowercase)",
+      "HEX (uppercase)",
+      "Base64",
+      "Base64 URL-safe"
+     ]
+    },
+    {
+     "id": "compare",
+     "label": "Compare against (optional)",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "jwt-decoder",
+   "name": "JWT Decoder",
+   "description": "Decode a JSON Web Token and verify its HMAC signature.",
+   "category": "crypto",
+   "icon": "JWT",
+   "keywords": [
+    "jwt",
+    "json web token",
+    "decode",
+    "bearer",
+    "claims",
+    "oauth",
+    "oidc",
+    "verify",
+    "signature"
+   ],
+   "lede": "Splits the token, decodes the header and claims, renders the timestamps and — with a secret — checks the signature.",
+   "footnote": "Decoding a JWT does <strong>not</strong> authenticate it — anyone can read and rewrite the claims. Only a verified signature makes a token trustworthy, and the server must pin the expected algorithm rather than trusting the token's own <code>alg</code> field.",
+   "inputLabel": "JWT",
+   "outputLabel": "Decoded",
+   "sample": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+   "options": [
+    {
+     "id": "secret",
+     "label": "Secret (optional — to verify HS256/384/512)",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "secretEncoding",
+     "label": "Secret is",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Plain text (UTF-8)",
+      "Hexadecimal",
+      "Base64"
+     ]
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "base32-decoder",
+   "name": "Base32 Decoder",
+   "description": "Decode Base32 back into readable text.",
+   "category": "encoding",
+   "icon": "b32→",
+   "keywords": [
+    "base32",
+    "decode",
+    "decoder",
+    "text",
+    "convert"
+   ],
+   "lede": "Decodes Base32 to bytes, then interprets those bytes as UTF-8 text.",
+   "footnote": "",
+   "inputLabel": "Base32",
+   "outputLabel": "Text",
+   "sample": "JBSWY3DPFQQHO33SNRSCC===",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "base32-encoder",
+   "name": "Base32 Encoder",
+   "description": "Encode text or a file into Base32.",
+   "category": "encoding",
+   "icon": "b32",
+   "keywords": [
+    "base32",
+    "encode",
+    "encoder",
+    "text",
+    "convert"
+   ],
+   "lede": "UTF-8 encodes the text, then renders the bytes as Base32. RFC 4648 Base32 uses A–Z and 2–7 only, so it survives case-insensitive systems like DNS and TOTP secrets.",
+   "footnote": "",
+   "inputLabel": "Text",
+   "outputLabel": "Base32",
+   "sample": "Hello, world!",
+   "options": [
+    {
+     "id": "pad",
+     "label": "Include = padding",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "base32-to-hex",
+   "name": "Base32 to HEX",
+   "description": "Convert Base32 directly into hexadecimal.",
+   "category": "encoding",
+   "icon": "b32x",
+   "keywords": [
+    "base32",
+    "hex",
+    "hexadecimal",
+    "convert"
+   ],
+   "lede": "Decodes Base32 to raw bytes and re-renders them as hex — no text interpretation in between.",
+   "footnote": "",
+   "inputLabel": "Base32",
+   "outputLabel": "Hexadecimal",
+   "sample": "JBSWY3DPFQQHO33SNRSCC===",
+   "options": [
+    {
+     "id": "separator",
+     "label": "Separator",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "None",
+      "Space",
+      "Colon"
+     ]
+    },
+    {
+     "id": "upper",
+     "label": "Uppercase",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "base58-decoder",
+   "name": "Base58 Decoder",
+   "description": "Decode Base58 back into readable text.",
+   "category": "encoding",
+   "icon": "b58→",
+   "keywords": [
+    "base58",
+    "decode",
+    "decoder",
+    "text",
+    "convert"
+   ],
+   "lede": "Decodes Base58 to bytes, then interprets those bytes as UTF-8 text.",
+   "footnote": "",
+   "inputLabel": "Base58",
+   "outputLabel": "Text",
+   "sample": "72k1xXWG59wUsYv7h2",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "base58-encoder",
+   "name": "Base58 Encoder",
+   "description": "Encode text or a file into Base58.",
+   "category": "encoding",
+   "icon": "b58",
+   "keywords": [
+    "base58",
+    "encode",
+    "encoder",
+    "text",
+    "convert"
+   ],
+   "lede": "UTF-8 encodes the text, then renders the bytes as Base58. Bitcoin-style Base58 omits 0, O, I and l to avoid visual ambiguity. There is no padding.",
+   "footnote": "",
+   "inputLabel": "Text",
+   "outputLabel": "Base58",
+   "sample": "Hello, world!",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "base58-to-hex",
+   "name": "Base58 to HEX",
+   "description": "Convert Base58 directly into hexadecimal.",
+   "category": "encoding",
+   "icon": "b58x",
+   "keywords": [
+    "base58",
+    "hex",
+    "hexadecimal",
+    "convert"
+   ],
+   "lede": "Decodes Base58 to raw bytes and re-renders them as hex — no text interpretation in between.",
+   "footnote": "",
+   "inputLabel": "Base58",
+   "outputLabel": "Hexadecimal",
+   "sample": "72k1xXWG59wUsYv7h2",
+   "options": [
+    {
+     "id": "separator",
+     "label": "Separator",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "None",
+      "Space",
+      "Colon"
+     ]
+    },
+    {
+     "id": "upper",
+     "label": "Uppercase",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "base64-decoder",
+   "name": "Base64 Decoder",
+   "description": "Decode Base64 back into readable text.",
+   "category": "encoding",
+   "icon": "b64→",
+   "keywords": [
+    "base64",
+    "decode",
+    "decoder",
+    "text",
+    "convert"
+   ],
+   "lede": "Decodes Base64 to bytes, then interprets those bytes as UTF-8 text.",
+   "footnote": "",
+   "inputLabel": "Base64",
+   "outputLabel": "Text",
+   "sample": "SGVsbG8sIHdvcmxkIQ==",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "base64-encoder",
+   "name": "Base64 Encoder",
+   "description": "Encode text or a file into Base64.",
+   "category": "encoding",
+   "icon": "b64",
+   "keywords": [
+    "base64",
+    "encode",
+    "encoder",
+    "text",
+    "convert"
+   ],
+   "lede": "UTF-8 encodes the text, then renders the bytes as Base64. Base64 packs 3 bytes into 4 characters, so output is about 33% larger than the input.",
+   "footnote": "",
+   "inputLabel": "Text",
+   "outputLabel": "Base64",
+   "sample": "Hello, world!",
+   "options": [
+    {
+     "id": "urlSafe",
+     "label": "URL-safe alphabet (- and _)",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "pad",
+     "label": "Include = padding",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "base64-to-file",
+   "name": "Base64 to File",
+   "description": "Decode a Base64 string or data URI back into a downloadable file.",
+   "category": "encoding",
+   "icon": "📥",
+   "keywords": [
+    "base64",
+    "decode",
+    "file",
+    "download",
+    "data uri",
+    "image"
+   ],
+   "lede": "Paste Base64 or a full data: URI. Images are previewed; anything else can be saved straight to disk.",
+   "footnote": "",
+   "inputLabel": "Base64 or data URI",
+   "outputLabel": "Details",
+   "sample": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "base64-to-hex",
+   "name": "Base64 to HEX",
+   "description": "Convert Base64 directly into hexadecimal.",
+   "category": "encoding",
+   "icon": "b64x",
+   "keywords": [
+    "base64",
+    "hex",
+    "hexadecimal",
+    "convert"
+   ],
+   "lede": "Decodes Base64 to raw bytes and re-renders them as hex — no text interpretation in between.",
+   "footnote": "",
+   "inputLabel": "Base64",
+   "outputLabel": "Hexadecimal",
+   "sample": "SGVsbG8sIHdvcmxkIQ==",
+   "options": [
+    {
+     "id": "separator",
+     "label": "Separator",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "None",
+      "Space",
+      "Colon"
+     ]
+    },
+    {
+     "id": "upper",
+     "label": "Uppercase",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "base64-file",
+   "name": "File to Base64",
+   "description": "Encode any file as a Base64 string or a ready-to-use data URI.",
+   "category": "encoding",
+   "icon": "📄",
+   "keywords": [
+    "base64",
+    "file",
+    "data uri",
+    "encode",
+    "upload",
+    "binary",
+    "image"
+   ],
+   "lede": "Pick a file with the File button. Everything stays in your browser — nothing is uploaded.",
+   "footnote": "",
+   "inputLabel": "File",
+   "outputLabel": "Base64",
+   "sample": "",
+   "options": [
+    {
+     "id": "dataUri",
+     "label": "Wrap as data: URI",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "wrap",
+     "label": "Wrap at column (0 = one line)",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "hex-to-base32",
+   "name": "HEX to Base32",
+   "description": "Convert hexadecimal bytes into Base32.",
+   "category": "encoding",
+   "icon": "xb32",
+   "keywords": [
+    "hex",
+    "hexadecimal",
+    "base32",
+    "convert"
+   ],
+   "lede": "Parses hex into raw bytes and encodes them as Base32. Separators and 0x prefixes are tolerated.",
+   "footnote": "",
+   "inputLabel": "Hexadecimal",
+   "outputLabel": "Base32",
+   "sample": "48 65 6c 6c 6f 2c 20 77 6f 72 6c 64 21",
+   "options": [
+    {
+     "id": "pad",
+     "label": "Include = padding",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "hex-to-base58",
+   "name": "HEX to Base58",
+   "description": "Convert hexadecimal bytes into Base58.",
+   "category": "encoding",
+   "icon": "xb58",
+   "keywords": [
+    "hex",
+    "hexadecimal",
+    "base58",
+    "convert"
+   ],
+   "lede": "Parses hex into raw bytes and encodes them as Base58. Separators and 0x prefixes are tolerated.",
+   "footnote": "",
+   "inputLabel": "Hexadecimal",
+   "outputLabel": "Base58",
+   "sample": "48 65 6c 6c 6f 2c 20 77 6f 72 6c 64 21",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "hex-to-base64",
+   "name": "HEX to Base64",
+   "description": "Convert hexadecimal bytes into Base64.",
+   "category": "encoding",
+   "icon": "xb64",
+   "keywords": [
+    "hex",
+    "hexadecimal",
+    "base64",
+    "convert"
+   ],
+   "lede": "Parses hex into raw bytes and encodes them as Base64. Separators and 0x prefixes are tolerated.",
+   "footnote": "",
+   "inputLabel": "Hexadecimal",
+   "outputLabel": "Base64",
+   "sample": "48 65 6c 6c 6f 2c 20 77 6f 72 6c 64 21",
+   "options": [
+    {
+     "id": "urlSafe",
+     "label": "URL-safe alphabet (- and _)",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "pad",
+     "label": "Include = padding",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "passphrase-generator",
+   "name": "Passphrase Generator",
+   "description": "Generate memorable multi-word passphrases with real entropy figures.",
+   "category": "generators",
+   "icon": "📝",
+   "keywords": [
+    "passphrase",
+    "diceware",
+    "words",
+    "memorable",
+    "random",
+    "password",
+    "xkcd"
+   ],
+   "lede": "Diceware-style passphrases drawn from a 2,413-word list (11.24 bits per word).",
+   "footnote": "Capitalising words or appending a digit adds far less entropy than one extra word — if you want it stronger, add a word.",
+   "inputLabel": "",
+   "outputLabel": "Passphrases",
+   "sample": "",
+   "options": [
+    {
+     "id": "words",
+     "label": "Words",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "count",
+     "label": "How many",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "separator",
+     "label": "Separator",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Hyphen",
+      "Dot",
+      "Underscore",
+      "Space",
+      "None"
+     ]
+    },
+    {
+     "id": "capitalise",
+     "label": "Capitalise each word",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "number",
+     "label": "Append a digit",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "password-generator",
+   "name": "Password Generator",
+   "description": "Generate strong random passwords with a live entropy read-out.",
+   "category": "generators",
+   "icon": "🔑",
+   "keywords": [
+    "password",
+    "random",
+    "generate",
+    "secure",
+    "strong",
+    "entropy",
+    "credentials"
+   ],
+   "lede": "Generated with crypto.getRandomValues in your browser. Nothing is transmitted or stored.",
+   "footnote": "Entropy assumes an attacker knows your exact generator settings — the honest worst case. Crack times are for a <em>fast</em> hash; a password stored with bcrypt or argon2 takes far longer to attack.",
+   "inputLabel": "",
+   "outputLabel": "Passwords",
+   "sample": "",
+   "options": [
+    {
+     "id": "length",
+     "label": "Length",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "count",
+     "label": "How many",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "lower",
+     "label": "a-z",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "upper",
+     "label": "A-Z",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "digits",
+     "label": "0-9",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "symbols",
+     "label": "Symbols",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "noAmbiguous",
+     "label": "Avoid lookalikes (Il1O0)",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "everySet",
+     "label": "Require one of each set",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "pin-generator",
+   "name": "PIN Generator",
+   "description": "Generate random numeric PINs, optionally with no repeated digits.",
+   "category": "generators",
+   "icon": "#️⃣",
+   "keywords": [
+    "pin",
+    "number",
+    "numeric",
+    "random",
+    "code",
+    "otp"
+   ],
+   "lede": "Uniform random digits — not the pseudo-random Math.random most generators use.",
+   "footnote": "A numeric PIN is inherently low-entropy — a 6-digit PIN has only ~20 bits. PINs are only safe where the number of attempts is strictly rate-limited (a phone, a bank card), never as a standalone password.",
+   "inputLabel": "",
+   "outputLabel": "PINs",
+   "sample": "",
+   "options": [
+    {
+     "id": "length",
+     "label": "Digits",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "count",
+     "label": "How many",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "unique",
+     "label": "No repeated digits",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "noSequence",
+     "label": "Reject runs like 1234 and 1111",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "random-number",
+   "name": "Random Data Generator",
+   "description": "Random integers, decimals, hex bytes, colours and picks from a list.",
+   "category": "generators",
+   "icon": "🎲",
+   "keywords": [
+    "random",
+    "number",
+    "integer",
+    "dice",
+    "shuffle",
+    "pick",
+    "sample",
+    "bytes",
+    "hex",
+    "token"
+   ],
+   "lede": "Cryptographically secure random values in whatever shape you need.",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "Values",
+   "sample": "",
+   "options": [
+    {
+     "id": "kind",
+     "label": "Type",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Integers",
+      "Decimals",
+      "Hex token",
+      "Byte array",
+      "Hex colours",
+      "true / false"
+     ]
+    },
+    {
+     "id": "count",
+     "label": "How many",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "min",
+     "label": "Minimum (integers/decimals)",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "max",
+     "label": "Maximum (integers/decimals)",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "size",
+     "label": "Length in bytes (hex/bytes)",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "uuid-generator",
+   "name": "UUID Generator",
+   "description": "Generate UUID v4, time-ordered v7, or v1-style identifiers in bulk.",
+   "category": "generators",
+   "icon": "ID",
+   "keywords": [
+    "uuid",
+    "guid",
+    "unique",
+    "identifier",
+    "v4",
+    "v7",
+    "random",
+    "id",
+    "key"
+   ],
+   "lede": "v4 is fully random. v7 embeds a millisecond timestamp in the high bits, so IDs sort chronologically — much kinder to database indexes.",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "UUIDs",
+   "sample": "",
+   "options": [
+    {
+     "id": "version",
+     "label": "Version",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "v4 — random",
+      "v7 — time-ordered (recommended for keys)",
+      "Nil UUID",
+      "Max UUID"
+     ]
+    },
+    {
+     "id": "count",
+     "label": "How many",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "format",
+     "label": "Format",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Standard (8-4-4-4-12)",
+      "No hyphens",
+      "Braced {…}",
+      "URN (urn:uuid:…)"
+     ]
+    },
+    {
+     "id": "upper",
+     "label": "Uppercase",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "color-converter",
+   "name": "Colour Converter",
+   "description": "Convert between HEX, RGB, HSL, HSV and CMYK with contrast checking.",
+   "category": "image",
+   "icon": "🎨",
+   "keywords": [
+    "color",
+    "colour",
+    "hex",
+    "rgb",
+    "hsl",
+    "hsv",
+    "cmyk",
+    "convert",
+    "contrast",
+    "wcag",
+    "accessibility"
+   ],
+   "lede": "Accepts hex, rgb(), hsl() and CSS colour names. Also reports WCAG contrast against black and white.",
+   "footnote": "WCAG 2.1 requires 4.5:1 for normal body text and 3:1 for large text (18pt+, or 14pt bold). AAA raises those to 7:1 and 4.5:1.",
+   "inputLabel": "Colour",
+   "outputLabel": "Formats",
+   "sample": "#3b82f6",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "mermaid-generator",
+   "name": "Mermaid Generator",
+   "description": "Build flowcharts, sequence diagrams, ERDs and mind maps from plain lists or CSV.",
+   "category": "image",
+   "icon": "◈+",
+   "keywords": [
+    "mermaid",
+    "generate",
+    "flowchart",
+    "sequence",
+    "diagram",
+    "erd",
+    "mindmap",
+    "gantt",
+    "class",
+    "state",
+    "csv",
+    "build",
+    "create",
+    "chart",
+    "graph"
+   ],
+   "lede": "Write the structure as indented lines, arrows or CSV — get valid Mermaid you can paste into a README.",
+   "footnote": "",
+   "inputLabel": "Structure",
+   "outputLabel": "Mermaid",
+   "sample": "Request received -> Validate payload\nValidate payload -> Enrich from cache\nValidate payload -> Reject\nEnrich from cache -> Publish to Service Bus\nPublish to Service Bus -> Acknowledge",
+   "options": [
+    {
+     "id": "kind",
+     "label": "Diagram type",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Flowchart — from \"A -> B\" lines",
+      "Sequence — from \"A -> B: message\" lines",
+      "Mind map — from indented lines",
+      "Tree flowchart — from indented lines",
+      "ER diagram — from CSV columns",
+      "Pie chart — from \"label, value\" lines",
+      "User journey — from \"step: score: actor\""
+     ]
+    },
+    {
+     "id": "direction",
+     "label": "Direction (flowchart)",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Top to bottom",
+      "Left to right",
+      "Bottom to top",
+      "Right to left"
+     ]
+    },
+    {
+     "id": "shape",
+     "label": "Node shape (flowchart)",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "box",
+      "round",
+      "stadium",
+      "circle",
+      "diamond",
+      "hex"
+     ]
+    },
+    {
+     "id": "title",
+     "label": "Title (optional)",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "mermaid-validator",
+   "name": "Mermaid Validator",
+   "description": "Check a Mermaid diagram parses, and get the error line when it does not.",
+   "category": "image",
+   "icon": "◈✓",
+   "keywords": [
+    "mermaid",
+    "validate",
+    "check",
+    "syntax",
+    "error",
+    "parse",
+    "lint",
+    "diagram",
+    "ci"
+   ],
+   "lede": "Runs the real Mermaid parser. Useful before committing a diagram to a README, where a syntax error just renders as a grey box.",
+   "footnote": "",
+   "inputLabel": "Mermaid source",
+   "outputLabel": "Result",
+   "sample": "flowchart TD\n    A[Start] --> B{Valid?}\n    B -->|yes| C[Process]\n    B -->|no| D[Reject]\n    C --> E[End\n    D --> E",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "mermaid-viewer",
+   "name": "Mermaid Viewer",
+   "description": "Write Mermaid diagrams with a live preview and export to SVG or PNG.",
+   "category": "image",
+   "icon": "◈",
+   "keywords": [
+    "mermaid",
+    "diagram",
+    "flowchart",
+    "sequence",
+    "gantt",
+    "chart",
+    "uml",
+    "graph",
+    "render",
+    "preview",
+    "export",
+    "svg",
+    "png"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": false,
+   "bespoke": true
+  },
+  {
+   "id": "qr-generator",
+   "name": "QR Code Generator",
+   "description": "Turn text, a URL, wifi credentials or a vCard into a downloadable QR code.",
+   "category": "image",
+   "icon": "▦",
+   "keywords": [
+    "qr",
+    "qrcode",
+    "barcode",
+    "generate",
+    "url",
+    "wifi",
+    "vcard",
+    "png",
+    "svg"
+   ],
+   "lede": "Generated locally — the content never leaves your browser. Download as PNG or SVG.",
+   "footnote": "Useful content formats — wifi: <code>WIFI:T:WPA;S:NetworkName;P:password;;</code> · phone: <code>tel:+441234567890</code> · email: <code>mailto:me@example.com?subject=Hi</code> · SMS: <code>SMSTO:+44123:message</code>",
+   "inputLabel": "Content",
+   "outputLabel": "SVG source",
+   "sample": "https://github.com/i-am-epic/devtools",
+   "options": [
+    {
+     "id": "level",
+     "label": "Error correction",
+     "type": "select",
+     "hint": "Higher correction survives damage but needs a denser code.",
+     "choices": [
+      "L — recovers ~7%",
+      "M — recovers ~15%",
+      "Q — recovers ~25%",
+      "H — recovers ~30%"
+     ]
+    },
+    {
+     "id": "size",
+     "label": "Module size (px)",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "margin",
+     "label": "Quiet zone (modules)",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "dark",
+     "label": "Foreground",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "light",
+     "label": "Background",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "qr-reader",
+   "name": "QR Code Reader",
+   "description": "Extract the text from a QR code image without uploading it anywhere.",
+   "category": "image",
+   "icon": "▤",
+   "keywords": [
+    "qr",
+    "qrcode",
+    "scan",
+    "read",
+    "decode",
+    "barcode",
+    "image"
+   ],
+   "lede": "Choose a PNG, JPEG or WebP containing a QR code. Decoding happens locally in your browser.",
+   "footnote": "",
+   "inputLabel": "QR code image",
+   "outputLabel": "Decoded content",
+   "sample": "",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "cron-parser",
+   "name": "Cron Expression Parser",
+   "description": "Explain a cron schedule in plain English and list the next run times.",
+   "category": "time",
+   "icon": "⏱",
+   "keywords": [
+    "cron",
+    "crontab",
+    "schedule",
+    "expression",
+    "job",
+    "next run",
+    "kubernetes",
+    "quartz"
+   ],
+   "lede": "Five fields (minute hour day-of-month month day-of-week), or six with a leading seconds field.",
+   "footnote": "When both day-of-month and day-of-week are restricted, standard cron fires if <strong>either</strong> matches — a common source of surprise. Quartz extensions (L, W, #) are not supported here.",
+   "inputLabel": "Cron expression",
+   "outputLabel": "Explanation",
+   "sample": "30 9 * * MON-FRI",
+   "options": [
+    {
+     "id": "count",
+     "label": "Next runs to show",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "utc",
+     "label": "Evaluate in UTC",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "timestamp-converter",
+   "name": "Timestamp Converter",
+   "description": "Convert between Unix timestamps, ISO 8601 and human-readable dates.",
+   "category": "time",
+   "icon": "🕐",
+   "keywords": [
+    "timestamp",
+    "unix",
+    "epoch",
+    "date",
+    "time",
+    "iso",
+    "utc",
+    "convert",
+    "milliseconds"
+   ],
+   "lede": "Paste a Unix timestamp (seconds, milliseconds, microseconds or nanoseconds) or any date string — the unit is detected automatically. Leave it empty for \"now\".",
+   "footnote": "",
+   "inputLabel": "Timestamp or date",
+   "outputLabel": "Conversions",
+   "sample": "1700000000",
+   "options": [
+    {
+     "id": "timezone",
+     "label": "Local zone display",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Your local timezone",
+      "UTC only"
+     ]
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "my-ip",
+   "name": "My IP Address",
+   "description": "Look up your public IP address and the network it belongs to.",
+   "category": "network",
+   "icon": "🌐",
+   "keywords": [
+    "ip",
+    "address",
+    "public ip",
+    "network",
+    "isp",
+    "geolocation",
+    "whois"
+   ],
+   "lede": "Your public IP is only visible to an outside server, so this one tool has to make a network request. Nothing happens until you press the button.",
+   "footnote": "This is the only tool on the site that sends anything off your machine. It queries <code>ipapi.co</code>, which necessarily sees your IP address in order to report it back. Geolocation from an IP is approximate and often wrong by tens of kilometres — it reflects your ISP, not your device.",
+   "inputLabel": "",
+   "outputLabel": "Result",
+   "sample": "",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "user-agent-parser",
+   "name": "My User Agent",
+   "description": "Inspect your browser, platform, screen and locale — all read locally.",
+   "category": "network",
+   "icon": "🖥",
+   "keywords": [
+    "user agent",
+    "useragent",
+    "browser",
+    "platform",
+    "device",
+    "screen",
+    "client",
+    "headers"
+   ],
+   "lede": "Everything here is read from your own browser. No request is made to any server.",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "Client details",
+   "sample": "",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "servicebus-listener",
+   "name": "Service Bus Consumer",
+   "description": "Receive and settle messages from an Azure Service Bus queue or subscription.",
+   "category": "cloud",
+   "icon": "📥",
+   "keywords": [
+    "azure",
+    "service bus",
+    "servicebus",
+    "consume",
+    "receive",
+    "listen",
+    "queue",
+    "subscription",
+    "peek",
+    "lock",
+    "message",
+    "dead letter",
+    "connection string"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": false,
+   "bespoke": true
+  },
+  {
+   "id": "servicebus-sender",
+   "name": "Service Bus Publisher",
+   "description": "Publish messages to an Azure Service Bus queue or topic using a connection string.",
+   "category": "cloud",
+   "icon": "📤",
+   "keywords": [
+    "azure",
+    "service bus",
+    "servicebus",
+    "publish",
+    "send",
+    "queue",
+    "topic",
+    "message",
+    "broker",
+    "amqp",
+    "connection string"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": false,
+   "bespoke": true
+  },
+  {
+   "id": "agent-arch",
+   "name": "Architecture",
+   "description": "Designs or reviews system architecture - component boundaries, data flow, scaling, failure modes, trade-offs. Use for \"how should we build X\", \"review this design\", or evaluating an architectural change. For a concrete implementation plan use Plan; for building it use nikbot-dev.",
+   "category": "agents",
+   "icon": "🏛",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-arch",
+    "architecture",
+    "architecture"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-bug",
+   "name": "Bug Hunt",
+   "description": "Diagnoses a specific defect - reproduces it, isolates the cause, explains the mechanism, and proposes a minimal fix. Use for a failing test, a stack trace, a crash, or \"this works here but not there\". For a broad hunt across unchanged code use nikbot-review; for slowness rather than wrongness use nikbot-perf.",
+   "category": "agents",
+   "icon": "🐛",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-bug",
+    "bug hunt",
+    "bug",
+    "hunt"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-dev",
+   "name": "Developer",
+   "description": "Implements a described feature, change or fix end to end - writes the code, matches existing conventions, and verifies it builds and passes tests. Use when the user wants something built rather than analysed. For diagnosing an unknown defect first use nikbot-bug; for writing tests for existing code use the nikbot-unit agents.",
+   "category": "agents",
+   "icon": "⚒",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-dev",
+    "developer",
+    "developer"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-docs",
+   "name": "Documentation",
+   "description": "Writes and updates documentation - READMEs, API references, architecture notes, runbooks, changelogs, code comments. Use for \"document this\", \"update the README\", or when a change needs its docs brought in line. For explaining code to yourself rather than producing a document use nikbot-explain.",
+   "category": "agents",
+   "icon": "📄",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-docs",
+    "documentation",
+    "documentation"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-explain",
+   "name": "Explain",
+   "description": "Explains how an unfamiliar codebase, module or mechanism works, so you can work in it. Use for \"how does this work\", \"where do I start\", onboarding, or tracing a flow end to end. For a short description use nikbot-summary; for judging the design use nikbot-arch.",
+   "category": "agents",
+   "icon": "💡",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-explain",
+    "explain",
+    "explain"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-perf",
+   "name": "Performance",
+   "description": "Investigates slowness or excessive resource use by measuring first - profiles, finds the real bottleneck, proposes changes with expected effect. Use for \"this is slow\", \"why does this use so much memory\", or evaluating a performance claim. For wrong results rather than slow ones use nikbot-bug.",
+   "category": "agents",
+   "icon": "⚡",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-perf",
+    "performance",
+    "performance"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-pr",
+   "name": "Pull Request Review",
+   "description": "Reviews a complete branch or pull request - every commit, the full diff against the base, the description, and merge risk. Use for \"review this PR\", \"review my branch before I raise it\", or when given a PR number or URL. For uncommitted work in progress use nikbot-review instead.",
+   "category": "agents",
+   "icon": "🔀",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-pr",
+    "pull request review",
+    "pull",
+    "request",
+    "review"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-req",
+   "name": "Requirements Review",
+   "description": "Reviews requirements, specs, tickets and acceptance criteria for ambiguity, gaps, testability and contradictions - before anyone builds them. Use for \"is this ticket ready\", \"review this spec\", or \"what is missing from these requirements\". For designing the solution use nikbot-arch.",
+   "category": "agents",
+   "icon": "📋",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-req",
+    "requirements review",
+    "requirements",
+    "review"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-research",
+   "name": "Research",
+   "description": "Investigates an open question across the codebase and the web and returns a sourced answer with trade-offs. Use for \"how should we do X\", \"what are the options for Y\", \"how does library Z handle this\", or comparing approaches. For locating code in this repo use Explore; for a system design use nikbot-arch.",
+   "category": "agents",
+   "icon": "🔎",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-research",
+    "research",
+    "research"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-review",
+   "name": "Code Review",
+   "description": "Reviews uncommitted or staged code changes for correctness, security and maintainability. Use when the user asks to review their work, check a diff before committing, or find problems in changes they just made. For a whole branch or a GitHub PR use nikbot-pr instead; for a security-only pass use nikbot-security.",
+   "category": "agents",
+   "icon": "👁",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-review",
+    "code review",
+    "code",
+    "review"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-sanity",
+   "name": "Sanity Check",
+   "description": "Fast pre-commit gate - builds, runs tests, and scans the diff for obvious mistakes like secrets, debug leftovers and stray files. Use before committing or pushing when you want a quick pass/fail, not a considered review. For a real review use nikbot-review.",
+   "category": "agents",
+   "icon": "✅",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-sanity",
+    "sanity check",
+    "sanity",
+    "check"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-security",
+   "name": "Security Review",
+   "description": "Security audit with an attacker-first mindset - untrusted input, authn/authz, secrets, injection, dependency CVEs. Use for \"is this secure\", auditing a feature that handles user input or credentials, or a pre-release security pass. For general correctness review use nikbot-review.",
+   "category": "agents",
+   "icon": "🔒",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-security",
+    "security review",
+    "security",
+    "review"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-summary",
+   "name": "Summary",
+   "description": "Condenses something into a short, accurate summary - a file, a directory, a diff, a log, a document, or recent commits. Use for \"what does this do\", \"summarise this\", \"what changed\". For understanding a module well enough to work in it use nikbot-explain; for judging quality use nikbot-review.",
+   "category": "agents",
+   "icon": "📝",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-summary",
+    "summary",
+    "summary"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-test",
+   "name": "Test Strategy",
+   "description": "Analyses test coverage and designs a test strategy - what is untested, which tests are weak, what should be tested at which level. Use for \"what tests do we need\", \"is this well tested\", or planning a test suite. To actually write the tests use nikbot-unit-dotnet or nikbot-unit-python.",
+   "category": "agents",
+   "icon": "🧪",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-test",
+    "test strategy",
+    "test",
+    "strategy"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-triage",
+   "name": "Triage",
+   "description": "Reads logs, traces, crash dumps and monitoring output to work out what happened and what to do next. Use for \"here are the logs from the failure\", incident triage, or making sense of a long noisy log. To then diagnose the defect in code use nikbot-bug.",
+   "category": "agents",
+   "icon": "🚨",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-triage",
+    "triage",
+    "triage"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-unit-dotnet",
+   "name": "Unit Tests (.NET)",
+   "description": "Writes unit tests for C#/.NET code using the project's existing framework (xUnit, NUnit or MSTest). Use for \"write tests for this class\" in a .NET repo. For deciding what should be tested use nikbot-test; for Python use nikbot-unit-python.",
+   "category": "agents",
+   "icon": "🧪",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-unit-dotnet",
+    "unit tests (.net)",
+    "unit",
+    "tests",
+    "(.net)"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-unit-python",
+   "name": "Unit Tests (Python)",
+   "description": "Writes unit tests for Python code using the project's existing framework (pytest or unittest). Use for \"write tests for this module\" in a Python repo. For deciding what should be tested use nikbot-test; for .NET use nikbot-unit-dotnet.",
+   "category": "agents",
+   "icon": "🧪",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-unit-python",
+    "unit tests (python)",
+    "unit",
+    "tests",
+    "(python)"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-upgrade-dotnet",
+   "name": "Upgrade (.NET)",
+   "description": "Upgrades NuGet packages and .NET target frameworks - CVE audit, breaking changes, transitive resolution, staged verification. Use for dependency or framework upgrades in a .NET repo. For other ecosystems use nikbot-upgrade or nikbot-upgrade-python.",
+   "category": "agents",
+   "icon": "⬆",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-upgrade-dotnet",
+    "upgrade (.net)",
+    "upgrade",
+    "(.net)"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-upgrade-python",
+   "name": "Upgrade (Python)",
+   "description": "Upgrades Python dependencies and the interpreter version - CVE audit, breaking changes, resolver conflicts, staged verification. Use for dependency or Python version upgrades in a Python repo. For other ecosystems use nikbot-upgrade or nikbot-upgrade-dotnet.",
+   "category": "agents",
+   "icon": "⬆",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-upgrade-python",
+    "upgrade (python)",
+    "upgrade",
+    "(python)"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  },
+  {
+   "id": "agent-upgrade",
+   "name": "Dependency Upgrade",
+   "description": "Plans and performs dependency upgrades - reads changelogs, finds breaking changes and CVEs, sequences the work, verifies after each step. Use for \"update our dependencies\", \"are we on anything vulnerable\", or upgrading a specific package. Language-specific variants exist for .NET and Python.",
+   "category": "agents",
+   "icon": "⬆",
+   "keywords": [
+    "agent",
+    "subagent",
+    "claude",
+    "claude code",
+    "copilot",
+    "prompt",
+    "nikbot",
+    "nikbot-upgrade",
+    "dependency upgrade",
+    "dependency",
+    "upgrade"
+   ],
+   "lede": "",
+   "footnote": "",
+   "inputLabel": "",
+   "outputLabel": "",
+   "sample": "",
+   "options": [],
+   "isAgent": true,
+   "bespoke": true
+  }
+ ]
+}

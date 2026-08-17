@@ -1,473 +1,939 @@
+// Parquet viewer — reads real Parquet files in the browser via hyparquet.
+//
+// Handles multiple files at once, surfaces the footer metadata (row groups,
+// codecs, encodings, compressed vs uncompressed sizes, column statistics),
+// computes per-column statistics from the actual values, and lets you filter,
+// sort and export the data.
+
 import { BaseTool } from '../core/BaseTool.js';
+import { libs } from '../lib/loader.js';
+import { formatBytes } from '../lib/bytes.js';
+import { columnStats, formatNumber, toCsv } from '../lib/tabular.js';
+import { toast, copyText, downloadText, downloadBlob } from '../ui/toast.js';
+
+const escapeHtml = (value) => String(value)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+const PAGE_SIZE = 100;
+
+/** JSON.stringify cannot serialise BigInt; render values for display instead. */
+function displayValue(value) {
+    if (value === null || value === undefined) return null;
+    if (typeof value === 'bigint') return value.toString();
+    if (value instanceof Date) return value.toISOString();
+    if (value instanceof Uint8Array) {
+        const text = new TextDecoder('utf-8', { fatal: false }).decode(value);
+        return text.includes('\uFFFD') ? `0x${[...value].map((b) => b.toString(16).padStart(2, '0')).join('')}` : text;
+    }
+    if (typeof value === 'object') {
+        try {
+            return JSON.stringify(value, (_, v) => (typeof v === 'bigint' ? v.toString() : v));
+        } catch {
+            return String(value);
+        }
+    }
+    return value;
+}
+
+const isNumeric = (value) => typeof value === 'number' || typeof value === 'bigint';
+
+// ---------------------------------------------------------------- filter --
+
+/**
+ * Tiny, safe filter language: `col op value` joined by AND / OR.
+ * Deliberately not eval() — the grammar is closed and predictable.
+ */
+function parseFilter(expression) {
+    const tokens = expression.match(
+        /("[^"]*"|'[^']*'|\(|\)|>=|<=|!=|<>|=|>|<|\bAND\b|\bOR\b|\bNOT\s+LIKE\b|\bLIKE\b|\bIN\b|\bIS\s+NOT\s+NULL\b|\bIS\s+NULL\b|[^\s()]+)/gi,
+    );
+    if (!tokens) throw new Error('Could not read that filter');
+
+    let position = 0;
+    const peek = () => tokens[position];
+    const next = () => tokens[position++];
+
+    const literal = (token) => {
+        if (token === undefined) throw new Error('Filter ended unexpectedly');
+        if (/^["']/.test(token)) return token.slice(1, -1);
+        if (/^-?\d+\.?\d*$/.test(token)) return Number(token);
+        if (/^true$/i.test(token)) return true;
+        if (/^false$/i.test(token)) return false;
+        if (/^null$/i.test(token)) return null;
+        return token;
+    };
+
+    const compare = () => {
+        if (peek() === '(') {
+            next();
+            const inner = orExpression();
+            if (next() !== ')') throw new Error('Missing closing parenthesis');
+            return inner;
+        }
+
+        const column = next();
+        const operator = next();
+        if (operator === undefined) throw new Error(`Expected a comparison after "${column}"`);
+
+        const op = operator.toUpperCase().replace(/\s+/g, ' ');
+
+        if (op === 'IS NULL') return (row) => row[column] === null || row[column] === undefined;
+        if (op === 'IS NOT NULL') return (row) => row[column] !== null && row[column] !== undefined;
+
+        if (op === 'IN') {
+            if (next() !== '(') throw new Error('IN must be followed by a parenthesised list');
+            const values = [];
+            for (;;) {
+                const token = next();
+                if (token === ')') break;
+                if (token === ',') continue;
+                if (token === undefined) throw new Error('Unterminated IN list');
+                values.push(literal(token.replace(/,$/, '')));
+            }
+            return (row) => values.some((v) => String(row[column]) === String(v));
+        }
+
+        const value = literal(next());
+
+        if (op === 'LIKE' || op === 'NOT LIKE') {
+            const pattern = new RegExp(
+                `^${String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*').replace(/_/g, '.')}$`,
+                'i',
+            );
+            return op === 'LIKE'
+                ? (row) => pattern.test(String(row[column] ?? ''))
+                : (row) => !pattern.test(String(row[column] ?? ''));
+        }
+
+        const compareValues = (cell) => {
+            if (cell === null || cell === undefined) return null;
+            if (isNumeric(cell) && typeof value !== 'boolean') {
+                const left = typeof cell === 'bigint' ? Number(cell) : cell;
+                const right = typeof value === 'string' ? Number(value) : value;
+                if (!Number.isNaN(right)) return [left, right];
+            }
+            return [String(cell), String(value)];
+        };
+
+        return (row) => {
+            const pair = compareValues(row[column]);
+            if (pair === null) return op === '!=' || op === '<>';
+            const [left, right] = pair;
+            switch (op) {
+                case '=': return left === right;
+                case '!=': case '<>': return left !== right;
+                case '>': return left > right;
+                case '>=': return left >= right;
+                case '<': return left < right;
+                case '<=': return left <= right;
+                default: throw new Error(`Unknown operator "${operator}"`);
+            }
+        };
+    };
+
+    const andExpression = () => {
+        let left = compare();
+        while (peek() && peek().toUpperCase() === 'AND') {
+            next();
+            const right = compare();
+            const previous = left;
+            left = (row) => previous(row) && right(row);
+        }
+        return left;
+    };
+
+    const orExpression = () => {
+        let left = andExpression();
+        while (peek() && peek().toUpperCase() === 'OR') {
+            next();
+            const right = andExpression();
+            const previous = left;
+            left = (row) => previous(row) || right(row);
+        }
+        return left;
+    };
+
+    const predicate = orExpression();
+    if (position < tokens.length) throw new Error(`Unexpected "${tokens[position]}" at the end of the filter`);
+    return predicate;
+}
+
+// --------------------------------------------------------------------------
 
 export class ParquetViewerTool extends BaseTool {
-  constructor(config) {
-    super(config);
-    this.files = [];
-    this.parquetData = [];
-  }
-
-  render() {
-    return `
-      <div class="tool-interface">
-        <h2>${this.icon} ${this.name}</h2>
-        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
-          Upload and view multiple Parquet files with schema inspection and data preview
-        </p>
-
-        <!-- File Upload Section -->
-        <div class="tool-section">
-          <label for="parquetFileInput">Upload Parquet Files</label>
-          <input type="file" id="parquetFileInput" accept=".parquet,.parq" multiple class="file-input">
-          <p class="helper-text">You can select multiple Parquet files at once</p>
-        </div>
-
-        <!-- Uploaded Files List -->
-        <div class="tool-section" id="filesListSection" style="display: none;">
-          <h3>Uploaded Files (<span id="fileCount">0</span>)</h3>
-          <div id="filesList" style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <!-- Files will be listed here -->
-          </div>
-        </div>
-
-        <!-- File Selector -->
-        <div class="tool-section" id="fileSelectorSection" style="display: none;">
-          <label for="fileSelector">Select File to View</label>
-          <select id="fileSelector" style="padding: 0.75rem; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; width: 100%; font-size: 0.95rem;">
-            <option value="">-- Select a file --</option>
-          </select>
-        </div>
-
-        <!-- Schema Section -->
-        <div class="tool-section" id="schemaSection" style="display: none;">
-          <h3>📋 Schema Information</h3>
-          <div class="output-section" id="schemaOutput">
-            <!-- Schema will appear here -->
-          </div>
-        </div>
-
-        <!-- Data Preview Section -->
-        <div class="tool-section" id="dataSection" style="display: none;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h3>📊 Data Preview</h3>
-            <div style="display: flex; gap: 0.5rem;">
-              <button class="action-btn" id="exportCsvBtn" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
-                📥 Export CSV
-              </button>
-              <button class="action-btn" id="exportJsonBtn" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
-                📥 Export JSON
-              </button>
-            </div>
-          </div>
-          <div style="margin-bottom: 0.75rem;">
-            <label for="rowsToShow">Rows to display:</label>
-            <select id="rowsToShow" style="padding: 0.5rem; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; margin-left: 0.5rem;">
-              <option value="10">10</option>
-              <option value="50" selected>50</option>
-              <option value="100">100</option>
-              <option value="500">500</option>
-              <option value="all">All</option>
-            </select>
-          </div>
-          <div class="output-section" id="dataOutput" style="overflow-x: auto; max-height: 500px; overflow-y: auto;">
-            <!-- Data table will appear here -->
-          </div>
-        </div>
-
-        <!-- Status Section -->
-        <div class="tool-section" id="statusSection" style="display: none;">
-          <div id="statusMessage" style="padding: 1rem; border-radius: 8px;"></div>
-        </div>
-
-        <!-- Info Section -->
-        <div class="tool-section">
-          <details style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px;">
-            <summary style="cursor: pointer; font-weight: 600;">ℹ️ About Apache Parquet</summary>
-            <div style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 1rem; line-height: 1.8;">
-              <p>Apache Parquet is a columnar storage format optimized for big data processing.</p>
-              <p><strong>Features:</strong></p>
-              <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
-                <li>Efficient compression and encoding</li>
-                <li>Schema evolution support</li>
-                <li>Columnar storage for analytical queries</li>
-                <li>Language-agnostic format</li>
-              </ul>
-              <p style="margin-top: 1rem;">
-                <strong>Note:</strong> This tool uses parquet-wasm for client-side parsing. 
-                Large files may take time to load.
-              </p>
-            </div>
-          </details>
-        </div>
-      </div>
-    `;
-  }
-
-  onOpen() {
-    this.loadParquetLibrary();
-    
-    setTimeout(() => {
-      const fileInput = document.getElementById('parquetFileInput');
-      const fileSelector = document.getElementById('fileSelector');
-      const rowsToShow = document.getElementById('rowsToShow');
-      const exportCsvBtn = document.getElementById('exportCsvBtn');
-      const exportJsonBtn = document.getElementById('exportJsonBtn');
-
-      fileInput?.addEventListener('change', (e) => this.handleFileUpload(e));
-      fileSelector?.addEventListener('change', (e) => this.displayFile(e.target.value));
-      rowsToShow?.addEventListener('change', () => this.updateDataDisplay());
-      exportCsvBtn?.addEventListener('click', () => this.exportData('csv'));
-      exportJsonBtn?.addEventListener('click', () => this.exportData('json'));
-    }, 0);
-  }
-
-  loadParquetLibrary() {
-    // Check if parquet-wasm is already loaded
-    if (window.parquetWasm) {
-      this.showStatus('Parquet library ready', 'success');
-      return;
+    constructor(config) {
+        super(config);
+        this.files = [];          // { name, size, buffer, metadata, schema, rows, error }
+        this.activeIndex = 0;
+        this.combined = false;
+        this.page = 0;
+        this.sortColumn = null;
+        this.sortDirection = 'asc';
+        this.filterText = '';
+        this.view = 'data';
     }
 
-    this.showStatus('Loading Parquet library... This may take a moment.', 'info');
+    render() {
+        return `
+            <div class="tool-interface" data-cat="data">
+                <h2><span class="tool-icon">${this.icon}</span>${escapeHtml(this.name)}</h2>
+                <p class="tool-lede">
+                    Open one or more Parquet files, inspect their schema and footer metadata, filter and sort
+                    the rows, and export the result. Files are parsed entirely in your browser — nothing is uploaded.
+                </p>
 
-    // Load parquet-wasm from CDN
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/parquet-wasm@0.5.0/esm/parquet_wasm.js';
-    script.type = 'module';
-    script.onload = async () => {
-      try {
-        // Initialize parquet-wasm
-        const module = await import('https://cdn.jsdelivr.net/npm/parquet-wasm@0.5.0/esm/parquet_wasm.js');
-        await module.default();
-        window.parquetWasm = module;
-        this.showStatus('Parquet library loaded successfully!', 'success');
-      } catch (error) {
-        this.showStatus('Failed to initialize Parquet library. Some features may not work.', 'error');
-        console.error('Parquet library error:', error);
-      }
-    };
-    script.onerror = () => {
-      this.showStatus('Failed to load Parquet library. Please check your internet connection.', 'error');
-    };
-    document.head.appendChild(script);
-  }
+                <div class="tool-section">
+                    <input type="file" id="pqFiles" accept=".parquet,.parq,.pq" multiple class="file-input">
+                    <div class="helper-text">Select several files at once to compare them or stack them into one table.</div>
+                </div>
 
-  async handleFileUpload(event) {
-    const files = Array.from(event.target.files);
-    if (files.length === 0) return;
+                <div id="pqStatus"></div>
+                <div id="pqFileList" class="tool-section" style="display:none;"></div>
+                <div id="pqBody"></div>
+            </div>
+        `;
+    }
 
-    this.showStatus(`Loading ${files.length} file(s)...`, 'info');
+    onOpen() {
+        setTimeout(() => {
+            document.getElementById('pqFiles')?.addEventListener('change', (event) => {
+                this.loadFiles([...event.target.files]);
+            });
+        }, 0);
+    }
 
-    try {
-      // Store files and read their content
-      for (const file of files) {
-        const arrayBuffer = await this.readFileAsArrayBuffer(file);
-        this.files.push({
-          name: file.name,
-          size: file.size,
-          data: arrayBuffer
+    onClose() {
+        this.files = [];
+    }
+
+    // ------------------------------------------------------------ loading --
+
+    setStatus(message, kind = 'info') {
+        const node = document.getElementById('pqStatus');
+        if (!node) return;
+        node.innerHTML = message
+            ? `<div class="alert ${kind}"><span>${kind === 'err' ? '✕' : kind === 'ok' ? '✓' : 'ℹ'}</span><span>${escapeHtml(message)}</span></div>`
+            : '';
+    }
+
+    async loadFiles(fileList) {
+        if (!fileList.length) return;
+        this.setStatus(`Reading ${fileList.length} file${fileList.length === 1 ? '' : 's'}…`);
+
+        let hyparquet;
+        let compressors;
+        try {
+            hyparquet = await libs.hyparquet();
+        } catch (err) {
+            this.setStatus(`Could not load the Parquet parser: ${err.message}`, 'err');
+            return;
+        }
+        try {
+            ({ compressors } = await libs.hyparquetCompressors());
+        } catch {
+            compressors = undefined;   // snappy + uncompressed still work without it
+        }
+
+        for (const file of fileList) {
+            const entry = { name: file.name, size: file.size };
+            try {
+                const buffer = await file.arrayBuffer();
+                entry.buffer = buffer;
+                entry.metadata = hyparquet.parquetMetadata(buffer);
+                entry.schema = hyparquet.parquetSchema(entry.metadata);
+
+                const rows = await new Promise((resolve, reject) => {
+                    hyparquet.parquetRead({
+                        file: buffer,
+                        metadata: entry.metadata,
+                        compressors,
+                        rowFormat: 'object',
+                        onComplete: resolve,
+                    }).catch(reject);
+                });
+                entry.rows = rows;
+                entry.columns = this.topLevelColumns(entry.schema);
+            } catch (err) {
+                entry.error = err.message || String(err);
+            }
+            this.files.push(entry);
+        }
+
+        this.activeIndex = this.files.findIndex((f) => !f.error);
+        if (this.activeIndex === -1) this.activeIndex = 0;
+
+        const failed = this.files.filter((f) => f.error).length;
+        this.setStatus(
+            failed
+                ? `${this.files.length - failed} file(s) loaded, ${failed} failed — see the list below.`
+                : `${this.files.length} file${this.files.length === 1 ? '' : 's'} loaded.`,
+            failed ? 'warn' : 'ok',
+        );
+
+        this.renderFileList();
+        this.renderBody();
+    }
+
+    /**
+     * The columns to show are the schema root's direct children — those are the
+     * keys parquetRead puts on each row. Nested groups (LIST, MAP, STRUCT) stay
+     * as one column and are summarised rather than split into their leaves.
+     *
+     * @param {object} schemaTree result of hyparquet's parquetSchema()
+     */
+    topLevelColumns(schemaTree) {
+        const describeGroup = (node) => {
+            const kind = node.element.logical_type?.type || node.element.converted_type;
+
+            if (kind === 'LIST') {
+                // LIST wraps its item in a repeated group: list -> element
+                const item = node.children?.[0]?.children?.[0];
+                const inner = item
+                    ? (this.describeLogicalType(item.element) || item.element.type || 'group')
+                    : '?';
+                return `LIST<${inner}>`;
+            }
+            if (kind === 'MAP') return 'MAP';
+
+            const fields = (node.children || [])
+                .map((child) => child.element.name)
+                .slice(0, 4)
+                .join(', ');
+            const more = (node.children || []).length > 4 ? ', …' : '';
+            return `STRUCT{${fields}${more}}`;
+        };
+
+        return (schemaTree.children || []).map((node) => {
+            const isGroup = (node.children || []).length > 0;
+            return {
+                name: node.element.name,
+                physical: isGroup ? 'GROUP' : (node.element.type || 'GROUP'),
+                logical: isGroup ? describeGroup(node) : this.describeLogicalType(node.element),
+                repetition: node.element.repetition_type,
+            };
         });
-      }
+    }
 
-      // Update UI
-      this.updateFilesList();
-      this.updateFileSelector();
-      
-      // Auto-select first file
-      if (this.files.length > 0) {
-        const fileSelector = document.getElementById('fileSelector');
-        if (fileSelector) {
-          fileSelector.value = '0';
-          await this.displayFile('0');
+    /**
+     * hyparquet exposes logical types as a flat object whose `type` field names
+     * the kind, e.g. { type: 'DECIMAL', precision: 12, scale: 2 } or
+     * { type: 'TIMESTAMP', unit: 'MILLIS', isAdjustedToUTC: false }.
+     */
+    describeLogicalType(element) {
+        const logical = element.logical_type || element.logicalType;
+        const kind = logical?.type;
+
+        if (kind) {
+            switch (kind) {
+                case 'TIMESTAMP':
+                    return `TIMESTAMP(${logical.unit || ''}${logical.isAdjustedToUTC ? ', UTC' : ''})`;
+                case 'TIME':
+                    return `TIME(${logical.unit || ''})`;
+                case 'DECIMAL':
+                    return `DECIMAL(${logical.precision},${logical.scale})`;
+                case 'INTEGER':
+                    return `${logical.isSigned === false ? 'U' : ''}INT${logical.bitWidth || ''}`;
+                default:
+                    return kind;
+            }
         }
-      }
 
-      this.showStatus(`${files.length} file(s) loaded successfully!`, 'success');
-    } catch (error) {
-      this.showStatus(`Error loading files: ${error.message}`, 'error');
-    }
-  }
-
-  readFileAsArrayBuffer(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result);
-      reader.onerror = (e) => reject(new Error('Failed to read file'));
-      reader.readAsArrayBuffer(file);
-    });
-  }
-
-  updateFilesList() {
-    const filesListSection = document.getElementById('filesListSection');
-    const filesList = document.getElementById('filesList');
-    const fileCount = document.getElementById('fileCount');
-
-    if (!filesList || !filesListSection || !fileCount) return;
-
-    fileCount.textContent = this.files.length;
-    filesListSection.style.display = 'block';
-
-    filesList.innerHTML = this.files.map((file, index) => `
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px;">
-        <div>
-          <strong>${file.name}</strong>
-          <span style="color: var(--text-secondary); font-size: 0.85rem; margin-left: 0.5rem;">
-            (${this.formatFileSize(file.size)})
-          </span>
-        </div>
-        <button onclick="window.parquetTool.removeFile(${index})" style="padding: 0.25rem 0.75rem; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
-          Remove
-        </button>
-      </div>
-    `).join('');
-
-    // Store reference for remove function
-    window.parquetTool = this;
-  }
-
-  removeFile(index) {
-    this.files.splice(index, 1);
-    this.updateFilesList();
-    this.updateFileSelector();
-    
-    if (this.files.length === 0) {
-      document.getElementById('filesListSection').style.display = 'none';
-      document.getElementById('fileSelectorSection').style.display = 'none';
-      document.getElementById('schemaSection').style.display = 'none';
-      document.getElementById('dataSection').style.display = 'none';
-    }
-  }
-
-  updateFileSelector() {
-    const fileSelectorSection = document.getElementById('fileSelectorSection');
-    const fileSelector = document.getElementById('fileSelector');
-
-    if (!fileSelector || !fileSelectorSection) return;
-
-    if (this.files.length > 0) {
-      fileSelectorSection.style.display = 'block';
-      fileSelector.innerHTML = '<option value="">-- Select a file --</option>' +
-        this.files.map((file, index) => 
-          `<option value="${index}">${file.name}</option>`
-        ).join('');
-    } else {
-      fileSelectorSection.style.display = 'none';
-    }
-  }
-
-  async displayFile(index) {
-    if (index === '' || !this.files[index]) {
-      document.getElementById('schemaSection').style.display = 'none';
-      document.getElementById('dataSection').style.display = 'none';
-      return;
+        if (element.converted_type) return element.converted_type;
+        return '';
     }
 
-    const file = this.files[index];
-    this.currentFileIndex = parseInt(index);
+    // ------------------------------------------------------------- files ---
 
-    try {
-      this.showStatus(`Parsing ${file.name}...`, 'info');
+    renderFileList() {
+        const node = document.getElementById('pqFileList');
+        if (!node) return;
+        node.style.display = 'block';
 
-      // Parse Parquet file (simplified - actual implementation would use parquet-wasm)
-      const parsedData = await this.parseParquetFile(file.data, file.name);
-      this.parquetData = parsedData;
+        const usable = this.files.filter((f) => !f.error).length;
 
-      // Display schema and data
-      this.displaySchema(parsedData.schema);
-      this.displayData(parsedData.data, parsedData.schema);
+        node.innerHTML = `
+            <h3>Files (${this.files.length})</h3>
+            ${this.files.map((file, index) => {
+                if (file.error) {
+                    return `
+                        <div class="file-row" style="border-color:var(--red)">
+                            <div>
+                                <div class="fname">${escapeHtml(file.name)}</div>
+                                <div class="fmeta" style="color:var(--red)">${escapeHtml(file.error.slice(0, 160))}</div>
+                            </div>
+                            <button class="mini-btn" data-remove="${index}">Remove</button>
+                        </div>`;
+                }
+                const rows = Number(file.metadata.num_rows);
+                const compressed = file.metadata.row_groups.reduce(
+                    (sum, group) => sum + group.columns.reduce((s, c) => s + Number(c.meta_data?.total_compressed_size || 0), 0), 0,
+                );
+                return `
+                    <div class="file-row ${index === this.activeIndex && !this.combined ? 'active' : ''}" data-select="${index}" style="cursor:pointer">
+                        <div>
+                            <div class="fname">${escapeHtml(file.name)}</div>
+                            <div class="fmeta">${rows.toLocaleString()} rows · ${file.columns.length} cols · ${formatBytes(file.size)}${compressed ? ` · ${formatBytes(compressed)} of column data` : ''}</div>
+                        </div>
+                        <button class="mini-btn" data-remove="${index}">Remove</button>
+                    </div>`;
+            }).join('')}
 
-      this.showStatus(`${file.name} loaded successfully!`, 'success');
-    } catch (error) {
-      this.showStatus(`Error parsing file: ${error.message}`, 'error');
-    }
-  }
+            ${usable > 1 ? `
+                <div class="btn-row" style="margin-top:0.75rem;">
+                    <button class="action-btn ${this.combined ? '' : 'secondary'}" id="pqCombine">
+                        ${this.combined ? '✓ Combined view on' : 'Stack all files into one table'}
+                    </button>
+                    <button class="action-btn secondary" id="pqCompare">Compare schemas</button>
+                </div>` : ''}
+        `;
 
-  async parseParquetFile(arrayBuffer, filename) {
-    // Simplified parser - in a real implementation, this would use parquet-wasm library
-    // For demonstration, we'll create mock data
-    
-    // Note: Real implementation would be:
-    // const uint8Array = new Uint8Array(arrayBuffer);
-    // const table = window.parquetWasm.readParquet(uint8Array);
-    // return this.convertArrowTableToJSON(table);
+        node.querySelectorAll('[data-select]').forEach((row) => {
+            row.addEventListener('click', (event) => {
+                if (event.target.hasAttribute('data-remove')) return;
+                this.activeIndex = Number(row.dataset.select);
+                this.combined = false;
+                this.page = 0;
+                this.sortColumn = null;
+                this.renderFileList();
+                this.renderBody();
+            });
+        });
 
-    // Mock implementation for demonstration
-    this.showStatus('Note: Using mock data for demonstration. Real Parquet parsing requires parquet-wasm library.', 'info');
-    
-    return {
-      schema: [
-        { name: 'id', type: 'int64' },
-        { name: 'name', type: 'string' },
-        { name: 'age', type: 'int32' },
-        { name: 'email', type: 'string' },
-        { name: 'created_at', type: 'timestamp' }
-      ],
-      data: Array.from({ length: 100 }, (_, i) => ({
-        id: i + 1,
-        name: `User ${i + 1}`,
-        age: 20 + (i % 50),
-        email: `user${i + 1}@example.com`,
-        created_at: new Date(2024, 0, 1 + i).toISOString()
-      })),
-      filename
-    };
-  }
+        node.querySelectorAll('[data-remove]').forEach((button) => {
+            button.addEventListener('click', (event) => {
+                event.stopPropagation();
+                this.files.splice(Number(button.dataset.remove), 1);
+                this.activeIndex = Math.max(0, Math.min(this.activeIndex, this.files.length - 1));
+                if (!this.files.length) {
+                    document.getElementById('pqFileList').style.display = 'none';
+                    document.getElementById('pqBody').innerHTML = '';
+                    this.setStatus('');
+                    return;
+                }
+                this.renderFileList();
+                this.renderBody();
+            });
+        });
 
-  displaySchema(schema) {
-    const schemaSection = document.getElementById('schemaSection');
-    const schemaOutput = document.getElementById('schemaOutput');
+        document.getElementById('pqCombine')?.addEventListener('click', () => {
+            this.combined = !this.combined;
+            this.page = 0;
+            this.renderFileList();
+            this.renderBody();
+        });
 
-    if (!schemaOutput || !schemaSection) return;
-
-    let schemaHTML = '<table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">';
-    schemaHTML += `
-      <thead>
-        <tr>
-          <th style="padding: 0.75rem; border: 1px solid var(--border-color); background: var(--bg-secondary); text-align: left;">Column Name</th>
-          <th style="padding: 0.75rem; border: 1px solid var(--border-color); background: var(--bg-secondary); text-align: left;">Data Type</th>
-        </tr>
-      </thead>
-      <tbody>
-    `;
-
-    schema.forEach(column => {
-      schemaHTML += `
-        <tr>
-          <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><code>${column.name}</code></td>
-          <td style="padding: 0.75rem; border: 1px solid var(--border-color); color: var(--text-secondary);">${column.type}</td>
-        </tr>
-      `;
-    });
-
-    schemaHTML += '</tbody></table>';
-    schemaOutput.innerHTML = schemaHTML;
-    schemaSection.style.display = 'block';
-  }
-
-  displayData(data, schema) {
-    this.updateDataDisplay();
-  }
-
-  updateDataDisplay() {
-    const dataSection = document.getElementById('dataSection');
-    const dataOutput = document.getElementById('dataOutput');
-    const rowsToShow = document.getElementById('rowsToShow')?.value || '50';
-
-    if (!dataOutput || !dataSection || !this.parquetData.data) return;
-
-    const data = this.parquetData.data;
-    const schema = this.parquetData.schema;
-    const rowCount = rowsToShow === 'all' ? data.length : Math.min(parseInt(rowsToShow), data.length);
-    const displayData = data.slice(0, rowCount);
-
-    let tableHTML = '<table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">';
-    
-    // Header
-    tableHTML += '<thead><tr>';
-    schema.forEach(column => {
-      tableHTML += `<th style="padding: 0.75rem; border: 1px solid var(--border-color); background: var(--bg-secondary); text-align: left; white-space: nowrap;">${column.name}</th>`;
-    });
-    tableHTML += '</tr></thead>';
-
-    // Data rows
-    tableHTML += '<tbody>';
-    displayData.forEach(row => {
-      tableHTML += '<tr>';
-      schema.forEach(column => {
-        const value = row[column.name];
-        const displayValue = value !== null && value !== undefined ? String(value) : '<span style="color: var(--text-secondary);">null</span>';
-        tableHTML += `<td style="padding: 0.75rem; border: 1px solid var(--border-color); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${displayValue}</td>`;
-      });
-      tableHTML += '</tr>';
-    });
-    tableHTML += '</tbody></table>';
-
-    if (data.length > rowCount) {
-      tableHTML += `<p style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.85rem;">Showing ${rowCount} of ${data.length} rows</p>`;
+        document.getElementById('pqCompare')?.addEventListener('click', () => {
+            this.view = 'compare';
+            this.renderBody();
+        });
     }
 
-    dataOutput.innerHTML = tableHTML;
-    dataSection.style.display = 'block';
-  }
+    // -------------------------------------------------------------- data ---
 
-  exportData(format) {
-    if (!this.parquetData || !this.parquetData.data) {
-      this.showStatus('No data to export. Please load a Parquet file first.', 'error');
-      return;
-    }
-
-    const data = this.parquetData.data;
-    const filename = this.files[this.currentFileIndex]?.name.replace('.parquet', '').replace('.parq', '') || 'data';
-
-    try {
-      if (format === 'csv') {
-        const csv = this.convertToCSV(data, this.parquetData.schema);
-        this.downloadFile(new Blob([csv], { type: 'text/csv' }), `${filename}.csv`);
-        this.showStatus('CSV exported successfully!', 'success');
-      } else if (format === 'json') {
-        const json = JSON.stringify(data, null, 2);
-        this.downloadFile(new Blob([json], { type: 'application/json' }), `${filename}.json`);
-        this.showStatus('JSON exported successfully!', 'success');
-      }
-    } catch (error) {
-      this.showStatus(`Export error: ${error.message}`, 'error');
-    }
-  }
-
-  convertToCSV(data, schema) {
-    const headers = schema.map(col => col.name).join(',');
-    const rows = data.map(row => 
-      schema.map(col => {
-        const value = row[col.name];
-        // Handle values with commas or quotes
-        if (value === null || value === undefined) return '';
-        const stringValue = String(value);
-        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-          return `"${stringValue.replace(/"/g, '""')}"`;
+    /** Rows currently in scope, with a __file column added in combined mode. */
+    baseRows() {
+        if (this.combined) {
+            return this.files
+                .filter((file) => !file.error)
+                .flatMap((file) => file.rows.map((row) => ({ __file: file.name, ...row })));
         }
-        return stringValue;
-      }).join(',')
-    );
-    return [headers, ...rows].join('\n');
-  }
-
-  downloadFile(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }
-
-  formatFileSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-  }
-
-  showStatus(message, type) {
-    const statusSection = document.getElementById('statusSection');
-    const statusMessage = document.getElementById('statusMessage');
-    
-    if (!statusMessage) return;
-
-    const colors = {
-      success: 'background: #10b98120; border: 1px solid #10b981; color: #10b981;',
-      error: 'background: #ef444420; border: 1px solid #ef4444; color: #ef4444;',
-      info: 'background: #3b82f620; border: 1px solid #3b82f6; color: #3b82f6;'
-    };
-
-    statusMessage.style = colors[type] || colors.info;
-    statusMessage.textContent = message;
-    statusSection.style.display = 'block';
-
-    if (type === 'success' || type === 'info') {
-      setTimeout(() => {
-        statusSection.style.display = 'none';
-      }, 5000);
+        return this.files[this.activeIndex]?.rows || [];
     }
-  }
+
+    activeColumns() {
+        if (this.combined) {
+            const names = new Set(['__file']);
+            for (const file of this.files) {
+                if (file.error) continue;
+                file.columns.forEach((column) => names.add(column.name));
+            }
+            const lookup = new Map();
+            for (const file of this.files) {
+                if (file.error) continue;
+                file.columns.forEach((column) => lookup.set(column.name, column));
+            }
+            return [...names].map((name) => lookup.get(name) || { name, physical: 'STRING', logical: 'source file' });
+        }
+        return this.files[this.activeIndex]?.columns || [];
+    }
+
+    /** Apply the filter, then the sort. */
+    visibleRows() {
+        let rows = this.baseRows();
+
+        if (this.filterText.trim()) {
+            try {
+                const predicate = parseFilter(this.filterText.trim());
+                rows = rows.filter(predicate);
+                this.filterError = null;
+            } catch (err) {
+                this.filterError = err.message;
+            }
+        } else {
+            this.filterError = null;
+        }
+
+        if (this.sortColumn) {
+            const column = this.sortColumn;
+            const direction = this.sortDirection === 'asc' ? 1 : -1;
+            rows = [...rows].sort((a, b) => {
+                const left = a[column];
+                const right = b[column];
+                if (left === null || left === undefined) return 1;
+                if (right === null || right === undefined) return -1;
+                if (isNumeric(left) && isNumeric(right)) return (Number(left) - Number(right)) * direction;
+                return String(left).localeCompare(String(right)) * direction;
+            });
+        }
+
+        return rows;
+    }
+
+    // ------------------------------------------------------------- render --
+
+    renderBody() {
+        const node = document.getElementById('pqBody');
+        if (!node) return;
+
+        const file = this.files[this.activeIndex];
+        if (!this.files.length || (!this.combined && (!file || file.error))) {
+            node.innerHTML = '';
+            return;
+        }
+
+        const tabs = [
+            ['data', 'Data'],
+            ['stats', 'Column stats'],
+            ['schema', 'Schema'],
+            ['file', 'File metadata'],
+            ...(this.files.filter((f) => !f.error).length > 1 ? [['compare', 'Compare']] : []),
+        ];
+
+        node.innerHTML = `
+            <div class="tool-section">
+                <div class="btn-row" style="margin-bottom:1rem;">
+                    ${tabs.map(([id, label]) => `
+                        <button class="action-btn ${this.view === id ? '' : 'secondary'}" data-view="${id}">${label}</button>
+                    `).join('')}
+                </div>
+                <div id="pqView"></div>
+            </div>
+        `;
+
+        node.querySelectorAll('[data-view]').forEach((button) => {
+            button.addEventListener('click', () => {
+                this.view = button.dataset.view;
+                this.renderBody();
+            });
+        });
+
+        const view = document.getElementById('pqView');
+        switch (this.view) {
+            case 'stats': view.innerHTML = this.renderColumnStats(); break;
+            case 'schema': view.innerHTML = this.renderSchema(); this.bindSchemaActions(); break;
+            case 'file': view.innerHTML = this.renderFileMetadata(); break;
+            case 'compare': view.innerHTML = this.renderCompare(); break;
+            default: this.renderData(view); break;
+        }
+    }
+
+    renderData(container) {
+        const columns = this.activeColumns();
+        const rows = this.visibleRows();
+        const total = this.baseRows().length;
+        const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+        this.page = Math.min(this.page, pages - 1);
+        const slice = rows.slice(this.page * PAGE_SIZE, (this.page + 1) * PAGE_SIZE);
+
+        container.innerHTML = `
+            <div class="field-group" style="margin-bottom:1rem;">
+                <div>
+                    <label for="pqFilter">Filter</label>
+                    <input type="text" id="pqFilter" value="${escapeHtml(this.filterText)}"
+                           placeholder="age &gt; 30 AND city = 'London'">
+                    <div class="helper-text">
+                        Operators: = != &gt; &gt;= &lt; &lt;= LIKE IN IS NULL, combined with AND / OR and parentheses.
+                    </div>
+                </div>
+            </div>
+
+            ${this.filterError ? `<div class="alert err"><span>✕</span><span>${escapeHtml(this.filterError)}</span></div>` : ''}
+
+            <div class="btn-row" style="margin-bottom:1rem;">
+                <button class="action-btn secondary" id="pqExportCsv">Export CSV</button>
+                <button class="action-btn secondary" id="pqExportJson">Export JSON</button>
+                <button class="action-btn secondary" id="pqExportNdjson">Export NDJSON</button>
+                <span class="chip">${rows.length.toLocaleString()} of ${total.toLocaleString()} rows</span>
+                ${this.sortColumn ? `<span class="chip on">sorted by ${escapeHtml(this.sortColumn)} ${this.sortDirection}</span>` : ''}
+            </div>
+
+            <div class="table-wrap">
+                <table class="data">
+                    <thead>
+                        <tr>
+                            <th class="row-index">#</th>
+                            ${columns.map((column) => `
+                                <th data-sort="${escapeHtml(column.name)}" style="cursor:pointer" title="Click to sort">
+                                    ${escapeHtml(column.name)}${this.sortColumn === column.name ? (this.sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                                    <span class="th-type">${escapeHtml(column.logical || column.physical)}</span>
+                                </th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${slice.map((row, index) => `
+                            <tr>
+                                <td class="row-index">${(this.page * PAGE_SIZE + index + 1).toLocaleString()}</td>
+                                ${columns.map((column) => {
+                                    const value = displayValue(row[column.name]);
+                                    if (value === null) return '<td class="nul">null</td>';
+                                    const numeric = isNumeric(row[column.name]);
+                                    const text = String(value);
+                                    return `<td class="${numeric ? 'num' : ''}" title="${escapeHtml(text.slice(0, 400))}">${escapeHtml(text.slice(0, 200))}</td>`;
+                                }).join('')}
+                            </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            ${pages > 1 ? `
+                <div class="btn-row" style="margin-top:1rem;align-items:center;">
+                    <button class="action-btn secondary" id="pqPrev" ${this.page === 0 ? 'disabled' : ''}>← Previous</button>
+                    <span class="chip">Page ${this.page + 1} of ${pages.toLocaleString()}</span>
+                    <button class="action-btn secondary" id="pqNext" ${this.page >= pages - 1 ? 'disabled' : ''}>Next →</button>
+                </div>` : ''}
+        `;
+
+        const filterInput = document.getElementById('pqFilter');
+        let debounce;
+        filterInput?.addEventListener('input', (event) => {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => {
+                this.filterText = event.target.value;
+                this.page = 0;
+                const caret = event.target.selectionStart;
+                this.renderData(container);
+                const refreshed = document.getElementById('pqFilter');
+                refreshed?.focus();
+                refreshed?.setSelectionRange(caret, caret);
+            }, 260);
+        });
+
+        container.querySelectorAll('[data-sort]').forEach((header) => {
+            header.addEventListener('click', () => {
+                const column = header.dataset.sort;
+                if (this.sortColumn === column) {
+                    if (this.sortDirection === 'asc') this.sortDirection = 'desc';
+                    else { this.sortColumn = null; this.sortDirection = 'asc'; }
+                } else {
+                    this.sortColumn = column;
+                    this.sortDirection = 'asc';
+                }
+                this.renderData(container);
+            });
+        });
+
+        document.getElementById('pqPrev')?.addEventListener('click', () => { this.page--; this.renderData(container); });
+        document.getElementById('pqNext')?.addEventListener('click', () => { this.page++; this.renderData(container); });
+
+        const baseName = (this.combined ? 'combined' : this.files[this.activeIndex].name).replace(/\.(parquet|parq|pq)$/i, '');
+        document.getElementById('pqExportCsv')?.addEventListener('click', () => {
+            const names = columns.map((c) => c.name);
+            const body = rows.map((row) => names.map((name) => displayValue(row[name])));
+            downloadText(toCsv([names, ...body]), `${baseName}.csv`, 'text/csv');
+            toast(`Exported ${rows.length.toLocaleString()} rows`);
+        });
+        document.getElementById('pqExportJson')?.addEventListener('click', () => {
+            const body = rows.map((row) => Object.fromEntries(columns.map((c) => [c.name, displayValue(row[c.name])])));
+            downloadText(JSON.stringify(body, null, 2), `${baseName}.json`, 'application/json');
+            toast(`Exported ${rows.length.toLocaleString()} rows`);
+        });
+        document.getElementById('pqExportNdjson')?.addEventListener('click', () => {
+            const body = rows.map((row) => JSON.stringify(
+                Object.fromEntries(columns.map((c) => [c.name, displayValue(row[c.name])])),
+            )).join('\n');
+            downloadText(body, `${baseName}.ndjson`, 'application/x-ndjson');
+            toast(`Exported ${rows.length.toLocaleString()} rows`);
+        });
+    }
+
+    renderColumnStats() {
+        const columns = this.activeColumns();
+        const rows = this.visibleRows();
+
+        const cards = columns.map((column) => {
+            const values = rows.map((row) => row[column.name]);
+            const stats = columnStats(values);
+
+            const numericRows = stats.numeric ? `
+                <tr><td>Min</td><td class="num">${formatNumber(stats.numeric.min)}</td></tr>
+                <tr><td>Max</td><td class="num">${formatNumber(stats.numeric.max)}</td></tr>
+                <tr><td>Mean</td><td class="num">${formatNumber(stats.numeric.mean)}</td></tr>
+                <tr><td>Median</td><td class="num">${formatNumber(stats.numeric.median)}</td></tr>
+                <tr><td>Std dev</td><td class="num">${formatNumber(stats.numeric.stdDev)}</td></tr>
+                <tr><td>Sum</td><td class="num">${formatNumber(stats.numeric.sum)}</td></tr>` : '';
+
+            const topRows = stats.top.map(([value, count]) => `
+                <tr>
+                    <td title="${escapeHtml(value)}">${escapeHtml(value.slice(0, 60)) || '<em>(empty)</em>'}</td>
+                    <td class="num">${count.toLocaleString()}</td>
+                    <td class="num">${((count / Math.max(1, stats.nonNull)) * 100).toFixed(1)}%</td>
+                </tr>`).join('');
+
+            return `
+                <div class="stat-tile" style="grid-column:span 2;">
+                    <div class="stat-label">${escapeHtml(column.name)}</div>
+                    <div class="stat-sub" style="margin-bottom:0.75rem;font-family:var(--mono)">
+                        ${escapeHtml(column.physical)}${column.logical ? ` · ${escapeHtml(column.logical)}` : ''}${column.repetition ? ` · ${escapeHtml(column.repetition)}` : ''}
+                    </div>
+                    <table class="data" style="font-size:0.75rem;">
+                        <tbody>
+                            <tr><td style="width:45%">Values</td><td class="num">${stats.count.toLocaleString()}</td></tr>
+                            <tr><td>Nulls</td><td class="num">${stats.nulls.toLocaleString()} (${stats.nullPercent.toFixed(1)}%)</td></tr>
+                            <tr><td>Distinct</td><td class="num">${stats.distinctCapped ? '&gt;10,000' : stats.distinct.toLocaleString()}</td></tr>
+                            <tr><td>Length range</td><td class="num">${stats.minLength}–${stats.maxLength}</td></tr>
+                            ${numericRows}
+                        </tbody>
+                    </table>
+                    ${topRows ? `
+                        <div class="stat-label" style="margin-top:0.75rem;">Most frequent</div>
+                        <table class="data" style="font-size:0.72rem;">
+                            <tbody>${topRows}</tbody>
+                        </table>` : ''}
+                </div>`;
+        }).join('');
+
+        return `
+            <p class="helper-text" style="margin-bottom:1rem;">
+                Computed from the ${rows.length.toLocaleString()} rows currently in view${this.filterText.trim() ? ' (filter applied)' : ''}.
+            </p>
+            <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));">${cards}</div>`;
+    }
+
+    renderSchema() {
+        const columns = this.activeColumns();
+        const file = this.combined ? null : this.files[this.activeIndex];
+
+        // Footer statistics, aggregated across row groups
+        const footerStats = new Map();
+        if (file) {
+            for (const group of file.metadata.row_groups) {
+                for (const column of group.columns) {
+                    // Roll nested leaves (tags.list.element) up into their
+                    // top-level column (tags), which is what the table shows.
+                    const name = column.meta_data?.path_in_schema?.[0];
+                    if (!name) continue;
+                    const entry = footerStats.get(name) || {
+                        compressed: 0, uncompressed: 0, values: 0, nulls: 0,
+                        codec: column.meta_data.codec, encodings: new Set(),
+                    };
+                    entry.compressed += Number(column.meta_data.total_compressed_size || 0);
+                    entry.uncompressed += Number(column.meta_data.total_uncompressed_size || 0);
+                    entry.values += Number(column.meta_data.num_values || 0);
+                    entry.nulls += Number(column.meta_data.statistics?.null_count || 0);
+                    (column.meta_data.encodings || []).forEach((e) => entry.encodings.add(e));
+                    footerStats.set(name, entry);
+                }
+            }
+        }
+
+        return `
+            <div class="table-wrap">
+                <table class="data">
+                    <thead>
+                        <tr>
+                            <th>Column</th><th>Physical type</th><th>Logical type</th><th>Repetition</th>
+                            ${file ? '<th>Codec</th><th>Compressed</th><th>Raw</th><th>Ratio</th><th>Nulls</th><th>Encodings</th>' : ''}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${columns.map((column) => {
+                            const stats = footerStats.get(column.name);
+                            return `
+                                <tr>
+                                    <td><strong>${escapeHtml(column.name)}</strong></td>
+                                    <td>${escapeHtml(column.physical)}</td>
+                                    <td>${escapeHtml(column.logical || '—')}</td>
+                                    <td>${escapeHtml(column.repetition || '—')}</td>
+                                    ${file ? (stats ? `
+                                        <td>${escapeHtml(stats.codec || '—')}</td>
+                                        <td class="num">${formatBytes(stats.compressed)}</td>
+                                        <td class="num">${formatBytes(stats.uncompressed)}</td>
+                                        <td class="num">${stats.compressed ? `${(stats.uncompressed / stats.compressed).toFixed(2)}×` : '—'}</td>
+                                        <td class="num">${stats.nulls.toLocaleString()}</td>
+                                        <td style="max-width:none;font-size:0.7rem">${escapeHtml([...stats.encodings].join(', '))}</td>
+                                    ` : '<td colspan="6">—</td>') : ''}
+                                </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <div class="btn-row" style="margin-top:1rem;">
+                <button class="action-btn secondary" id="pqCopySchema">Copy schema as JSON</button>
+            </div>
+        `;
+    }
+
+    /** Called after renderSchema()'s markup is in the DOM. */
+    bindSchemaActions() {
+        document.getElementById('pqCopySchema')?.addEventListener('click', () => {
+            copyText(JSON.stringify(this.activeColumns(), null, 2), 'Schema copied');
+        });
+    }
+
+    renderFileMetadata() {
+        if (this.combined) {
+            return '<div class="info-box">File metadata is per-file. Select a single file from the list above to see it.</div>';
+        }
+
+        const file = this.files[this.activeIndex];
+        const metadata = file.metadata;
+        const rows = Number(metadata.num_rows);
+
+        let compressed = 0;
+        let uncompressed = 0;
+        for (const group of metadata.row_groups) {
+            for (const column of group.columns) {
+                compressed += Number(column.meta_data?.total_compressed_size || 0);
+                uncompressed += Number(column.meta_data?.total_uncompressed_size || 0);
+            }
+        }
+
+        const codecs = new Set();
+        const encodings = new Set();
+        for (const group of metadata.row_groups) {
+            for (const column of group.columns) {
+                if (column.meta_data?.codec) codecs.add(column.meta_data.codec);
+                (column.meta_data?.encodings || []).forEach((e) => encodings.add(e));
+            }
+        }
+
+        const keyValues = metadata.key_value_metadata || [];
+
+        return `
+            <div class="stat-grid">
+                <div class="stat-tile"><div class="stat-label">Rows</div><div class="stat-value">${rows.toLocaleString()}</div></div>
+                <div class="stat-tile"><div class="stat-label">Columns</div><div class="stat-value">${file.columns.length}</div></div>
+                <div class="stat-tile"><div class="stat-label">Row groups</div><div class="stat-value">${metadata.row_groups.length}</div></div>
+                <div class="stat-tile"><div class="stat-label">File size</div><div class="stat-value" style="font-size:1.2rem">${formatBytes(file.size)}</div></div>
+                <div class="stat-tile">
+                    <div class="stat-label">Column data</div>
+                    <div class="stat-value" style="font-size:1.2rem">${formatBytes(compressed)}</div>
+                    <div class="stat-sub">${formatBytes(uncompressed)} uncompressed</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-label">Compression</div>
+                    <div class="stat-value">${compressed ? `${(uncompressed / compressed).toFixed(2)}×` : '—'}</div>
+                    <div class="stat-sub">${[...codecs].join(', ') || 'none'}</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-label">Bytes per row</div>
+                    <div class="stat-value" style="font-size:1.2rem">${rows ? (compressed / rows).toFixed(1) : '—'}</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-label">Total values</div>
+                    <div class="stat-value">${(rows * file.columns.length).toLocaleString()}</div>
+                    <div class="stat-sub">rows × columns</div>
+                </div>
+            </div>
+
+            <h3 style="margin-top:1.5rem;">Row groups</h3>
+            <div class="table-wrap" style="max-height:300px;">
+                <table class="data">
+                    <thead><tr><th>#</th><th>Rows</th><th>Compressed</th><th>Uncompressed</th><th>Ratio</th></tr></thead>
+                    <tbody>
+                        ${metadata.row_groups.map((group, index) => {
+                            const groupCompressed = group.columns.reduce((s, c) => s + Number(c.meta_data?.total_compressed_size || 0), 0);
+                            const groupRaw = group.columns.reduce((s, c) => s + Number(c.meta_data?.total_uncompressed_size || 0), 0);
+                            return `<tr>
+                                <td class="num">${index}</td>
+                                <td class="num">${Number(group.num_rows).toLocaleString()}</td>
+                                <td class="num">${formatBytes(groupCompressed)}</td>
+                                <td class="num">${formatBytes(groupRaw)}</td>
+                                <td class="num">${groupCompressed ? `${(groupRaw / groupCompressed).toFixed(2)}×` : '—'}</td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 style="margin-top:1.5rem;">Footer</h3>
+            <div class="table-wrap">
+                <table class="data">
+                    <tbody>
+                        <tr><td style="width:200px"><strong>Created by</strong></td><td style="max-width:none">${escapeHtml(metadata.created_by || '(not recorded)')}</td></tr>
+                        <tr><td><strong>Format version</strong></td><td>${escapeHtml(String(metadata.version ?? '—'))}</td></tr>
+                        <tr><td><strong>Encodings used</strong></td><td style="max-width:none">${escapeHtml([...encodings].join(', ') || '—')}</td></tr>
+                        ${keyValues.map((kv) => `
+                            <tr>
+                                <td><strong>${escapeHtml(kv.key)}</strong></td>
+                                <td style="max-width:none;white-space:normal;word-break:break-all;font-size:0.72rem">${escapeHtml(String(kv.value ?? '').slice(0, 1200))}</td>
+                            </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+    }
+
+    renderCompare() {
+        const usable = this.files.filter((file) => !file.error);
+        if (usable.length < 2) {
+            return '<div class="info-box">Load at least two readable files to compare them.</div>';
+        }
+
+        const allColumns = [...new Set(usable.flatMap((file) => file.columns.map((c) => c.name)))];
+
+        const typeOf = (file, name) => {
+            const column = file.columns.find((c) => c.name === name);
+            if (!column) return null;
+            return column.logical || column.physical;
+        };
+
+        const rows = allColumns.map((name) => {
+            const types = usable.map((file) => typeOf(file, name));
+            const present = types.filter(Boolean);
+            const consistent = present.length === usable.length && new Set(present).size === 1;
+            return { name, types, consistent, missing: types.some((t) => t === null) };
+        });
+
+        const mismatches = rows.filter((row) => !row.consistent).length;
+
+        return `
+            <div class="alert ${mismatches ? 'warn' : 'ok'}">
+                <span>${mismatches ? '!' : '✓'}</span>
+                <span>${mismatches
+                    ? `${mismatches} column${mismatches === 1 ? '' : 's'} differ between files — stacking them may produce mixed types.`
+                    : 'All files share an identical schema — safe to stack.'}</span>
+            </div>
+            <div class="table-wrap">
+                <table class="data">
+                    <thead>
+                        <tr><th>Column</th>${usable.map((file) => `<th title="${escapeHtml(file.name)}">${escapeHtml(file.name.slice(0, 22))}</th>`).join('')}</tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map((row) => `
+                            <tr${row.consistent ? '' : ' style="background:color-mix(in srgb, var(--yellow) 14%, transparent)"'}>
+                                <td><strong>${escapeHtml(row.name)}</strong></td>
+                                ${row.types.map((type) => (type === null
+                                    ? '<td class="nul">absent</td>'
+                                    : `<td>${escapeHtml(type)}</td>`)).join('')}
+                            </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <div class="stat-grid" style="margin-top:1rem;">
+                ${usable.map((file) => `
+                    <div class="stat-tile">
+                        <div class="stat-label">${escapeHtml(file.name.slice(0, 26))}</div>
+                        <div class="stat-value">${Number(file.metadata.num_rows).toLocaleString()}</div>
+                        <div class="stat-sub">rows · ${file.columns.length} columns · ${formatBytes(file.size)}</div>
+                    </div>`).join('')}
+                <div class="stat-tile">
+                    <div class="stat-label">Combined</div>
+                    <div class="stat-value">${usable.reduce((sum, f) => sum + Number(f.metadata.num_rows), 0).toLocaleString()}</div>
+                    <div class="stat-sub">rows across ${usable.length} files</div>
+                </div>
+            </div>`;
+    }
 }
+
+export { parseFilter, displayValue };

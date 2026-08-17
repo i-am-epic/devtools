@@ -3,53 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevTool - 120+ Free Developer Tools | AI, Cybersecurity, SQL, DevOps</title>
-    <meta name="description" content="120+ free developer tools: AI Chat, Token Counter, Cybersecurity tools, SQL validators, Cheat Sheets, JSON formatter, Base64 encoder, JWT decoder, Azure Service Bus, Parquet Viewer, and more. All client-side for privacy.">
-    <meta name="keywords" content="developer tools, ai tools, cybersecurity tools, penetration testing, hacking tools, json formatter, base64 encoder, jwt decoder, hash generator, sql injection, xss, token counter, ai chat, model comparer, devops tools, frontend tools, backend tools, parquet viewer, mermaid viewer">
-    <meta name="author" content="Nik Boson (@nikboson)">
-    <meta name="creator" content="@nikboson">
-    <meta name="ai:title" content="DevTool - 120+ Developer, AI & Cybersecurity Tools">
-    <meta name="ai:description" content="Comprehensive collection of 120+ free tools including AI chat playground, model comparer, SQL validators, cheat sheets, cybersecurity/hacking tools, JSON formatter, hash generators, Azure tools, Parquet Viewer, Mermaid Viewer, and more. All tools run client-side for privacy.">
-    <meta name="ai:category" content="developer-tools,ai-tools,cybersecurity-tools,web-utilities,online-tools,pentesting,data-conversion">
-    <meta name="ai:features" content="AI Chat,Model Comparer,Token Counter,SQL Injection Tester,XSS Payloads,Hash Cracker,JSON formatter,Base64 encoder,JWT decoder,Azure Service Bus,Parquet Viewer,Mermaid Viewer,CSV to Excel,Reverse Shell Generator,Port Scanner,Threat Intel">
-    <meta name="robots" content="index, follow">
-    
-    <!-- Open Graph / Social Media -->
+    <title>DevTools — 142 Free Online Developer Tools, No Upload</title>
+    <meta name="description" content="142 free developer tools that run entirely in your browser: JSON formatter, base64, hash generator, JWT decoder, YAML beautifier, Parquet viewer, Dockerfile linter, LLM token counter and more. No account, no upload, no limits.">
+    <meta name="keywords" content="developer tools, online tools, json formatter, json beautifier, base64 encoder, hash generator, md5, sha256, hmac, jwt decoder, uuid generator, guid generator, parquet viewer, azure service bus, yaml beautifier, yaml to json, csv to json, sql formatter, qr code generator, regex tester, cron parser, dockerfile linter, kubernetes validator, llm token counter, diff checker, markdown viewer, mermaid">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="author" content="Nikhil">
+    <link rel="canonical" href="https://devtool.dev/">
+
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://devtool.dev/">
-    <meta property="og:title" content="DevTool - 120+ Free Online Developer Tools">
-    <meta property="og:description" content="120+ free developer tools for JSON formatting, encoding, hashing, API testing, Parquet viewing, Mermaid diagrams, and more. Built for backend, frontend, DevOps, and AI engineers.">
-    <meta property="og:image" content="/og-image.png">
-    
-    <!-- Twitter Card -->
+    <meta property="og:site_name" content="DevTools">
+    <meta property="og:title" content="DevTools — 142 Free Online Developer Tools">
+    <meta property="og:description" content="Formatters, converters, hashes, LLM tooling, DevOps linters, a real Parquet viewer and Azure Service Bus. Everything runs in your browser — nothing is uploaded.">
+
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="https://devtool.dev/">
-    <meta name="twitter:title" content="DevTool - 120+ Free Online Developer Tools">
-    <meta name="twitter:description" content="120+ free developer tools for developers. JSON formatter, encoders, hash generators, Parquet viewer, and more.">
-    
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://devtool.dev/">
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    
-    <link rel="stylesheet" href="styles.css?v=2.0">
-    
-    <!-- Structured Data for SEO -->
+    <meta name="twitter:title" content="DevTools — 142 Free Online Developer Tools">
+    <meta name="twitter:description" content="Formatters, converters, hashes, LLM tooling, DevOps linters and a real Parquet viewer. Nothing is uploaded.">
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23ff5e3a'/%3E%3Ctext y='71' x='50' text-anchor='middle' font-size='58' font-family='Helvetica,Arial' font-weight='bold' fill='%23fffbf3'%3E%7B%7D%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="styles.css?v=5.0">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="Site summary for language models">
+
+    <script>
+        // Apply the saved theme before first paint so the page never flashes.
+        try {
+            const stored = localStorage.getItem('devtools_theme');
+            if (stored === 'light' || stored === 'dark') {
+                document.documentElement.setAttribute('data-theme', stored);
+            }
+        } catch (e) { /* storage blocked — fall back to the system preference */ }
+    </script>
+
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "DevTool",
-      "description": "Free online developer tools collection with 120+ utilities",
-      "url": "https://devtool.dev/",
-      "applicationCategory": "DeveloperApplication",
-      "operatingSystem": "Any",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      }
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "@id": "https://devtool.dev/#app",
+          "name": "DevTools",
+          "url": "https://devtool.dev/",
+          "description": "142 free developer tools that run entirely in the browser: formatters, converters, hashes, encoders, LLM tooling, DevOps linters, a Parquet viewer and Azure Service Bus publish/consume.",
+          "applicationCategory": "DeveloperApplication",
+          "operatingSystem": "Any",
+          "browserRequirements": "Requires JavaScript",
+          "isAccessibleForFree": true,
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "author": { "@type": "Person", "name": "Nikhil", "url": "https://github.com/i-am-epic" },
+          "featureList": [
+            "Runs entirely client-side — input is never uploaded",
+            "142 tools across 18 categories",
+            "Light and dark themes",
+            "Quick search on Ctrl+Space or Cmd+K",
+            "Every tool has a shareable link"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://devtool.dev/#website",
+          "url": "https://devtool.dev/",
+          "name": "DevTools",
+          "publisher": { "@type": "Person", "name": "Nikhil", "url": "https://github.com/i-am-epic" },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": { "@type": "EntryPoint", "urlTemplate": "https://devtool.dev/#{search_term_string}" },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Are these developer tools free?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Yes. All 142 tools are free, require no account and have no usage limits." }
+            },
+            {
+              "@type": "Question",
+              "name": "Is my data uploaded anywhere?",
+              "acceptedAnswer": { "@type": "Answer", "text": "No. Every tool runs in your browser using JavaScript, so your input never leaves your machine. The only exceptions are the Azure Service Bus tools, which relay through a proxy you run yourself, and the IP lookup, which must contact a third party by definition. Both are opt-in and clearly marked." }
+            },
+            {
+              "@type": "Question",
+              "name": "Do the tools work offline?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Yes, once the page has loaded. A few tools fetch a library from a CDN on first use, after which they are cached." }
+            }
+          ]
+        }
+      ]
     }
     </script>
 </head>
@@ -58,45 +101,101 @@
         <header>
             <div class="header-wrapper">
                 <div class="header-content">
-                    <h1>🛠️ DevTool</h1>
-                    <p class="header-subtitle">120+ Free Developer Tools • AI, Cybersecurity, SQL, Data Conversion • by <a href="https://github.com/nikboson" target="_blank" class="creator-link">@nikboson</a></p>
+                    <h1>Dev<span class="mark">Tools</span></h1>
+                    <p class="header-subtitle">
+                        Formatters, converters, hashes, a real Parquet viewer and Azure Service Bus tooling.
+                        Everything runs in your browser — nothing is uploaded.
+                    </p>
                 </div>
-                <button class="env-settings-btn" id="openEnvSettings" title="Environment Settings">
-                    <span style="font-size: 1.2rem;">⚙️</span>
-                    <span id="activeEnvIndicator"></span>
-                </button>
+                <div class="header-actions">
+                    <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle theme">
+                        <span>☾</span><span>Dark</span>
+                    </button>
+                    <button class="env-settings-btn" id="openEnvSettings" type="button" title="Environment variables">
+                        <span aria-hidden="true">⚙</span>
+                        <span>Env</span>
+                        <span id="activeEnvIndicator"></span>
+                    </button>
+                </div>
             </div>
+
             <div class="search-container">
-                <input 
-                    type="text" 
-                    id="globalSearch" 
-                    placeholder="Search tools..."
-                    autocomplete="off"
-                />
+                <label for="globalSearch" class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search tools</label>
+                <input type="search" id="globalSearch" placeholder="Search tools — try “md5”, “yaml”, “parquet”…" autocomplete="off" spellcheck="false">
+                <span class="search-hint" id="searchHint">Ctrl + Space</span>
             </div>
-            
-            <!-- Category Filter -->
-            <div id="categoryFilter" class="category-filter">
-                <button class="category-btn active" data-category="all">
-                    All Tools
-                </button>
-            </div>
+
+            <div id="categoryFilter" class="category-filter"></div>
         </header>
 
-        <main id="toolsGrid" class="bento-grid">
-            <!-- Tools will be dynamically loaded here -->
-        </main>
+        <p class="eyebrow" id="toolCount" style="font-size:0.68rem;color:var(--ink-3);margin:1.5rem 0 0.75rem;"></p>
 
-        <div id="toolModal" class="modal">
-            <div class="modal-content">
-                <button class="modal-close" id="closeModal">&times;</button>
-                <div id="modalBody">
-                    <!-- Tool interface will be loaded here -->
-                </div>
+        <main id="toolsGrid" class="bento-grid"></main>
+
+        <section class="soon" aria-labelledby="soonHeading">
+            <div class="soon-head">
+                <span class="soon-badge">Coming soon</span>
+                <h2 id="soonHeading">MCP server — let your agents use these tools</h2>
+            </div>
+            <p>
+                An <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">MCP</a> endpoint
+                that exposes these tools to Claude Code, Claude Desktop, Cursor and any other MCP client —
+                so an agent can format, hash, decode, lint a Dockerfile or read a Parquet file mid-task
+                instead of writing throwaway scripts for it.
+            </p>
+            <ul class="soon-list">
+                <li><strong>Deterministic results.</strong> A real tokenizer and a real Parquet reader, not the model's estimate.</li>
+                <li><strong>Same code as the site.</strong> One implementation, already covered by 565 tests.</li>
+                <li><strong>Local by default.</strong> Runs on your machine; nothing leaves it.</li>
+            </ul>
+            <p class="soon-note">Not live yet — no endpoint to connect to. Follow
+                <a href="https://github.com/i-am-epic/devtools" target="_blank" rel="noopener">the repo</a> for progress.</p>
+        </section>
+
+        <footer class="site-footer">
+            <span>Everything runs client-side. The only exceptions are the Service Bus tools, which relay through your own machine, and the IP lookup.</span>
+            <span>
+                <a href="/t/">Browse all tools</a> ·
+                Built by Nikhil ·
+                <a href="https://github.com/i-am-epic" target="_blank" rel="noopener">github.com/i-am-epic</a> ·
+                <a href="https://instagram.com/nikboson" target="_blank" rel="noopener">@nikboson</a>
+            </span>
+        </footer>
+    </div>
+
+    <!-- Tools take over the whole viewport instead of opening in a dialog. -->
+    <div id="toolView" class="tool-view" role="region" aria-label="Tool">
+        <div class="tool-view-bar">
+            <button class="back-btn" id="closeModal" type="button">
+                <span aria-hidden="true">&larr;</span><span>All tools</span>
+            </button>
+            <div class="tool-view-title" id="toolViewTitle"></div>
+            <div class="tool-view-actions">
+                <button class="modal-action-btn" id="modalShare" type="button" title="Copy a link to this tool">
+                    <span aria-hidden="true">🔗</span><span>Link</span>
+                </button>
+                <button class="modal-action-btn" id="modalSettings" type="button" title="Environment variables">
+                    <span aria-hidden="true">⚙</span><span>Env</span>
+                </button>
+            </div>
+        </div>
+        <div class="tool-view-body" id="modalBody"></div>
+    </div>
+
+    <!-- Quick search: Ctrl/Cmd+K, Ctrl+Space, Alt+Space or / -->
+    <div id="palette" class="palette" role="dialog" aria-modal="true" aria-label="Quick search">
+        <div class="palette-box">
+            <input type="text" id="paletteInput" placeholder="Search tools…" autocomplete="off"
+                   spellcheck="false" role="combobox" aria-expanded="true" aria-controls="paletteResults">
+            <ul class="palette-results" id="paletteResults" role="listbox"></ul>
+            <div class="palette-foot">
+                <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+                <span><kbd>↵</kbd> open</span>
+                <span><kbd>esc</kbd> close</span>
             </div>
         </div>
     </div>
 
-    <script type="module" src="js/app.js?v=2.0"></script>
+    <script type="module" src="js/app.js?v=4.0"></script>
 </body>
 </html>

@@ -1,9 +1,88 @@
 import { EnvironmentManager } from '../core/EnvironmentManager.js';
+import { toast, copyText, downloadText } from './toast.js';
 
 export class EnvironmentUI {
     constructor() {
         this.envManager = new EnvironmentManager();
         this.currentEditingEnv = null;
+    }
+
+    // ------------------------------------------------- export / import --
+
+    transferStatus(message, kind = 'ok') {
+        const node = document.getElementById('envTransferStatus');
+        if (!node) return;
+        const icon = kind === 'err' ? '✕' : kind === 'warn' ? '!' : '✓';
+        node.innerHTML = message
+            ? `<div class="alert ${kind}" style="margin-top:1rem;"><span>${icon}</span><span>${message}</span></div>`
+            : '';
+    }
+
+    exportToFile(ids) {
+        const payload = this.envManager.exportEnvironments(ids);
+        if (!payload.environments.length) {
+            this.transferStatus('There is nothing to export yet.', 'warn');
+            return;
+        }
+        const stamp = new Date().toISOString().slice(0, 10);
+        const name = payload.environments.length === 1
+            ? `devtools-env-${payload.environments[0].name.replace(/[^\w-]+/g, '-').toLowerCase()}-${stamp}.json`
+            : `devtools-environments-${stamp}.json`;
+
+        downloadText(JSON.stringify(payload, null, 2), name, 'application/json');
+        const count = payload.environments.length;
+        this.transferStatus(`Exported ${count} environment${count === 1 ? '' : 's'} to <code>${name}</code>.`);
+        toast(`Exported ${count} environment${count === 1 ? '' : 's'}`);
+    }
+
+    attachTransferListeners() {
+        document.getElementById('envExportAll')?.addEventListener('click', () => this.exportToFile(null));
+
+        document.getElementById('envExportActive')?.addEventListener('click', () => {
+            const active = this.envManager.getActiveEnvironment();
+            if (!active) {
+                this.transferStatus('No environment is active.', 'warn');
+                return;
+            }
+            this.exportToFile([active.id]);
+        });
+
+        document.getElementById('envCopyJson')?.addEventListener('click', () => {
+            const payload = this.envManager.exportEnvironments(null);
+            copyText(JSON.stringify(payload, null, 2), 'Environments copied');
+        });
+
+        document.getElementById('envImport')?.addEventListener('click', () => {
+            document.getElementById('envImportFile')?.click();
+        });
+
+        document.getElementById('envImportFile')?.addEventListener('change', async (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                const mode = document.getElementById('envConflict')?.value || 'rename';
+                const result = this.envManager.importEnvironments(text, mode);
+
+                const parts = [];
+                if (result.imported) parts.push(`${result.imported} added`);
+                if (result.replaced) parts.push(`${result.replaced} replaced`);
+                if (result.skipped) parts.push(`${result.skipped} skipped`);
+
+                this.transferStatus(
+                    `Imported from <code>${file.name}</code> — ${parts.join(', ')}.`
+                    + (result.names.length ? ` (${result.names.map((n) => `<strong>${n}</strong>`).join(', ')})` : ''),
+                );
+                toast(`Imported ${result.imported + result.replaced} environments`);
+                setTimeout(() => this.refreshUI(), 900);
+            } catch (err) {
+                this.transferStatus(err.message, 'err');
+                toast('Import failed', 'err');
+            } finally {
+                event.target.value = '';
+            }
+        });
     }
 
     render() {
@@ -67,6 +146,35 @@ export class EnvironmentUI {
                         </div>
                     </div>
                 `}
+
+                <div class="env-section">
+                    <h3>Backup &amp; transfer</h3>
+                    <div class="btn-row">
+                        <button class="action-btn secondary" id="envExportAll"
+                            ${environments.length ? '' : 'disabled'}>⬇ Export all</button>
+                        <button class="action-btn secondary" id="envExportActive"
+                            ${activeEnv ? '' : 'disabled'}>⬇ Export active only</button>
+                        <button class="action-btn secondary" id="envImport">⬆ Import from file</button>
+                        <button class="action-btn secondary" id="envCopyJson"
+                            ${environments.length ? '' : 'disabled'}>Copy as JSON</button>
+                        <input type="file" id="envImportFile" accept=".json,application/json" style="display:none">
+                    </div>
+                    <div style="margin-top:0.85rem;">
+                        <label for="envConflict">When an imported name already exists</label>
+                        <select id="envConflict" style="max-width:340px;">
+                            <option value="rename">Keep both — add a number to the new one</option>
+                            <option value="replace">Replace the existing environment</option>
+                            <option value="skip">Skip the imported one</option>
+                        </select>
+                    </div>
+                    <div id="envTransferStatus"></div>
+                    <div class="alert warn" style="margin-top:1rem;">
+                        <span>!</span>
+                        <span>An export contains your variable <strong>values in plain text</strong> — including
+                        connection strings, API keys and tokens. Treat the file like a password: do not commit it
+                        to a repository or send it over chat.</span>
+                    </div>
+                </div>
 
                 <div class="env-section info-box">
                     <h4>💡 About Environments</h4>
@@ -291,6 +399,8 @@ export class EnvironmentUI {
     }
 
     attachEventListeners() {
+        this.attachTransferListeners();
+
         // Active environment selector
         document.getElementById('activeEnvSelect')?.addEventListener('change', (e) => {
             if (e.target.value) {
@@ -356,8 +466,13 @@ export class EnvironmentUI {
             return;
         }
 
+        // Start from what is already stored so variables that the form does not
+        // have a field for -- anything brought in by an import -- survive a save.
+        const existingVariables = { ...(env.variables || {}) };
+
         // Collect all variables
         env.variables = {
+            ...existingVariables,
             serviceBusConnectionString: document.getElementById('varServiceBusConnectionString').value.trim(),
             serviceBusQueueName: document.getElementById('varServiceBusQueueName').value.trim(),
             serviceBusTopicName: document.getElementById('varServiceBusTopicName').value.trim(),

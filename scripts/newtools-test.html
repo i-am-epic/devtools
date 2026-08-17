@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>New tool correctness</title>
+<style>
+  body { font-family: ui-monospace, Consolas, monospace; padding: 1.5rem; background: #14140f; color: #ede9e0; font-size: 13px; }
+  .pass { color: #4ade80; } .fail { color: #f87171; } .info { color: #93c5fd; }
+  pre { white-space: pre-wrap; line-height: 1.55; }
+</style>
+</head>
+<body>
+<h1 style="font-size:1.1rem">Correctness checks for the AI / devx / codegen tools</h1>
+<pre id="out">running...</pre>
+<script type="module">
+const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const out = document.getElementById('out');
+const lines = [];
+let pass = 0, fail = 0;
+
+function check(label, condition, detail = '') {
+  if (condition) { pass++; lines.push(`<span class="pass">ok   ${esc(label)}</span>`); }
+  else { fail++; lines.push(`<span class="fail">FAIL ${esc(label)} ${esc(detail)}</span>`); }
+}
+
+const bust = '?v=' + Date.now();
+for (const u of ['../js/tools/specs/devx.js', '../js/tools/specs/codegen.js', '../js/tools/specs/ai.js',
+                 '../js/tools/registry.js', '../js/lib/hashes.js', '../js/lib/bytes.js']) {
+  await fetch(u, { cache: 'reload' }).catch(() => {});
+}
+
+try {
+  const devx = await import('../js/tools/specs/devx.js');
+  const codegen = await import('../js/tools/specs/codegen.js');
+  const { TOOLS } = await import('../js/tools/registry.js');
+
+  const tool = (id) => {
+    const t = TOOLS.find(x => x.id === id);
+    if (!t) throw new Error(`tool ${id} not in registry`);
+    return t.spec;
+  };
+  const defaults = (spec, over = {}) => {
+    const o = {};
+    for (const opt of spec.options || []) {
+      o[opt.id] = opt.default !== undefined ? opt.default
+        : opt.type === 'checkbox' ? false
+        : opt.type === 'select' ? (typeof opt.choices[0] === 'string' ? opt.choices[0] : opt.choices[0].value)
+        : opt.type === 'number' ? 0 : '';
+    }
+    return { ...o, ...over };
+  };
+  const run = async (id, input, over = {}) => {
+    const spec = tool(id);
+    const r = await spec.run({ input, options: defaults(spec, over), bytes: null, fileName: '', tool: { id_: (n) => n } });
+    return typeof r === 'string' ? { output: r } : r;
+  };
+
+  // ------------------------------------------------------------- CIDR ----
+  lines.push('<b>CIDR calculator</b>');
+  {
+    const r = await run('cidr-calculator', '10.42.0.0/20');
+    const o = r.output;
+    check('network is 10.42.0.0', o.includes('Network:') && /Network:\s+10\.42\.0\.0/.test(o), o.split('\n')[3]);
+    check('broadcast is 10.42.15.255', /Broadcast:\s+10\.42\.15\.255/.test(o));
+    check('4,096 total addresses', /Total addresses:\s+4,096/.test(o));
+    check('4,094 usable hosts', /Usable hosts:\s+4,094/.test(o));
+    check('netmask 255.255.240.0', /Netmask:\s+255\.255\.240\.0/.test(o));
+    check('classified as private', /Type:\s+private/.test(o));
+
+    const inside = await run('cidr-calculator', '10.42.0.0/20', { contains: '10.42.5.17' });
+    check('10.42.5.17 is inside /20', /inside\?:\s+YES/.test(inside.output), inside.output.split('\n').pop());
+    const outside = await run('cidr-calculator', '10.42.0.0/20', { contains: '10.42.16.1' });
+    check('10.42.16.1 is outside /20', /inside\?:\s+NO/.test(outside.output), outside.output.split('\n').pop());
+
+    const single = await run('cidr-calculator', '192.168.1.1/32');
+    check('/32 reports 1 address', /Total addresses:\s+1\b/.test(single.output));
+
+    check('32 usable hosts for /27', /Usable hosts:\s+30/.test((await run('cidr-calculator', '172.16.0.0/27')).output));
+    check('public address detected', /Type:\s+public/.test((await run('cidr-calculator', '8.8.8.0/24')).output));
+
+    let rejected = false;
+    try { await run('cidr-calculator', '999.1.1.1/24'); } catch { rejected = true; }
+    check('invalid octet rejected', rejected);
+  }
+
+  // ------------------------------------------------------------ semver ---
+  lines.push('\n<b>Semver</b>');
+  {
+    const { parseSemver, compareSemver, satisfiesRange } = devx;
+    const v = (s) => parseSemver(s);
+
+    check('1.2.3 < 1.2.4', compareSemver(v('1.2.3'), v('1.2.4')) < 0);
+    check('1.10.0 > 1.9.0', compareSemver(v('1.10.0'), v('1.9.0')) > 0);
+    check('equal versions compare 0', compareSemver(v('2.0.0'), v('2.0.0')) === 0);
+    check('prerelease sorts below release', compareSemver(v('1.0.0-beta'), v('1.0.0')) < 0);
+    check('alpha < beta', compareSemver(v('1.0.0-alpha'), v('1.0.0-beta')) < 0);
+    check('beta.2 > beta.10 is false (numeric compare)', compareSemver(v('1.0.0-beta.2'), v('1.0.0-beta.10')) < 0);
+    check('build metadata ignored for precedence', compareSemver(v('1.0.0+a'), v('1.0.0+b')) === 0);
+
+    check('^1.2.0 allows 1.9.0', satisfiesRange(v('1.9.0'), '^1.2.0'));
+    check('^1.2.0 rejects 2.0.0', !satisfiesRange(v('2.0.0'), '^1.2.0'));
+    check('^1.2.0 rejects 1.1.0', !satisfiesRange(v('1.1.0'), '^1.2.0'));
+    check('^0.2.3 allows 0.2.9', satisfiesRange(v('0.2.9'), '^0.2.3'));
+    check('^0.2.3 rejects 0.3.0 (pre-1.0 rule)', !satisfiesRange(v('0.3.0'), '^0.2.3'));
+    check('~1.2.3 allows 1.2.9', satisfiesRange(v('1.2.9'), '~1.2.3'));
+    check('~1.2.3 rejects 1.3.0', !satisfiesRange(v('1.3.0'), '~1.2.3'));
+    check('>=1.0.0 <2.0.0 allows 1.5.0', satisfiesRange(v('1.5.0'), '>=1.0.0 <2.0.0'));
+    check('>=1.0.0 <2.0.0 rejects 2.0.0', !satisfiesRange(v('2.0.0'), '>=1.0.0 <2.0.0'));
+    check('* allows anything', satisfiesRange(v('9.9.9'), '*'));
+    check('invalid version returns null', parseSemver('not.a.version') === null);
+  }
+
+  // ---------------------------------------------------------- duration ---
+  lines.push('\n<b>Duration converter</b>');
+  {
+    const r = await run('duration-converter', '1h30m\n5400\nPT2H15M\n00:45:30\n90000ms\n7d');
+    const o = r.output;
+    check('1h30m = 5400s', /1h30m\s+1h 30m\s+5,400s/.test(o), o.split('\n')[0]);
+    check('5400 (bare) = 5400s', /^5400\s+1h 30m\s+5,400s/m.test(o), o.split('\n')[1]);
+    check('PT2H15M = 8100s', /PT2H15M\s+2h 15m\s+8,100s/.test(o), o.split('\n')[2]);
+    check('00:45:30 = 2730s', /00:45:30\s+45m 30s\s+2,730s/.test(o), o.split('\n')[3]);
+    check('90000ms = 90s', /90000ms\s+1m 30s\s+90s/.test(o), o.split('\n')[4]);
+    check('7d = 604800s', /7d\s+7d\s+604,800s/.test(o), o.split('\n')[5]);
+  }
+
+  // --------------------------------------------------------------- k8s ---
+  lines.push('\n<b>Kubernetes quantities</b>');
+  {
+    const r = await run('k8s-quantity', '512Mi\n1.5Gi\n2G\n250m\n1500m\n4');
+    const o = r.output;
+    check('512Mi = 536,870,912 bytes', o.includes('536,870,912'), o.split('\n')[0]);
+    check('1.5Gi = 1,610,612,736 bytes', o.includes('1,610,612,736'), o.split('\n')[1]);
+    check('2G = 2,000,000,000 bytes', o.includes('2,000,000,000'), o.split('\n')[2]);
+    check('250m = 0.25 cores', /250m\s+0\.25 cores/.test(o), o.split('\n')[3]);
+    check('1500m = 1.5 cores', /1500m\s+1\.5 cores/.test(o), o.split('\n')[4]);
+    check('Mi and M differ', o.includes('536,870,912') && !o.includes('512,000,000'));
+  }
+
+  // -------------------------------------------------------- id decoder ---
+  lines.push('\n<b>ID decoder</b>');
+  {
+    const { decodeUuid, decodeUlid } = devx;
+
+    // A v7 UUID whose first 48 bits encode a known instant.
+    const ms = Date.UTC(2024, 5, 1, 12, 0, 0);
+    const hex = ms.toString(16).padStart(12, '0');
+    const v7 = `${hex.slice(0,8)}-${hex.slice(8,12)}-7abc-8def-0123456789ab`;
+    const d7 = decodeUuid(v7);
+    check('v7 version detected', d7 && d7.version === 7, JSON.stringify(d7?.version));
+    check('v7 timestamp round-trips', d7 && d7.date.getTime() === ms, `${d7?.date?.toISOString()} vs ${new Date(ms).toISOString()}`);
+
+    const v4 = decodeUuid('f47ac10b-58cc-4372-a567-0e02b2c3d479');
+    check('v4 version detected', v4 && v4.version === 4);
+    check('v4 has no timestamp', v4 && !v4.date);
+    check('v4 variant is RFC 4122', v4 && v4.variant === 'RFC 4122', v4?.variant);
+
+    check('non-uuid rejected', decodeUuid('hello') === null);
+
+    // Round-trip against an independent Crockford base32 encoder, rather than
+    // trusting a remembered vector.
+    const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+    const encodeUlidTime = (millis) => {
+        let n = BigInt(millis);
+        let s = '';
+        for (let i = 0; i < 10; i++) { s = CROCKFORD[Number(n % 32n)] + s; n /= 32n; }
+        return s;
+    };
+    for (const millis of [0, 1469922850259, Date.UTC(2024, 0, 15, 8, 30, 0), 281474976710655]) {
+        const encoded = `${encodeUlidTime(millis)}0000000000000000`;
+        const back = decodeUlid(encoded);
+        check(`ULID round-trips ${millis}`, back && back.date.getTime() === millis,
+            `${encoded} -> ${back?.date?.getTime()}`);
+    }
+    check('ULID 01ARZ3NDEK decodes to 1469922850259',
+        decodeUlid('01ARZ3NDEKTSV4RRFFQ69G5FAV')?.date.getTime() === 1469922850259);
+    check('26-character length enforced', decodeUlid('01ARZ3NDEK') === null);
+
+    const objectId = await run('id-decoder', '507f1f77bcf86cd799439011');
+    check('ObjectId recognised', objectId.output.includes('MongoDB ObjectId'));
+
+    const snowflake = await run('id-decoder', '175928847299117063', { snowflakeEpoch: 'discord' });
+    check('Snowflake recognised', snowflake.output.includes('Snowflake'));
+  }
+
+  // ---------------------------------------------------------- JSONPath ---
+  lines.push('\n<b>JSONPath</b>');
+  {
+    const { jsonPath } = codegen;
+    const doc = {
+      store: { book: [
+        { title: 'A', price: 8.95, tags: ['x'] },
+        { title: 'B', price: 12.99, tags: ['y', 'z'] },
+        { title: 'C', price: 22.99, tags: [] },
+      ], bicycle: { colour: 'red', price: 19.95 } },
+    };
+    const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+    check('$.store.bicycle.colour', eq(jsonPath(doc, '$.store.bicycle.colour'), ['red']));
+    check('$.store.book[*].title', eq(jsonPath(doc, '$.store.book[*].title'), ['A', 'B', 'C']));
+    check('$.store.book[0].title', eq(jsonPath(doc, '$.store.book[0].title'), ['A']));
+    check('$.store.book[-1].title (negative index)', eq(jsonPath(doc, '$.store.book[-1].title'), ['C']));
+    check('$.store.book[0:2] slice', jsonPath(doc, '$.store.book[0:2]').length === 2);
+    check('$..price recursive finds 4', jsonPath(doc, '$..price').length === 4, String(jsonPath(doc, '$..price').length));
+    check('filter [?(@.price > 10)]', jsonPath(doc, '$.store.book[?(@.price > 10)]').length === 2);
+    check("filter [?(@.title == 'B')]", jsonPath(doc, "$.store.book[?(@.title == 'B')]").length === 1);
+    check('$ returns the root', eq(jsonPath(doc, '$'), [doc]));
+    check('missing path yields nothing', jsonPath(doc, '$.nope.nothing').length === 0);
+
+    let bad = false;
+    try { jsonPath(doc, 'store.book'); } catch { bad = true; }
+    check('expression without $ rejected', bad);
+  }
+
+  // --------------------------------------------------------- JSON diff ---
+  lines.push('\n<b>JSON diff</b>');
+  {
+    const { jsonDiff } = codegen;
+    const d = jsonDiff(
+      { a: 1, b: { c: 2, d: 3 }, e: [1, 2], keep: 'same' },
+      { a: 2, b: { c: 2 }, e: [1, 2, 3], added: true, keep: 'same' },
+    );
+    const byPath = Object.fromEntries(d.map(x => [x.path, x.kind]));
+    check('changed scalar detected', byPath['$.a'] === 'changed', JSON.stringify(byPath));
+    check('removed key detected', byPath['$.b.d'] === 'removed');
+    check('added key detected', byPath['$.added'] === 'added');
+    check('added array element detected', byPath['$.e[2]'] === 'added');
+    check('unchanged keys not reported', !('$.keep' in byPath) && !('$.b.c' in byPath));
+    check('identical documents produce no diff', jsonDiff({ x: [1, { y: 2 }] }, { x: [1, { y: 2 }] }).length === 0);
+    check('key order is irrelevant', jsonDiff({ a: 1, b: 2 }, { b: 2, a: 1 }).length === 0);
+    check('type change flagged', jsonDiff({ a: 1 }, { a: '1' })[0].kind === 'type');
+  }
+
+  // ------------------------------------------------------ json to types --
+  lines.push('\n<b>JSON to types</b>');
+  {
+    const sample = '{"id":1,"name":"x","active":true,"score":1.5,"tags":["a"],"child":{"k":"v"},"items":[{"a":1},{"a":2,"b":3}]}';
+    const ts = (await run('json-to-types', sample, { language: 'typescript', rootName: 'Root' })).output;
+    check('TS emits an interface', ts.includes('export interface Root'), ts.slice(0, 60));
+    check('TS maps int to number', /id: number;/.test(ts));
+    check('TS maps bool to boolean', /active: boolean;/.test(ts));
+    check('TS maps array to []', /tags: string\[\];/.test(ts));
+    check('TS references a nested type', /child: Child;/.test(ts));
+    check('TS merges array objects with an optional field', /b\?: number;/.test(ts), ts);
+
+    const py = (await run('json-to-types', sample, { language: 'python' })).output;
+    check('Python emits a dataclass', py.includes('@dataclass') && py.includes('class Root:'));
+    check('Python imports dataclass', py.includes('from dataclasses import dataclass'));
+    check('Python maps str', /name: str/.test(py));
+
+    const go = (await run('json-to-types', sample, { language: 'go' })).output;
+    check('Go emits a struct with json tags', /type Root struct/.test(go) && /json:"id"/.test(go));
+
+    const rs = (await run('json-to-types', sample, { language: 'rust' })).output;
+    check('Rust derives Serialize', rs.includes('#[derive(Debug, Clone, Serialize, Deserialize)]'));
+
+    const cs = (await run('json-to-types', sample, { language: 'csharp' })).output;
+    check('C# emits a record with JsonPropertyName', /public record Root/.test(cs) && /JsonPropertyName\("id"\)/.test(cs));
+  }
+
+  // --------------------------------------------------------- JSON Schema --
+  lines.push('\n<b>JSON Schema</b>');
+  {
+    const s = JSON.parse((await run('json-schema-generator',
+      '{"id":1,"email":"a@b.com","when":"2024-01-02T03:04:05Z","site":"https://x.dev","ok":true}')).output);
+    check('declares draft 2020-12', s.$schema.includes('2020-12'));
+    check('root is an object', s.type === 'object');
+    check('integer detected', s.properties.id.type === 'integer');
+    check('email format detected', s.properties.email.format === 'email');
+    check('date-time format detected', s.properties.when.format === 'date-time');
+    check('uri format detected', s.properties.site.format === 'uri');
+    check('required listed', Array.isArray(s.required) && s.required.includes('id'));
+  }
+
+  // -------------------------------------------------------------- curl ---
+  lines.push('\n<b>curl converter</b>');
+  {
+    const { parseCurl } = devx;
+    const p = parseCurl(`curl -X POST 'https://api.example.com/v1/orders' -H 'content-type: application/json' -H 'authorization: Bearer TOK' -d '{"item":"widget"}'`);
+    check('method parsed', p.method === 'POST', p.method);
+    check('url parsed', p.url === 'https://api.example.com/v1/orders', p.url);
+    check('headers parsed', p.headers['content-type'] === 'application/json' && p.headers.authorization === 'Bearer TOK');
+    check('body parsed', p.body === '{"item":"widget"}', p.body);
+
+    const g = parseCurl('curl https://x.dev/a');
+    check('method defaults to GET', g.method === 'GET');
+    const implied = parseCurl(`curl https://x.dev/a -d 'x=1'`);
+    check('body implies POST', implied.method === 'POST');
+
+    const fetchCode = (await run('curl-converter', `curl https://x.dev/a -H 'accept: application/json'`, { target: 'fetch' })).output;
+    check('fetch code produced', fetchCode.includes('await fetch("https://x.dev/a"') && fetchCode.includes('"accept": "application/json"'), fetchCode.slice(0, 80));
+    const py = (await run('curl-converter', `curl https://x.dev/a`, { target: 'python' })).output;
+    check('python code produced', py.includes('import requests') && py.includes('requests.get'));
+
+    let notCurl = false;
+    try { parseCurl('wget https://x.dev'); } catch { notCurl = true; }
+    check('non-curl rejected', notCurl);
+  }
+
+  // --------------------------------------------------------------- env ---
+  lines.push('\n<b>.env converter</b>');
+  {
+    const { parseEnvFile } = devx;
+    const parsed = parseEnvFile('# c\nA=1\nexport B="two words"\nC=3 # trailing\nD=\n');
+    check('plain value', parsed.A === '1');
+    check('export prefix stripped and quotes removed', parsed.B === 'two words', parsed.B);
+    check('inline comment stripped from unquoted value', parsed.C === '3', JSON.stringify(parsed.C));
+    check('empty value kept', parsed.D === '');
+    check('comment line ignored', !('#c' in parsed));
+
+    const json = (await run('env-converter', 'A=1\nB=two', { target: 'json' })).output;
+    check('to JSON', JSON.parse(json).B === 'two');
+    const k8s = (await run('env-converter', 'A=1', { target: 'k8s' })).output;
+    check('to ConfigMap', k8s.includes('kind: ConfigMap') && k8s.includes('A:'));
+    const exp = (await run('env-converter', 'A=two words', { target: 'export' })).output;
+    check('to shell export quotes when needed', exp === 'export A="two words"', exp);
+  }
+
+  // ------------------------------------------------------- JWT signer ----
+  lines.push('\n<b>JWT signer</b>');
+  {
+    const signed = (await run('jwt-signer', '{"sub":"123"}', { secret: 'topsecret', algorithm: 'sha256', expiresIn: 0, addIat: false })).output;
+    check('three dot-separated parts', signed.split('.').length === 3, signed);
+
+    const [h, p] = signed.split('.');
+    const { base64ToBytes } = await import('../js/lib/bytes.js');
+    const dec = (s) => JSON.parse(new TextDecoder().decode(base64ToBytes(s)));
+    check('header alg is HS256', dec(h).alg === 'HS256');
+    check('payload preserved', dec(p).sub === '123');
+
+    // Verify with an independent HMAC.
+    const { hmac } = await import('../js/lib/hashes.js');
+    const { utf8ToBytes, bytesToBase64 } = await import('../js/lib/bytes.js');
+    const parts = signed.split('.');
+    const expected = bytesToBase64(await hmac('sha256', utf8ToBytes('topsecret'), utf8ToBytes(`${parts[0]}.${parts[1]}`)), { urlSafe: true, pad: false });
+    check('signature verifies', parts[2] === expected, `${parts[2]} vs ${expected}`);
+
+    // And that the JWT decoder agrees.
+    const decoded = await run('jwt-decoder', signed, { secret: 'topsecret', secretEncoding: 'utf8' });
+    check('decoder confirms the signature is valid', decoded.extraHtml.includes('<strong>valid</strong>'));
+    const wrong = await run('jwt-decoder', signed, { secret: 'wrong', secretEncoding: 'utf8' });
+    check('decoder rejects a wrong secret', wrong.extraHtml.includes('<strong>invalid</strong>'));
+  }
+
+  // ------------------------------------------------------ token counter --
+  lines.push('\n<b>Token counter</b>');
+  {
+    const r = await run('token-counter', 'Hello world', { encoding: 'cl100k_base', showPieces: false, contextWindow: 0 });
+    check('cl100k tokenises "Hello world" to 2 tokens', r.output === '9906, 1917', r.output);
+    const o = await run('token-counter', 'Hello world', { encoding: 'o200k_base', showPieces: false, contextWindow: 0 });
+    check('o200k produces token ids', /^\d+(, \d+)*$/.test(o.output), o.output);
+    check('note reports the encoding', r.note.includes('cl100k_base'), r.note);
+  }
+
+  // ---------------------------------------------------- unicode/lines ----
+  lines.push('\n<b>Unicode &amp; line endings</b>');
+  {
+    const u = await run('unicode-inspector', 'a​b c', { onlySuspicious: true, limit: 400 });
+    check('zero-width space flagged', u.output.includes('U+200B'), u.output);
+    check('non-breaking space flagged', u.output.includes('U+00A0'));
+    check('suspicious count reported', u.note.includes('2 suspicious'), u.note);
+
+    const clean = await run('unicode-inspector', 'plain ascii', { onlySuspicious: false, limit: 400 });
+    check('clean text reports none suspicious', clean.note.includes('0 suspicious'), clean.note);
+
+    const le = await run('line-ending-inspector', 'a\r\nb\nc   \n', { convert: 'none' });
+    check('mixed endings detected', le.note.includes('mixed'), le.note);
+    check('CRLF counted', /CRLF \(\\r\\n\):\s+1/.test(le.output), le.output);
+    check('trailing whitespace counted', /Trailing whitespace:\s+1/.test(le.output));
+
+    const converted = await run('line-ending-inspector', 'a\r\nb   \n', { convert: 'clean' });
+    check('clean conversion strips CR and trailing spaces', converted.output === 'a\nb\n', JSON.stringify(converted.output));
+  }
+
+  // ------------------------------------------------- markdown table ------
+  lines.push('\n<b>Markdown table</b>');
+  {
+    const md = (await run('markdown-table', 'a,b\n1,22222', { align: 'keep', compact: false })).output;
+    check('CSV becomes a markdown table', md.split('\n').length === 3 && md.startsWith('| a'), JSON.stringify(md));
+    check('columns padded to equal width', md.split('\n')[0].length === md.split('\n')[2].length);
+    const auto = (await run('markdown-table', 'name,qty\nx,5', { align: 'auto', compact: false })).output;
+    check('auto alignment right-aligns numbers', auto.split('\n')[1].includes('-:'), auto);
+  }
+
+  // -------------------------------------------- speciality features -------
+  lines.push('\n<b>Speciality features</b>');
+  {
+    // UUID v3/v5 — vectors generated with Python's uuid module.
+    const uuidSpec = tool('uuid-generator');
+    const uuidRun = (over) => uuidSpec.run({ options: defaults(uuidSpec, over), tool: {} });
+
+    const v5 = (await uuidRun({ version: 'v5', names: 'example.com', namespace: 'dns' })).output.trim();
+    check('uuid v5 DNS example.com matches Python uuid5',
+      v5 === 'cfbff0d1-9375-5685-968c-48ce8b15ae17', v5);
+
+    const v5url = (await uuidRun({ version: 'v5', names: 'example.com', namespace: 'url' })).output.trim();
+    check('uuid v5 URL namespace differs and matches Python',
+      v5url === 'a5cf6e8e-4cfa-5f31-a804-6de6d1245e26', v5url);
+
+    const v3 = (await uuidRun({ version: 'v3', names: 'example.com', namespace: 'dns' })).output.trim();
+    check('uuid v3 DNS example.com matches Python uuid3',
+      v3 === '9073926b-929f-31c2-abc9-fad77ae3e8eb', v3);
+
+    const again = (await uuidRun({ version: 'v5', names: 'example.com', namespace: 'dns' })).output.trim();
+    check('uuid v5 is deterministic across calls', again === v5);
+
+    check('uuid v5 sets version nibble to 5', v5[14] === '5', v5);
+    check('uuid v3 sets version nibble to 3', v3[14] === '3', v3);
+    check('uuid variant bits are RFC 4122', '89ab'.includes(v5[19]), v5[19]);
+
+    const sqlOut = (await uuidRun({ version: 'v4', count: 2, format: 'sql' })).output;
+    check('uuid SQL output format', /^\('[0-9a-f-]{36}'\),$/m.test(sqlOut), sqlOut.split('\n')[0]);
+    const csOut = (await uuidRun({ version: 'v4', count: 1, format: 'csharp' })).output;
+    check('uuid C# output format', /^Guid\.Parse\("[0-9a-f-]{36}"\)$/.test(csOut.trim()), csOut);
+
+    let needsName = false;
+    try { await uuidRun({ version: 'v5', names: '' }); } catch { needsName = true; }
+    check('uuid v5 requires a name', needsName);
+
+    // Diff — moved block detection
+    const { diffLines } = await import('../js/tools/DiffCheckerTool.js?x=2');
+    const dt = tool ? null : null; void dt;
+    const { markMoves } = await import('../js/tools/DiffCheckerTool.js?x=2');
+    const moveRows = diffLines(['alpha', 'beta', 'gamma', 'delta'], ['gamma', 'alpha', 'beta', 'delta']);
+    const moves = markMoves(moveRows);
+    check(`diff detects moved lines (${moves} pairs)`, moves > 0, JSON.stringify(moveRows.map(r => r.type + (r.moved ? '*' : ''))));
+    check('moved lines are paired by id',
+      moveRows.filter(r => r.moved).length % 2 === 0 && moveRows.filter(r => r.moved).length >= 2);
+    check('genuinely added lines are not marked moved',
+      markMoves(diffLines(['a'], ['a', 'brand-new'])) === 0);
+
+    // JSON repair
+    const jsonSpec = tool('json-formatter');
+    const jsonRun = (input, over) => jsonSpec.run({ input, options: defaults(jsonSpec, over), tool: {} });
+
+    const broken = "{'name': 'test', items: [1,2,3,], ok: True, n: NaN, /* note */ }";
+    const repaired = await jsonRun(broken, { repair: true });
+    const parsed = JSON.parse(repaired.output);
+    check('repairs single quotes, bare keys, trailing comma, True, NaN and comments',
+      parsed.name === 'test' && parsed.items.length === 3 && parsed.ok === true && parsed.n === null,
+      repaired.output);
+    check('repair reports what it changed', repaired.note.includes('repaired'), repaired.note);
+
+    let stillFails = false;
+    try { await jsonRun('{"a": ', { repair: true }); } catch { stillFails = true; }
+    check('repair does not silently accept unfixable JSON', stillFails);
+
+    const untouched = await jsonRun('{"a":1}', { repair: true });
+    check('valid JSON is left alone by repair', !untouched.note.includes('repaired'), untouched.note);
+
+    // JSON size breakdown
+    const sized = await jsonRun('{"small":1,"big":"' + 'x'.repeat(500) + '"}', { sizes: true });
+    check('size breakdown lists the largest path first',
+      sized.extraHtml.includes('$.big') && sized.extraHtml.indexOf('$.big') < sized.extraHtml.indexOf('$.small'),
+      'expected $.big before $.small');
+    check('size breakdown shows a total', /\d+ bytes minified/.test(sized.extraHtml));
+  }
+
+} catch (err) {
+  fail++;
+  lines.push(`<span class="fail">FATAL ${esc(err.message)}\n${esc(err.stack)}</span>`);
+}
+
+lines.push(`\n<b>${pass} passed, ${fail} failed</b>`);
+lines.push(fail === 0 ? '<span class="pass">ALL GOOD</span>' : '<span class="fail">FAILURES PRESENT</span>');
+out.innerHTML = lines.join('\n');
+window.__done = true;
+</script>
+</body>
+</html>

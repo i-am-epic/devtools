@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mermaid Generator — Free Online Tool | DevTools</title>
+<meta name="description" content="Build flowcharts, sequence diagrams, ERDs and mind maps from plain lists or CSV. Write the structure as indented lines, arrows or CSV — get valid…">
+<meta name="keywords" content="mermaid, generate, flowchart, sequence, diagram, erd, mindmap, gantt, class, state, csv, build, create, chart, graph">
+<meta name="author" content="Nikhil">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<link rel="canonical" href="https://devtool.dev/t/mermaid-generator/">
+<meta name="color-scheme" content="light dark">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://devtool.dev/t/mermaid-generator/">
+<meta property="og:title" content="Mermaid Generator — Free Online Tool | DevTools">
+<meta property="og:description" content="Build flowcharts, sequence diagrams, ERDs and mind maps from plain lists or CSV. Write the structure as indented lines, arrows or CSV — get valid…">
+<meta property="og:site_name" content="DevTools">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Mermaid Generator — Free Online Tool | DevTools">
+<meta name="twitter:description" content="Build flowcharts, sequence diagrams, ERDs and mind maps from plain lists or CSV. Write the structure as indented lines, arrows or CSV — get valid…">
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23ff5e3a'/%3E%3C/svg%3E">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "SoftwareApplication",
+   "name": "Mermaid Generator",
+   "description": "Build flowcharts, sequence diagrams, ERDs and mind maps from plain lists or CSV. Write the structure as indented lines, arrows or CSV \u2014 get valid\u2026",
+   "url": "https://devtool.dev/t/mermaid-generator/",
+   "applicationCategory": "DeveloperApplication",
+   "operatingSystem": "Any",
+   "browserRequirements": "Requires JavaScript",
+   "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+   },
+   "author": {
+    "@type": "Person",
+    "name": "Nikhil",
+    "url": "https://github.com/i-am-epic"
+   },
+   "isPartOf": {
+    "@type": "WebSite",
+    "name": "DevTools",
+    "url": "https://devtool.dev/"
+   }
+  },
+  {
+   "@type": "FAQPage",
+   "mainEntity": [
+    {
+     "@type": "Question",
+     "name": "Is Mermaid Generator free to use?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Yes. Every tool on this site is free, needs no account, and has no usage limits."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Does Mermaid Generator upload my data?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "No. It runs entirely in your browser using JavaScript. Your input is never sent to a server, which makes it safe for data you would not paste into a hosted tool. The two exceptions across the whole site (the Azure Service Bus relay and the IP lookup) are documented and opt-in."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "What options does Mermaid Generator have?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "You can configure: Diagram type, Direction (flowchart), Node shape (flowchart), Title (optional)."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Does Mermaid Generator work offline?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Once the page has loaded it keeps working without a connection. A few tools fetch a library on first use, after which they are cached."
+     }
+    }
+   ]
+  },
+  {
+   "@type": "HowTo",
+   "name": "How to use Mermaid Generator",
+   "step": [
+    {
+     "@type": "HowToStep",
+     "position": 1,
+     "text": "Open Mermaid Generator and paste or type your input."
+    },
+    {
+     "@type": "HowToStep",
+     "position": 2,
+     "text": "Adjust the options if you need something other than the defaults."
+    },
+    {
+     "@type": "HowToStep",
+     "position": 3,
+     "text": "Copy the result, or save it to a file."
+    }
+   ]
+  },
+  {
+   "@type": "BreadcrumbList",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "Home",
+     "item": "https://devtool.dev/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Diagrams & Colour",
+     "item": "https://devtool.dev/#image"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "Mermaid Generator",
+     "item": "https://devtool.dev/t/mermaid-generator/"
+    }
+   ]
+  }
+ ]
+}
+</script>
+<style>
+  :root { color-scheme: light dark; --bg:#e9e6de; --ink:#1a1f2b; --ink2:#6b675d; --surface:#fffbf3; --line:#d8d3c7; --accent:#ff5e3a; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#191817; --ink:#ede9e0; --ink2:#a8a296; --surface:#262420; --line:#3a3833; } }
+  * { box-sizing: border-box; }
+  body { font-family: Helvetica, "Helvetica Neue", Arial, sans-serif; background: var(--bg); color: var(--ink);
+         line-height: 1.65; margin: 0; padding: 2.5rem 1.25rem 4rem; }
+  main { max-width: 780px; margin: 0 auto; }
+  nav.crumbs { font-size: .82rem; color: var(--ink2); margin-bottom: 1.5rem; }
+  nav.crumbs a { color: var(--ink2); }
+  h1 { font-size: clamp(1.8rem, 5vw, 2.4rem); letter-spacing: -.03em; line-height: 1.1; margin: 0 0 .5rem; }
+  .ico { display:inline-flex; width:44px; height:44px; align-items:center; justify-content:center;
+          background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent);
+          border-radius: 12px; font-size: 1.1rem; font-weight: 800; margin: 0 0 .6rem; }
+  h2 { font-size: .78rem; text-transform: uppercase; letter-spacing: .16em; color: var(--ink2);
+        margin: 2.5rem 0 .75rem; padding-bottom: .4rem; border-bottom: 2px solid var(--line); }
+  .lede { font-size: 1.05rem; color: var(--ink2); margin-bottom: 1.75rem; }
+  .cta { display:inline-block; background: var(--ink); color: var(--bg); text-decoration:none;
+          padding: .9rem 1.8rem; border-radius: 999px; font-weight: 800; text-transform: uppercase;
+          letter-spacing: .12em; font-size: .78rem; }
+  a { color: #d9451f; }
+  @media (prefers-color-scheme: dark) { a { color: #ff8a5c; } }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { border: 1px solid var(--line); padding: .5rem .7rem; text-align: left; vertical-align: top; }
+  th { background: var(--surface); }
+  pre { background: var(--surface); border: 2px solid var(--line); border-radius: 12px;
+         padding: 1rem; overflow-x: auto; font-size: .85rem; }
+  ul, ol { padding-left: 1.3rem; }
+  li { margin-bottom: .45rem; }
+  details { background: var(--surface); border: 2px solid var(--line); border-radius: 12px;
+             padding: .9rem 1.1rem; margin-bottom: .6rem; }
+  summary { font-weight: 800; cursor: pointer; }
+  details p { margin: .6rem 0 0; color: var(--ink2); }
+  .note { background: var(--surface); border: 2px solid var(--line); border-left: 6px solid var(--accent);
+           border-radius: 12px; padding: 1rem 1.2rem; color: var(--ink2); font-size: .92rem; }
+  code { background: var(--surface); padding: .12em .4em; border-radius: 5px; font-size: .88em; }
+  footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 2px solid var(--line);
+            font-size: .82rem; color: var(--ink2); }
+</style>
+</head>
+<body>
+<main>
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a href="https://devtool.dev/">DevTools</a> → <a href="https://devtool.dev/#image">Diagrams &amp; Colour</a> → Mermaid Generator
+  </nav>
+
+  <!-- The icon sits outside the h1 so the heading text is exactly the tool
+       name — inside it, "ID" + "UUID Generator" extracts as "IDUUID Generator". -->
+  <p class="ico" aria-hidden="true">◈+</p>
+  <h1>Mermaid Generator</h1>
+  <p class="lede">Write the structure as indented lines, arrows or CSV — get valid Mermaid you can paste into a README.</p>
+
+  <p><a class="cta" href="https://devtool.dev/#mermaid-generator">Open Mermaid Generator →</a></p>
+
+  <h2>What it does</h2>
+  <p>Build flowcharts, sequence diagrams, ERDs and mind maps from plain lists or CSV. It runs entirely in your browser — your input never leaves
+  your machine, so it is safe to use with data you would not paste into a hosted service.</p>
+
+      <h2>Example input</h2>
+      <pre>Request received -&gt; Validate payload
+Validate payload -&gt; Enrich from cache
+Validate payload -&gt; Reject
+Enrich from cache -&gt; Publish to Service Bus
+Publish to Service Bus -&gt; Acknowledge</pre>
+      <h2>Options</h2>
+      <table>
+        <thead><tr><th>Setting</th><th>Values</th><th>Notes</th></tr></thead>
+        <tbody>
+        <tr><td><strong>Diagram type</strong></td><td>Flowchart — from &quot;A -&gt; B&quot; lines, Sequence — from &quot;A -&gt; B: message&quot; lines, Mind map — from indented lines, Tree flowchart — from indented lines, ER diagram — from CSV columns, Pie chart — from &quot;label, value&quot; lines, User journey — from &quot;step: score: actor&quot;</td><td></td></tr>
+        <tr><td><strong>Direction (flowchart)</strong></td><td>Top to bottom, Left to right, Bottom to top, Right to left</td><td></td></tr>
+        <tr><td><strong>Node shape (flowchart)</strong></td><td>box, round, stadium, circle, diamond, hex</td><td></td></tr>
+        <tr><td><strong>Title (optional)</strong></td><td>text</td><td></td></tr>
+        </tbody>
+      </table>
+
+  <h2>How to use it</h2>
+  <ol>
+        <li>Open Mermaid Generator and paste or type your input.</li>
+        <li>Adjust the options if you need something other than the defaults.</li>
+        <li>Copy the result, or save it to a file.</li>
+  </ol>
+
+
+  <h2>Frequently asked questions</h2>
+      <details open><summary>Is Mermaid Generator free to use?</summary><p>Yes. Every tool on this site is free, needs no account, and has no usage limits.</p></details>
+      <details open><summary>Does Mermaid Generator upload my data?</summary><p>No. It runs entirely in your browser using JavaScript. Your input is never sent to a server, which makes it safe for data you would not paste into a hosted tool. The two exceptions across the whole site (the Azure Service Bus relay and the IP lookup) are documented and opt-in.</p></details>
+      <details open><summary>What options does Mermaid Generator have?</summary><p>You can configure: Diagram type, Direction (flowchart), Node shape (flowchart), Title (optional).</p></details>
+      <details open><summary>Does Mermaid Generator work offline?</summary><p>Once the page has loaded it keeps working without a connection. A few tools fetch a library on first use, after which they are cached.</p></details>
+
+  <h2>Related tools</h2>
+  <ul>
+        <li><a href="https://devtool.dev/t/mermaid-viewer/">Mermaid Viewer</a> — Write Mermaid diagrams with a live preview and export to SVG or PNG.</li>
+        <li><a href="https://devtool.dev/t/mermaid-validator/">Mermaid Validator</a> — Check a Mermaid diagram parses, and get the error line when it does not.</li>
+        <li><a href="https://devtool.dev/t/qr-generator/">QR Code Generator</a> — Turn text, a URL, wifi credentials or a vCard into a downloadable QR code.</li>
+        <li><a href="https://devtool.dev/t/color-converter/">Colour Converter</a> — Convert between HEX, RGB, HSL, HSV and CMYK with contrast checking.</li>
+        <li><a href="https://devtool.dev/t/qr-reader/">QR Code Reader</a> — Extract the text from a QR code image without uploading it anywhere.</li>
+        <li><a href="https://devtool.dev/t/json-to-types/">JSON to Types</a> — Generate TypeScript, Python, Go, C#, Rust or Java models from a JSON sample.</li>
+  </ul>
+
+  <footer>
+    <p><a href="https://devtool.dev/">← All DevTools tools</a> · Built by Nikhil
+    (<a href="https://github.com/i-am-epic" rel="noopener">@i-am-epic</a>)</p>
+  </footer>
+</main>
+
+<script>
+  // Anyone arriving with JavaScript on goes straight to the live tool; the
+  // static copy above is what a crawler (and a no-JS visitor) reads.
+  if (!location.search.includes('static')) {
+    location.replace('https://devtool.dev/#mermaid-generator'.replace(/^https?:\/\/[^/]+/, ''));
+  }
+</script>
+</body>
+</html>

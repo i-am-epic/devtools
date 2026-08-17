@@ -1,82 +1,38 @@
-# CodeForge - Multi-stage Docker build for production
-# Created by @nikboson
+# DevTools container.
+#
+# Runs server.py, which serves the static site AND the Service Bus relay at
+# /api/servicebus. An nginx-only image would serve the pages fine but the
+# Service Bus tools would have nothing to talk to, because Azure's REST API
+# sends no CORS headers.
+#
+# Python standard library only -- no dependencies to install.
 
-# Stage 1: Build stage (if needed for future build tools)
-FROM node:18-alpine AS builder
+FROM python:3.12-alpine
+
+LABEL maintainer="@i-am-epic"
+LABEL description="DevTools - browser-based developer utilities"
+LABEL version="4.0.0"
 
 WORKDIR /app
 
-# For future: Add build steps here if you add TypeScript/bundlers
-# COPY package*.json ./
-# RUN npm ci --only=production
+# Run as a non-root user.
+RUN adduser -D -u 10001 devtools
 
-# Stage 2: Production stage with nginx
-FROM nginx:alpine
+COPY server.py ./
+COPY index.html styles.css robots.txt sitemap.xml ./
+COPY js/ ./js/
+COPY agents/ ./agents/
 
-# Set maintainer
-LABEL maintainer="@nikboson"
-LABEL description="CodeForge - 100+ Free Developer Tools"
-LABEL version="1.0.0"
+USER devtools
 
-# Remove default nginx static assets
-RUN rm -rf /usr/share/nginx/html/*
+EXPOSE 8000
 
-# Copy application files
-COPY index.html /usr/share/nginx/html/
-COPY fresh.html /usr/share/nginx/html/
-COPY test.html /usr/share/nginx/html/
-COPY debug.html /usr/share/nginx/html/
-COPY styles.css /usr/share/nginx/html/
-COPY tools-config.json /usr/share/nginx/html/
-COPY sitemap.xml /usr/share/nginx/html/
-COPY robots.txt /usr/share/nginx/html/
-COPY js/ /usr/share/nginx/html/js/
+ENV PYTHONUNBUFFERED=1
+# Required inside a container: the default bind is localhost-only so that a
+# local run does not expose the Service Bus relay to the network.
+ENV DEVTOOLS_HOST=0.0.0.0
 
-# Create custom nginx config for SPA
-RUN echo 'server { \
-    listen 80; \
-    server_name localhost; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    \
-    # Gzip compression \
-    gzip on; \
-    gzip_vary on; \
-    gzip_min_length 1024; \
-    gzip_types text/plain text/css text/xml text/javascript application/javascript application/json application/xml+rss; \
-    \
-    # Cache static assets \
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ { \
-        expires 1y; \
-        add_header Cache-Control "public, immutable"; \
-    } \
-    \
-    # No cache for HTML \
-    location ~* \.(html)$ { \
-        expires -1; \
-        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"; \
-    } \
-    \
-    # Security headers \
-    add_header X-Frame-Options "SAMEORIGIN" always; \
-    add_header X-Content-Type-Options "nosniff" always; \
-    add_header X-XSS-Protection "1; mode=block" always; \
-    add_header Referrer-Policy "no-referrer-when-downgrade" always; \
-    \
-    # SPA fallback \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-    \
-    error_page 404 /index.html; \
-}' > /etc/nginx/conf.d/default.conf
-
-# Expose port 80
-EXPOSE 80
-
-# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2).status == 200 else 1)"
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["python", "server.py", "8000"]

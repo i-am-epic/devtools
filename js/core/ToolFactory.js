@@ -1,46 +1,29 @@
-// Factory Pattern (Open/Closed Principle - open for extension, closed for modification)
-import { JsonBeautifierTool } from '../tools/JsonBeautifierTool.js';
-import { GuidGeneratorTool } from '../tools/GuidGeneratorTool.js';
-import { Sha256Tool } from '../tools/Sha256Tool.js';
-import { Base64Tool } from '../tools/Base64Tool.js';
-import { DiffCheckerTool } from '../tools/DiffCheckerTool.js';
-import { ServiceBusSenderTool } from '../tools/ServiceBusSenderTool.js';
-import { ServiceBusListenerTool } from '../tools/ServiceBusListenerTool.js';
-import { CsvToExcelTool } from '../tools/CsvToExcelTool.js';
-import { MermaidViewerTool } from '../tools/MermaidViewerTool.js';
-import { ParquetViewerTool } from '../tools/ParquetViewerTool.js';
-import { PlaceholderTool } from '../tools/PlaceholderTool.js';
+// Creates a tool instance from its registry entry.
+//
+// Entries carrying a `spec` are rendered by the generic SimpleTool engine;
+// entries carrying a `toolClass` get their bespoke implementation.
+
+import { SimpleTool } from './SimpleTool.js';
 
 export class ToolFactory {
     constructor() {
-        this.toolRegistry = new Map([
-            ['json-beautifier', JsonBeautifierTool],
-            ['guid-generator', GuidGeneratorTool],
-            ['sha256-hash', Sha256Tool],
-            ['base64-encoder', Base64Tool],
-            ['diff-checker', DiffCheckerTool],
-            ['servicebus-sender', ServiceBusSenderTool],
-            ['servicebus-listener', ServiceBusListenerTool],
-            ['csv-to-excel', CsvToExcelTool],
-            ['mermaid-viewer', MermaidViewerTool],
-            ['parquet-viewer', ParquetViewerTool]
-        ]);
+        this.overrides = new Map();
     }
 
-    // Register new tool class (extensibility)
+    /** Replace the implementation for a tool id (used by tests and plugins). */
     register(toolId, toolClass) {
-        this.toolRegistry.set(toolId, toolClass);
+        this.overrides.set(toolId, toolClass);
     }
 
-    // Create tool instance
     create(config) {
-        const ToolClass = this.toolRegistry.get(config.id);
-        
-        if (!ToolClass) {
-            // Return placeholder for unimplemented tools
-            return new PlaceholderTool(config);
-        }
+        const Override = this.overrides.get(config.id);
+        if (Override) return new Override(config);
+        if (config.toolClass) return new config.toolClass(config);
+        if (config.spec) return new SimpleTool(config, config.spec);
 
-        return new ToolClass(config);
+        throw new Error(
+            `Tool "${config.id}" has neither a spec nor a toolClass. `
+            + 'Every entry in js/tools/registry.js must have one of the two.',
+        );
     }
 }

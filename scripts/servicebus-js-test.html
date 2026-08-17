@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>api/servicebus.js cross-check</title>
+<style>
+  body { font-family: ui-monospace, Consolas, monospace; padding: 1.5rem; background: #14140f; color: #ede9e0; font-size: 13px; }
+  .pass { color: #4ade80; } .fail { color: #f87171; } .info { color: #93c5fd; }
+  pre { white-space: pre-wrap; line-height: 1.55; }
+</style>
+</head>
+<body>
+<h1 style="font-size:1.1rem">api/servicebus.js - cross-check against server.py</h1>
+<p style="color:#93c5fd">There is no Node runtime on this machine, so the real Vercel function is loaded
+here with a node:crypto shim and its output compared to the Python relay's.</p>
+<pre id="out">running...</pre>
+<script type="module">
+const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const out = document.getElementById('out');
+const lines = [];
+let pass = 0, fail = 0;
+
+function check(label, condition, detail = '') {
+  if (condition) { pass++; lines.push(`<span class="pass">ok   ${esc(label)}</span>`); }
+  else { fail++; lines.push(`<span class="fail">FAIL ${esc(label)} ${esc(detail)}</span>`); }
+}
+
+try {
+  const { sha256Sync, hmacSha256Sync, digest } = await import('../js/lib/hashes.js?x=1');
+  const { utf8ToBytes, bytesToBase64, bytesToHex } = await import('../js/lib/bytes.js?x=1');
+
+  // The shim has to be correct before it can vouch for anything else.
+  const viaWebCrypto = bytesToHex(await digest('sha256', utf8ToBytes('abc')));
+  check('sha256Sync agrees with WebCrypto', bytesToHex(sha256Sync(utf8ToBytes('abc'))) === viaWebCrypto);
+
+  // ---- load the real Vercel function with node:crypto shimmed -------------
+  const source = await (await fetch('../api/servicebus.js', { cache: 'reload' })).text();
+
+  const shim = `
+    const crypto = {
+      createHmac(algorithm, key) {
+        if (algorithm !== 'sha256') throw new Error('shim only implements sha256');
+        let message = new Uint8Array(0);
+        return {
+          update(text) {
+            message = __utf8(text);
+            return this;
+          },
+          digest(encoding) {
+            const mac = __hmac(typeof key === 'string' ? __utf8(key) : key, message);
+            if (encoding !== 'base64') throw new Error('shim only implements base64');
+            return __b64(mac);
+          },
+        };
+      },
+    };
+  `;
+
+  const patched = source.replace(/^import crypto from 'node:crypto';\s*$/m, shim);
+  check('node:crypto import was replaced', patched !== source && !patched.includes("from 'node:crypto'"));
+
+  // Expose the helpers the shim needs, then import the patched module.
+  window.__utf8 = utf8ToBytes;
+  window.__b64 = bytesToBase64;
+  window.__hmac = hmacSha256Sync;
+  const prelude = 'const __utf8 = window.__utf8, __b64 = window.__b64, __hmac = window.__hmac;\n';
+
+  // Re-export the internals so the test can reach them.
+  const exposed = prelude + patched
+    + '\nexport { parseConnectionString, makeSasToken, entityUrl };\n';
+
+  const blob = new Blob([exposed], { type: 'text/javascript' });
+  const url = URL.createObjectURL(blob);
+  const mod = await import(url);
+  URL.revokeObjectURL(url);
+  lines.push('<span class="info">api/servicebus.js loaded with shim</span>');
+
+  const KEY = 'abcdEFGH1234567890abcdEFGH1234567890abcdEFG=';
+  const CS = `Endpoint=sb://demo-ns.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=${KEY}`;
+
+  // ---- parsing parity ----------------------------------------------------
+  const parsed = mod.parseConnectionString(CS);
+  check('host extracted', parsed.host === 'demo-ns.servicebus.windows.net', parsed.host);
+  check('key name extracted', parsed.keyName === 'RootManageSharedAccessKey', parsed.keyName);
+  check("base64 key with '=' survives intact", parsed.key === KEY, parsed.key);
+  check('EntityPath extracted', mod.parseConnectionString(`${CS};EntityPath=orders`).entityPath === 'orders');
+
+  const rejects = (fn, fragment) => {
+    try { fn(); return false; } catch (e) { return e.message.toLowerCase().includes(fragment); }
+  };
+  check('empty connection string rejected', rejects(() => mod.parseConnectionString(''), 'required'));
+  check('missing SharedAccessKey rejected',
+    rejects(() => mod.parseConnectionString('Endpoint=sb://x.servicebus.windows.net/;SharedAccessKeyName=n'), 'sharedaccesskey'));
+
+  // ---- entity urls -------------------------------------------------------
+  check('queue url',
+    mod.entityUrl('demo-ns.servicebus.windows.net', 'orders') === 'https://demo-ns.servicebus.windows.net/orders');
+  check('subscription path preserved',
+    mod.entityUrl('demo-ns.servicebus.windows.net', 'events/subscriptions/audit')
+      === 'https://demo-ns.servicebus.windows.net/events/subscriptions/audit');
+  check('surrounding slashes trimmed',
+    mod.entityUrl('demo-ns.servicebus.windows.net', '/orders/') === 'https://demo-ns.servicebus.windows.net/orders');
+
+  // ---- SAS token parity with server.py -----------------------------------
+  const uri = 'https://demo-ns.servicebus.windows.net/orders';
+  const token = mod.makeSasToken(uri, 'RootManageSharedAccessKey', KEY, 3600);
+  const parts = Object.fromEntries(
+    token.replace('SharedAccessSignature ', '').split('&').map((p) => {
+      const i = p.indexOf('=');
+      return [p.slice(0, i), p.slice(i + 1)];
+    }),
+  );
+
+  check('token prefix', token.startsWith('SharedAccessSignature '));
+  check('token fields', ['sr', 'sig', 'se', 'skn'].every((k) => k in parts), Object.keys(parts).join(','));
+  check('sr is the url-encoded resource uri', decodeURIComponent(parts.sr) === uri);
+
+  // Recompute the signature for this exact expiry the documented way, and ask
+  // the Python relay for its answer to the same inputs.
+  const expiry = Number(parts.se);
+  const encodedUri = encodeURIComponent(uri);
+  const reference = bytesToBase64(hmacSha256Sync(utf8ToBytes(KEY), utf8ToBytes(`${encodedUri}\n${expiry}`)));
+  check('signature matches an independent HMAC-SHA256', decodeURIComponent(parts.sig) === reference,
+    `js=${decodeURIComponent(parts.sig)} ref=${reference}`);
+
+  const pythonResponse = await fetch('/api/sas-debug', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ uri, keyName: 'RootManageSharedAccessKey', key: KEY, expiry }),
+  });
+
+  if (pythonResponse.ok) {
+    const python = await pythonResponse.json();
+    check('JS and Python produce an identical SAS token', python.token === token,
+      `\n   py=${python.token}\n   js=${token}`);
+  } else {
+    lines.push('<span class="info">skip: /api/sas-debug not available on this server build</span>');
+  }
+
+} catch (err) {
+  fail++;
+  lines.push(`<span class="fail">FATAL ${esc(err.message)}\n${esc(err.stack)}</span>`);
+}
+
+lines.push(`\n<b>${pass} passed, ${fail} failed</b>`);
+lines.push(fail === 0 ? '<span class="pass">ALL GOOD</span>' : '<span class="fail">FAILURES PRESENT</span>');
+out.innerHTML = lines.join('\n');
+window.__done = true;
+</script>
+</body>
+</html>

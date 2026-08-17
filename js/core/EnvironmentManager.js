@@ -148,6 +148,112 @@ export class EnvironmentManager {
         };
     }
     
+    // ---------------------------------------------------------- export --
+
+    /**
+     * Serialise environments for download.
+     * @param {string[]|null} ids environment ids to include, or null for all
+     */
+    exportEnvironments(ids = null) {
+        const all = this.getAllEnvironments();
+        const chosen = ids ? all.filter((env) => ids.includes(env.id)) : all;
+
+        return {
+            format: 'devtools-environments',
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            environments: chosen.map((env) => ({
+                name: env.name,
+                description: env.description || '',
+                variables: { ...(env.variables || {}) },
+            })),
+        };
+    }
+
+    /**
+     * Read an exported file back in. Ids are regenerated so importing never
+     * overwrites an unrelated environment that happens to share an id.
+     *
+     * @param {object|string} payload parsed JSON or raw text
+     * @param {'rename'|'replace'|'skip'} onConflict what to do when a name already exists
+     * @returns {{imported: number, replaced: number, skipped: number, names: string[]}}
+     */
+    importEnvironments(payload, onConflict = 'rename') {
+        let data = payload;
+        if (typeof data === 'string') {
+            try {
+                data = JSON.parse(data);
+            } catch (err) {
+                throw new Error(`That file is not valid JSON: ${err.message}`);
+            }
+        }
+
+        // Accept our own format, a bare array, or a single environment object.
+        let incoming;
+        if (Array.isArray(data)) incoming = data;
+        else if (Array.isArray(data?.environments)) incoming = data.environments;
+        else if (data && typeof data === 'object' && data.variables) incoming = [data];
+        else {
+            throw new Error(
+                'Unrecognised file. Expected an export from this tool, an array of environments, '
+                + 'or a single { name, variables } object.',
+            );
+        }
+
+        const existing = this.getAllEnvironments();
+        const result = { imported: 0, replaced: 0, skipped: 0, names: [] };
+
+        for (const raw of incoming) {
+            if (!raw || typeof raw !== 'object') continue;
+
+            const variables = raw.variables && typeof raw.variables === 'object' && !Array.isArray(raw.variables)
+                ? raw.variables
+                : {};
+
+            // Coerce every value to a string -- variables are substituted into text.
+            const cleanVariables = {};
+            for (const [key, value] of Object.entries(variables)) {
+                if (!key) continue;
+                cleanVariables[key] = value === null || value === undefined ? '' : String(value);
+            }
+
+            let name = String(raw.name || 'Imported environment').trim() || 'Imported environment';
+            const clash = existing.find((env) => env.name === name);
+
+            if (clash) {
+                if (onConflict === 'skip') { result.skipped++; continue; }
+                if (onConflict === 'replace') {
+                    clash.description = String(raw.description || '');
+                    clash.variables = cleanVariables;
+                    this.saveEnvironment(clash);
+                    result.replaced++;
+                    result.names.push(name);
+                    continue;
+                }
+                let suffix = 2;
+                while (existing.some((env) => env.name === `${name} (${suffix})`)) suffix++;
+                name = `${name} (${suffix})`;
+            }
+
+            const created = {
+                id: null,
+                name,
+                description: String(raw.description || ''),
+                variables: cleanVariables,
+            };
+            this.saveEnvironment(created);
+            existing.push(created);
+            result.imported++;
+            result.names.push(name);
+        }
+
+        if (!result.imported && !result.replaced && !result.skipped) {
+            throw new Error('The file contained no environments.');
+        }
+
+        return result;
+    }
+
     // Add or update a custom variable
     addVariable(envId, key, value) {
         const environments = this.getAllEnvironments();

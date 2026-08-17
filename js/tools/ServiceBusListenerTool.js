@@ -1,103 +1,124 @@
+// Consume messages from an Azure Service Bus queue or subscription.
+//
+// Uses the REST peek-lock flow: receive locks a message and returns a lock URI,
+// then you complete it (removes it) or abandon it (returns it to the queue).
+// Receive-and-delete mode skips the lock entirely.
+
 import { BaseTool } from '../core/BaseTool.js';
 import { StorageManager } from '../utils/StorageManager.js';
 import { EnvironmentManager } from '../core/EnvironmentManager.js';
+import { call, checkProxy, inspectConnectionString, relayBanner } from '../lib/servicebus.js';
+import { toast, copyText, downloadText } from '../ui/toast.js';
+
+const escapeHtml = (value) => String(value)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+/** Pretty-print a body when it happens to be JSON. */
+function formatBody(text) {
+    const trimmed = (text || '').trim();
+    if (!trimmed) return '(empty body)';
+    if (/^[[{]/.test(trimmed)) {
+        try {
+            return JSON.stringify(JSON.parse(trimmed), null, 2);
+        } catch {
+            return text;
+        }
+    }
+    return text;
+}
 
 export class ServiceBusListenerTool extends BaseTool {
     constructor(config) {
         super(config);
         this.storage = new StorageManager();
         this.envManager = new EnvironmentManager();
-        this.isListening = false;
         this.messages = [];
-        this.simulationInterval = null;
+        this.running = false;
+        this.emptyPolls = 0;
     }
 
     render() {
-        const savedConfig = this.storage.loadConfig('servicebus-listener');
-        const history = this.storage.loadHistory('servicebus-listener');
-        const activeEnv = this.envManager.getActiveEnvironment();
+        const saved = this.storage.loadConfig('servicebus-listener') || {};
+        const history = this.storage.loadHistory('servicebus-listener') || [];
 
         return `
-            <div class="tool-interface">
-                <h2>${this.icon} ${this.name}</h2>
-                
-                ${activeEnv ? `
-                    <div style="padding: 0.75rem 1rem; background: rgba(81, 207, 102, 0.1); border: 1px solid rgba(81, 207, 102, 0.3); border-radius: 8px; margin-bottom: 1.5rem;">
-                        <div style="color: #51cf66; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem;">
-                            🌍 Environment: ${activeEnv.name}
-                        </div>
-                        <div style="color: var(--text-secondary); font-size: 0.85rem;">
-                            Using environment variables. Type {{variableName}} to use them.
-                        </div>
-                    </div>
-                ` : ''}
-                
-                <div class="config-section">
-                    <div class="tool-section">
-                        <h3>Configuration</h3>
-                        
-                        ${history.length > 0 ? `
-                        <div style="margin-bottom: 1rem;">
-                            <label style="color: var(--text-secondary); font-size: 0.875rem; display: block; margin-bottom: 0.5rem;">
-                                Load from History
-                            </label>
-                            <select id="sblConfigHistory" style="width: 100%; padding: 0.75rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem;">
-                                <option value="">-- Select a saved configuration --</option>
-                                ${history.map((h, i) => `
-                                    <option value="${i}">${h.label} (${new Date(h.timestamp).toLocaleString()})</option>
+            <div class="tool-interface" data-cat="cloud">
+                <h2><span class="tool-icon">${this.icon}</span>${escapeHtml(this.name)}</h2>
+                <p class="tool-lede">
+                    Read messages from a queue or a topic subscription. Peek-lock mode leaves each message on the
+                    entity until you explicitly complete it, so you can inspect traffic without consuming it.
+                </p>
+
+                <div id="sbRelayStatus"></div>
+
+                <div class="tool-section">
+                    <h3>Connection</h3>
+
+                    ${history.length ? `
+                        <div style="margin-bottom:0.85rem;">
+                            <label for="sbHistory">Saved connections</label>
+                            <select id="sbHistory">
+                                <option value="">— Select a saved connection —</option>
+                                ${history.map((entry, index) => `
+                                    <option value="${index}">${escapeHtml(entry.label || entry.queueName || 'Untitled')} · ${escapeHtml(new Date(entry.timestamp).toLocaleString())}</option>
                                 `).join('')}
                             </select>
-                        </div>
-                        ` : ''}
-                        
-                        <div style="margin-bottom: 1rem;">
-                            <label style="color: var(--text-secondary); font-size: 0.875rem; display: block; margin-bottom: 0.5rem;">
-                                Configuration Label (optional)
-                            </label>
-                            <input type="text" id="sblConfigLabel" placeholder="e.g., Production, Dev, Test" 
-                                value="${savedConfig?.label || ''}"
-                                style="width: 100%; padding: 0.75rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem; min-height: auto;">
-                        </div>
-                        
-                        <div style="margin-bottom: 1rem;">
-                            <label style="color: var(--text-secondary); font-size: 0.875rem; display: block; margin-bottom: 0.5rem;">
-                                Connection String *
-                            </label>
-                            <textarea id="sblConnectionString" placeholder="Endpoint=sb://...;SharedAccessKeyName=...;SharedAccessKey=..." 
-                                style="min-height: 100px; font-family: 'Monaco', monospace; font-size: 0.85rem;"
-                            >${savedConfig?.connectionString || ''}</textarea>
-                        </div>
-                        
-                        <div style="margin-bottom: 1rem;">
-                            <label style="color: var(--text-secondary); font-size: 0.875rem; display: block; margin-bottom: 0.5rem;">
-                                Queue or Topic/Subscription Name *
-                            </label>
-                            <input type="text" id="sblQueueName" placeholder="my-queue or my-topic/subscriptions/my-sub" 
-                                value="${savedConfig?.queueName || ''}"
-                                style="width: 100%; padding: 0.75rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem; min-height: auto;">
-                        </div>
-                        
-                        <button class="action-btn" id="sblSaveConfig">Save Configuration</button>
-                        <button class="action-btn secondary" id="sblClearConfig">Clear</button>
+                        </div>` : ''}
+
+                    <div style="margin-bottom:0.85rem;">
+                        <label for="sbConnectionString">Connection string</label>
+                        <textarea id="sbConnectionString" class="short" spellcheck="false"
+                            placeholder="Endpoint=sb://your-namespace.servicebus.windows.net/;SharedAccessKeyName=Listen;SharedAccessKey=…">${escapeHtml(saved.connectionString || '')}</textarea>
+                        <div class="helper-text" id="sbConnInfo"></div>
                     </div>
 
-                    <div class="tool-section">
-                        <h3>Listener Control</h3>
-                        <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem;">
-                            <button class="action-btn" id="sblStartBtn">Start Listening</button>
-                            <button class="action-btn secondary" id="sblStopBtn" disabled>Stop Listening</button>
-                            <button class="action-btn secondary" id="sblClearMessages">Clear Messages</button>
+                    <div class="field-group">
+                        <div>
+                            <label for="sbEntity">Queue, or topic/subscriptions/name</label>
+                            <input type="text" id="sbEntity" value="${escapeHtml(saved.queueName || '')}"
+                                   placeholder="orders  ·  events/subscriptions/audit">
                         </div>
-                        <div id="sblStatus" style="padding: 0.75rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-secondary); font-size: 0.9rem;">
-                            Status: Not connected
+                        <div>
+                            <label for="sbMode">Receive mode</label>
+                            <select id="sbMode">
+                                <option value="peek-lock">Peek-lock — inspect, then settle</option>
+                                <option value="receive-delete">Receive and delete — destructive</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="sbWait">Long-poll wait (seconds)</label>
+                            <input type="number" id="sbWait" value="5" min="0" max="55">
+                        </div>
+                        <div>
+                            <label for="sbLabel">Save as (optional)</label>
+                            <input type="text" id="sbLabel" value="${escapeHtml(saved.label || '')}" placeholder="Prod orders">
                         </div>
                     </div>
 
-                    <div class="tool-section">
-                        <h3>Received Messages (<span id="sblMessageCount">0</span>)</h3>
-                        <div class="output-section" id="sblOutput" style="max-height: 400px; overflow-y: auto;">
-                            <pre>No messages received yet. Click "Start Listening" to begin...</pre>
-                        </div>
+                    <div class="btn-row">
+                        <button class="action-btn secondary" id="sbTest">Test connection</button>
+                        <button class="action-btn secondary" id="sbSave">Save connection</button>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <div class="btn-row">
+                        <button class="action-btn" id="sbReceiveOne">Receive one</button>
+                        <button class="action-btn" id="sbStart">Start listening</button>
+                        <button class="action-btn danger" id="sbStop" disabled>Stop</button>
+                        <button class="action-btn secondary" id="sbCompleteAll">Complete all shown</button>
+                        <button class="action-btn secondary" id="sbExport">Export JSON</button>
+                        <button class="action-btn secondary" id="sbClearLog">Clear</button>
+                    </div>
+                    <div class="helper-text" id="sbRunState">Idle.</div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Messages (<span id="sbCount">0</span>)</h3>
+                    <div id="sbMessages">
+                        <div class="info-box">No messages yet. Press <strong>Receive one</strong> to pull a single
+                        message, or <strong>Start listening</strong> to poll continuously.</div>
                     </div>
                 </div>
             </div>
@@ -105,241 +126,322 @@ export class ServiceBusListenerTool extends BaseTool {
     }
 
     onOpen() {
-        setTimeout(() => {
-            // Load from history
-            document.getElementById('sblConfigHistory')?.addEventListener('change', (e) => {
-                if (e.target.value !== '') {
-                    const history = this.storage.loadHistory('servicebus-listener');
-                    const config = history[parseInt(e.target.value)];
-                    if (config) {
-                        document.getElementById('sblConfigLabel').value = config.label || '';
-                        document.getElementById('sblConnectionString').value = config.connectionString || '';
-                        document.getElementById('sblQueueName').value = config.queueName || '';
-                    }
-                }
-            });
+        setTimeout(async () => {
+            const status = document.getElementById('sbRelayStatus');
+            const available = await checkProxy(true);
+            if (status) status.innerHTML = relayBanner(available);
 
-            // Save configuration
-            document.getElementById('sblSaveConfig')?.addEventListener('click', () => this.saveConfiguration());
-            
-            // Clear configuration
-            document.getElementById('sblClearConfig')?.addEventListener('click', () => this.clearConfiguration());
-            
-            // Start listening
-            document.getElementById('sblStartBtn')?.addEventListener('click', () => this.startListening());
-            
-            // Stop listening
-            document.getElementById('sblStopBtn')?.addEventListener('click', () => this.stopListening());
-            
-            // Clear messages
-            document.getElementById('sblClearMessages')?.addEventListener('click', () => this.clearMessages());
+            document.getElementById('sbReceiveOne')?.addEventListener('click', () => this.receiveOnce(true));
+            document.getElementById('sbStart')?.addEventListener('click', () => this.startLoop());
+            document.getElementById('sbStop')?.addEventListener('click', () => this.stopLoop());
+            document.getElementById('sbCompleteAll')?.addEventListener('click', () => this.completeAll());
+            document.getElementById('sbExport')?.addEventListener('click', () => this.exportMessages());
+            document.getElementById('sbClearLog')?.addEventListener('click', () => {
+                this.messages = [];
+                this.renderMessages();
+            });
+            document.getElementById('sbTest')?.addEventListener('click', () => this.test());
+            document.getElementById('sbSave')?.addEventListener('click', () => this.saveConnection());
+
+            document.getElementById('sbConnectionString')?.addEventListener('input', () => this.describeConnection());
+            this.describeConnection();
+
+            document.getElementById('sbHistory')?.addEventListener('change', (event) => {
+                if (event.target.value === '') return;
+                const history = this.storage.loadHistory('servicebus-listener') || [];
+                const entry = history[Number(event.target.value)];
+                if (!entry) return;
+                document.getElementById('sbConnectionString').value = entry.connectionString || '';
+                document.getElementById('sbEntity').value = entry.queueName || '';
+                document.getElementById('sbLabel').value = entry.label || '';
+                this.describeConnection();
+            });
         }, 0);
     }
 
     onClose() {
-        this.stopListening();
+        this.stopLoop();
     }
 
-    saveConfiguration() {
-        const label = document.getElementById('sblConfigLabel').value.trim();
-        const connectionString = document.getElementById('sblConnectionString').value.trim();
-        const queueName = document.getElementById('sblQueueName').value.trim();
+    describeConnection() {
+        const node = document.getElementById('sbConnInfo');
+        const raw = document.getElementById('sbConnectionString')?.value || '';
+        if (!node) return;
+        if (!raw.trim()) { node.textContent = ''; return; }
+
+        const info = inspectConnectionString(this.envManager.replaceVariables(raw));
+        node.innerHTML = info.valid
+            ? `<span style="color:var(--green)">✓ namespace <strong>${escapeHtml(info.namespace)}</strong> · policy <strong>${escapeHtml(info.keyName)}</strong></span>`
+            : `<span style="color:var(--red)">✕ ${escapeHtml(info.error)}</span>`;
+    }
+
+    readConnection() {
+        const connectionString = this.envManager.replaceVariables(
+            document.getElementById('sbConnectionString')?.value.trim() || '',
+        );
+        const entity = this.envManager.replaceVariables(
+            document.getElementById('sbEntity')?.value.trim() || '',
+        );
+
+        const info = inspectConnectionString(connectionString);
+        if (!info.valid) throw new Error(info.error);
+        if (!entity && !info.entityPath) throw new Error('Enter a queue name, or topic/subscriptions/name');
+
+        return {
+            connectionString,
+            entity: entity || info.entityPath,
+            mode: document.getElementById('sbMode')?.value || 'peek-lock',
+            waitSeconds: Number(document.getElementById('sbWait')?.value) || 5,
+        };
+    }
+
+    setRunState(text) {
+        const node = document.getElementById('sbRunState');
+        if (node) node.textContent = text;
+    }
+
+    async test() {
+        const button = document.getElementById('sbTest');
+        try {
+            const { connectionString, entity } = this.readConnection();
+            button.disabled = true;
+            button.textContent = 'Testing…';
+            const result = await call({ action: 'test', connectionString, entity });
+            this.setRunState(`Connection OK — ${result.detail}`);
+            toast('Connection OK');
+        } catch (err) {
+            this.setRunState(`Connection failed: ${err.message}`);
+            toast('Connection failed', 'err');
+        } finally {
+            button.disabled = false;
+            button.textContent = 'Test connection';
+        }
+    }
+
+    async receiveOnce(announceEmpty) {
+        const options = this.readConnection();
+        const result = await call({
+            action: 'receive',
+            connectionString: options.connectionString,
+            entity: options.entity,
+            mode: options.mode,
+            waitSeconds: options.waitSeconds,
+        });
+
+        if (result.empty) {
+            this.emptyPolls++;
+            this.setRunState(this.running
+                ? `Listening — no messages in the last ${this.emptyPolls} poll${this.emptyPolls === 1 ? '' : 's'}.`
+                : 'The entity is empty.');
+            if (announceEmpty && !this.running) toast('No messages waiting');
+            return false;
+        }
+
+        this.emptyPolls = 0;
+        this.messages.unshift({
+            ...result.message,
+            entity: options.entity,
+            connectionString: options.connectionString,
+            settled: options.mode === 'receive-delete' ? 'deleted' : null,
+        });
+        this.renderMessages();
+        this.setRunState(`Received ${this.messages.length} message${this.messages.length === 1 ? '' : 's'} this session.`);
+        return true;
+    }
+
+    async startLoop() {
+        try {
+            this.readConnection();
+        } catch (err) {
+            toast(err.message, 'err');
+            this.setRunState(err.message);
+            return;
+        }
+
+        this.running = true;
+        this.emptyPolls = 0;
+        document.getElementById('sbStart').disabled = true;
+        document.getElementById('sbStop').disabled = false;
+        document.getElementById('sbReceiveOne').disabled = true;
+        this.setRunState('Listening…');
+
+        while (this.running) {
+            try {
+                // eslint-disable-next-line no-await-in-loop
+                await this.receiveOnce(false);
+            } catch (err) {
+                this.setRunState(`Stopped: ${err.message}`);
+                toast('Listener stopped', 'err');
+                this.stopLoop();
+                return;
+            }
+            if (this.messages.length >= 500) {
+                this.setRunState('Stopped — 500 messages held in the page. Clear or export them first.');
+                this.stopLoop();
+                return;
+            }
+        }
+    }
+
+    stopLoop() {
+        this.running = false;
+        const start = document.getElementById('sbStart');
+        const stop = document.getElementById('sbStop');
+        const one = document.getElementById('sbReceiveOne');
+        if (start) start.disabled = false;
+        if (stop) stop.disabled = true;
+        if (one) one.disabled = false;
+        if (start) this.setRunState('Idle.');
+    }
+
+    async settle(index, action) {
+        const message = this.messages[index];
+        if (!message || !message.lockLocation) {
+            toast('This message has no lock to settle', 'err');
+            return;
+        }
+
+        try {
+            await call({
+                action,
+                connectionString: message.connectionString,
+                lockLocation: message.lockLocation,
+            });
+            message.settled = action === 'complete' ? 'completed'
+                : action === 'abandon' ? 'abandoned' : 'renewed';
+            if (action !== 'renew') message.lockLocation = action === 'complete' ? '' : message.lockLocation;
+            this.renderMessages();
+            toast(`Message ${message.settled}`);
+        } catch (err) {
+            toast(err.message, 'err');
+            this.setRunState(err.message);
+        }
+    }
+
+    async completeAll() {
+        const pending = this.messages.filter((m) => m.lockLocation && !m.settled);
+        if (!pending.length) {
+            toast('Nothing to complete', 'err');
+            return;
+        }
+        let done = 0;
+        for (const message of pending) {
+            try {
+                // eslint-disable-next-line no-await-in-loop
+                await call({
+                    action: 'complete',
+                    connectionString: message.connectionString,
+                    lockLocation: message.lockLocation,
+                });
+                message.settled = 'completed';
+                message.lockLocation = '';
+                done++;
+            } catch {
+                message.settled = 'lock expired';
+            }
+        }
+        this.renderMessages();
+        toast(`Completed ${done} of ${pending.length}`);
+    }
+
+    exportMessages() {
+        if (!this.messages.length) {
+            toast('No messages to export', 'err');
+            return;
+        }
+        const payload = this.messages.map(({ connectionString, lockLocation, ...rest }) => rest);
+        downloadText(JSON.stringify(payload, null, 2), 'servicebus-messages.json', 'application/json');
+        toast(`Exported ${payload.length} messages`);
+    }
+
+    renderMessages() {
+        const container = document.getElementById('sbMessages');
+        const count = document.getElementById('sbCount');
+        if (!container) return;
+
+        if (count) count.textContent = this.messages.length;
+
+        if (!this.messages.length) {
+            container.innerHTML = '<div class="info-box">No messages held. Press <strong>Receive one</strong> or <strong>Start listening</strong>.</div>';
+            return;
+        }
+
+        container.innerHTML = this.messages.map((message, index) => {
+            const broker = message.brokerProperties || {};
+            const properties = message.properties || {};
+            const settledColour = message.settled === 'completed' ? 'var(--green)'
+                : message.settled === 'abandoned' ? '#c9a800'
+                : message.settled === 'deleted' ? 'var(--ink-3)'
+                : 'var(--blue)';
+
+            return `
+                <div class="message-card" style="border-left-color:${settledColour}">
+                    <div class="msg-head">
+                        <span>#${this.messages.length - index} · ${escapeHtml(broker.MessageId || '(no message id)')}</span>
+                        <span>${escapeHtml(message.receivedAt || '')}</span>
+                    </div>
+
+                    <div class="btn-row" style="margin-bottom:0.6rem;">
+                        <span class="chip">${escapeHtml(String(message.size))} bytes</span>
+                        ${broker.SequenceNumber !== undefined ? `<span class="chip">seq ${escapeHtml(String(broker.SequenceNumber))}</span>` : ''}
+                        ${broker.DeliveryCount !== undefined ? `<span class="chip">delivery ${escapeHtml(String(broker.DeliveryCount))}</span>` : ''}
+                        ${message.contentType ? `<span class="chip">${escapeHtml(message.contentType)}</span>` : ''}
+                        ${message.settled ? `<span class="chip on" style="background:${settledColour};border-color:${settledColour}">${escapeHtml(message.settled)}</span>` : '<span class="chip on">locked</span>'}
+                    </div>
+
+                    <details ${index === 0 ? 'open' : ''}>
+                        <summary>Body</summary>
+                        <pre style="max-height:260px;overflow:auto">${escapeHtml(formatBody(message.body))}</pre>
+                    </details>
+
+                    ${Object.keys(properties).length ? `
+                        <details style="margin-top:0.5rem;">
+                            <summary>Application properties (${Object.keys(properties).length})</summary>
+                            <pre>${escapeHtml(JSON.stringify(properties, null, 2))}</pre>
+                        </details>` : ''}
+
+                    <details style="margin-top:0.5rem;">
+                        <summary>Broker properties</summary>
+                        <pre>${escapeHtml(JSON.stringify(broker, null, 2))}</pre>
+                    </details>
+
+                    <div class="btn-row" style="margin-top:0.75rem;">
+                        <button class="mini-btn" data-copy="${index}">Copy body</button>
+                        ${message.lockLocation && !message.settled ? `
+                            <button class="mini-btn" data-settle="complete" data-index="${index}">Complete</button>
+                            <button class="mini-btn" data-settle="abandon" data-index="${index}">Abandon</button>
+                            <button class="mini-btn" data-settle="renew" data-index="${index}">Renew lock</button>
+                        ` : ''}
+                    </div>
+                </div>`;
+        }).join('');
+
+        container.querySelectorAll('[data-copy]').forEach((button) => {
+            button.addEventListener('click', () => {
+                copyText(this.messages[Number(button.dataset.copy)].body, 'Body copied');
+            });
+        });
+
+        container.querySelectorAll('[data-settle]').forEach((button) => {
+            button.addEventListener('click', () => {
+                this.settle(Number(button.dataset.index), button.dataset.settle);
+            });
+        });
+    }
+
+    saveConnection() {
+        const connectionString = document.getElementById('sbConnectionString').value.trim();
+        const queueName = document.getElementById('sbEntity').value.trim();
+        const label = document.getElementById('sbLabel').value.trim();
 
         if (!connectionString || !queueName) {
-            this.updateStatus('Please provide connection string and queue/topic name', 'error');
+            toast('Enter a connection string and entity first', 'err');
             return;
         }
 
         const config = { label, connectionString, queueName };
-        
         this.storage.saveConfig('servicebus-listener', config);
         this.storage.saveToHistory('servicebus-listener', config);
-        
-        this.updateStatus('✓ Configuration saved successfully!', 'success');
-        
-        // Refresh the page to show new history
-        setTimeout(() => {
-            const currentTool = document.querySelector('.tool-interface');
-            if (currentTool) {
-                currentTool.innerHTML = this.render();
-                this.onOpen();
-            }
-        }, 1000);
-    }
-
-    clearConfiguration() {
-        document.getElementById('sblConfigLabel').value = '';
-        document.getElementById('sblConnectionString').value = '';
-        document.getElementById('sblQueueName').value = '';
-        this.updateStatus('Configuration cleared', 'info');
-    }
-
-    startListening() {
-        let connectionString = document.getElementById('sblConnectionString').value.trim();
-        let queueName = document.getElementById('sblQueueName').value.trim();
-
-        // Replace environment variables
-        connectionString = this.envManager.replaceVariables(connectionString);
-        queueName = this.envManager.replaceVariables(queueName);
-
-        if (!connectionString || !queueName) {
-            this.updateStatus('Please provide connection string and queue/topic name', 'error');
-            return;
-        }
-
-        this.isListening = true;
-        this.messages = [];
-        this.processedMessageIds = new Set(); // Track processed messages to avoid duplicates
-        
-        // Update UI
-        document.getElementById('sblStartBtn').disabled = true;
-        document.getElementById('sblStopBtn').disabled = false;
-        
-        this.updateStatus('🟢 Connected - Listening for messages...', 'success');
-        this.addMessage({
-            type: 'system',
-            message: `Listener started for: ${queueName}\n\n📚 How Service Bus Works:\n\n${queueName.includes('topic') || queueName.includes('subscription') ? 
-                '📢 TOPIC MODE:\n• Messages sent to topic are copied to all subscriptions\n• Each subscription processes messages independently\n• Same message can be read by multiple subscribers\n• Message is consumed (deleted) after successful processing per subscription\n' :
-                '📫 QUEUE MODE:\n• Messages are consumed (deleted) after reading\n• One message → One consumer\n• FIFO order guaranteed\n• Peek-lock pattern: Lock → Process → Complete/Abandon\n'
-            }\n💡 In Production:\n• Messages locked for 60s during processing\n• Must call Complete() to remove message\n• Call Abandon() to return to queue\n• Max delivery count prevents infinite retries\n\nDemo mode: Simulating new messages every 5 seconds...`
-        });
-
-        // Simulate receiving messages (in production, this would be real Service Bus receiver)
-        this.simulationInterval = setInterval(() => {
-            if (this.isListening) {
-                this.simulateMessage(queueName);
-            }
-        }, 5000);
-    }
-
-    stopListening() {
-        this.isListening = false;
-        
-        if (this.simulationInterval) {
-            clearInterval(this.simulationInterval);
-            this.simulationInterval = null;
-        }
-
-        // Update UI
-        document.getElementById('sblStartBtn').disabled = false;
-        document.getElementById('sblStopBtn').disabled = true;
-        
-        const totalMessages = this.messages.filter(m => m.type === 'message').length;
-        
-        this.updateStatus('⚫ Disconnected - Stopped listening', 'info');
-        this.addMessage({
-            type: 'system',
-            message: `Listener stopped.\n\n📊 Session Summary:\n• Total messages received: ${totalMessages}\n• All messages consumed successfully\n• No messages left in queue (demo mode)\n\n✓ In production, messages would be:\n  - Locked during processing\n  - Completed (deleted) or Abandoned\n  - Returned to queue if not completed within lock time`
-        });
-    }
-
-    clearMessages() {
-        this.messages = [];
-        const output = document.getElementById('sblOutput');
-        output.innerHTML = '<pre>Messages cleared.</pre>';
-        document.getElementById('sblMessageCount').textContent = '0';
-    }
-
-    simulateMessage(queueName) {
-        const sampleMessages = [
-            { type: 'order', data: { orderId: 'ORD-' + Date.now(), amount: (Math.random() * 1000).toFixed(2), status: 'pending' } },
-            { type: 'notification', data: { title: 'New Message', content: 'You have a new notification', userId: 'user-' + Math.floor(Math.random() * 1000) } },
-            { type: 'event', data: { eventType: 'user.login', userId: 'user-' + Math.floor(Math.random() * 1000), timestamp: new Date().toISOString() } },
-            { type: 'telemetry', data: { deviceId: 'device-' + Math.floor(Math.random() * 100), temperature: (20 + Math.random() * 10).toFixed(1), humidity: (50 + Math.random() * 30).toFixed(0) } }
-        ];
-
-        const sample = sampleMessages[Math.floor(Math.random() * sampleMessages.length)];
-        const messageId = this.generateMessageId();
-        
-        // Check if already processed (prevents duplicates)
-        if (this.processedMessageIds.has(messageId)) {
-            return;
-        }
-        
-        const message = {
-            messageId: messageId,
-            queueName: queueName,
-            body: sample.data,
-            properties: {
-                messageType: sample.type,
-                contentType: 'application/json',
-                deliveryCount: 1
-            },
-            enqueuedTimeUtc: new Date().toISOString(),
-            sequenceNumber: Date.now(),
-            lockToken: 'lock-' + Math.random().toString(36).substr(2, 16),
-            expiresAtUtc: new Date(Date.now() + 60000).toISOString() // 60 sec lock
-        };
-
-        // Mark as processed (consumed)
-        this.processedMessageIds.add(messageId);
-
-        this.addMessage({
-            type: 'message',
-            message: message,
-            consumed: true
-        });
-    }
-
-    addMessage(data) {
-        this.messages.push(data);
-        
-        const output = document.getElementById('sblOutput');
-        const messageCount = document.getElementById('sblMessageCount');
-        
-        let html = '';
-        
-        this.messages.forEach((msg, index) => {
-            if (msg.type === 'system') {
-                html += `<div style="padding: 0.75rem; margin-bottom: 0.5rem; background: var(--bg-secondary); border-left: 3px solid var(--text-secondary); border-radius: 4px;">
-                    <pre style="color: var(--text-secondary); font-size: 0.85rem; white-space: pre-wrap;">${this.escapeHtml(msg.message)}</pre>
-                </div>`;
-            } else {
-                const msgNum = this.messages.slice(0, index + 1).filter(m => m.type === 'message').length;
-                html += `<div style="padding: 0.75rem; margin-bottom: 0.5rem; background: var(--bg-secondary); border-left: 3px solid #51cf66; border-radius: 4px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <div style="color: #51cf66; font-weight: 600; font-size: 0.9rem;">
-                            📨 Message #${msgNum} - ${new Date(msg.message.enqueuedTimeUtc).toLocaleTimeString()}
-                        </div>
-                        <div style="color: #51cf66; font-size: 0.75rem; background: rgba(81, 207, 102, 0.1); padding: 0.25rem 0.5rem; border-radius: 4px;">
-                            ✓ CONSUMED
-                        </div>
-                    </div>
-                    <div style="margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.8rem;">
-                        ID: ${msg.message.messageId} | Lock: ${msg.message.lockToken}
-                    </div>
-                    <pre style="font-size: 0.85rem;">${this.escapeHtml(JSON.stringify(msg.message.body, null, 2))}</pre>
-                </div>`;
-            }
-        });
-        
-        output.innerHTML = html;
-        output.scrollTop = output.scrollHeight;
-        
-        const messageOnlyCount = this.messages.filter(m => m.type === 'message').length;
-        messageCount.textContent = messageOnlyCount;
-    }
-
-    updateStatus(message, type = 'info') {
-        const status = document.getElementById('sblStatus');
-        const colors = {
-            success: '#51cf66',
-            error: '#ff6b6b',
-            info: 'var(--text-secondary)',
-            warning: '#ffd43b'
-        };
-        
-        status.style.color = colors[type];
-        status.textContent = `Status: ${message}`;
-    }
-
-    generateMessageId() {
-        return 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-    }
-
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+        toast('Connection saved');
     }
 }

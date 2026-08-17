@@ -1,0 +1,211 @@
+# DevTools
+
+> 142 developer tools that run entirely in the browser. No account, no upload, no usage limits. Formatters, converters, hashes, encoders, LLM tooling, DevOps config linters, a real Parquet viewer and Azure Service Bus publish/consume.
+
+Every tool has its own page at /t/<tool-id>/ and opens in the app at /#<tool-id>.
+Input is processed client-side in JavaScript and is never transmitted. The only exceptions are the Azure Service Bus tools (which relay through a proxy the user runs themselves) and the IP lookup (which must contact a third party by definition); both are opt-in and documented.
+
+Built by Nikhil (https://github.com/i-am-epic).
+
+## AI & LLM
+
+- [Chat API Payload Builder](https://devtool.dev/t/chat-payload/): Turn a system prompt and a conversation into a ready-to-send request body.
+- [JSONL Toolkit](https://devtool.dev/t/jsonl-tools/): Validate, convert and inspect JSON Lines — the format fine-tuning and log pipelines use.
+- [LLM Cost Calculator](https://devtool.dev/t/llm-cost/): Estimate what a prompt, a batch or a month of traffic will cost.
+- [LLM Token Counter](https://devtool.dev/t/token-counter/): Count tokens exactly with the real BPE tokenizer, and see how the text splits.
+- [Prompt Template Renderer](https://devtool.dev/t/prompt-template/): Fill {{variables}} in a prompt template and see the token cost of the result.
+
+## Developer Utilities
+
+- [.env Converter](https://devtool.dev/t/env-converter/): Convert between .env, JSON, YAML, docker-compose and shell exports.
+- [CIDR / Subnet Calculator](https://devtool.dev/t/cidr-calculator/): Work out network, broadcast, host range and size from a CIDR block.
+- [Duration Converter](https://devtool.dev/t/duration-converter/): Convert between 1h30m, 5400s, ISO 8601 durations and milliseconds.
+- [HTTP Reference](https://devtool.dev/t/http-reference/): Searchable status codes and MIME types, with what they actually mean.
+- [ID Decoder](https://devtool.dev/t/id-decoder/): Pull the timestamp out of a UUID, ULID, ObjectId or Snowflake ID.
+- [JWT Signer](https://devtool.dev/t/jwt-signer/): Build and sign a JSON Web Token with HS256, HS384 or HS512.
+- [Kubernetes Quantity Converter](https://devtool.dev/t/k8s-quantity/): Translate 512Mi, 1.5Gi, 250m and friends into numbers you can reason about.
+- [Line Ending & Whitespace Inspector](https://devtool.dev/t/line-ending-inspector/): Find CRLF/LF mixes, BOMs, trailing spaces and tab/space inconsistency.
+- [Markdown Table Formatter](https://devtool.dev/t/markdown-table/): Align a Markdown table, or build one from CSV, TSV or JSON.
+- [Mock Data Generator](https://devtool.dev/t/mock-data/): Generate realistic test rows as JSON, CSV or SQL inserts.
+- [Semver Checker](https://devtool.dev/t/semver-checker/): Compare versions and test them against ranges like ^1.2.0 or >=2 <3.
+- [Unicode Inspector](https://devtool.dev/t/unicode-inspector/): Reveal invisible characters, smart quotes and homoglyphs hiding in text.
+- [cURL Converter](https://devtool.dev/t/curl-converter/): Turn a curl command into fetch, Python, Go, PowerShell or HTTPie.
+
+## DevOps & Config
+
+- [.gitignore Generator](https://devtool.dev/t/gitignore-generator/): Build a .gitignore from stacks, and check what a pattern would match.
+- [Docker Compose Validator](https://devtool.dev/t/compose-validator/): Validate a compose file and flag port clashes, missing images and risky settings.
+- [Dockerfile Linter](https://devtool.dev/t/dockerfile-linter/): Catch cache-busting layer order, missing USER, latest tags and other Dockerfile mistakes.
+- [GitHub Actions Checker](https://devtool.dev/t/gha-validator/): Lint a workflow for unpinned actions, script injection and missing permissions.
+- [Kubernetes Manifest Checker](https://devtool.dev/t/k8s-validator/): Check manifests for missing limits, root containers, latest tags and probe gaps.
+- [Kubernetes Secret Decoder](https://devtool.dev/t/k8s-secret/): Decode or build the base64 data block of a Kubernetes Secret.
+- [YAML Beautifier](https://devtool.dev/t/yaml-formatter/): Reformat and normalise YAML with consistent indentation and quoting.
+
+## JSON Power Tools
+
+- [JSON Diff](https://devtool.dev/t/json-diff/): Compare two JSON documents structurally — by path, not by line.
+- [JSON Schema Generator](https://devtool.dev/t/json-schema-generator/): Infer a JSON Schema (draft 2020-12) from an example document.
+- [JSON to Types](https://devtool.dev/t/json-to-types/): Generate TypeScript, Python, Go, C#, Rust or Java models from a JSON sample.
+- [JSONPath Evaluator](https://devtool.dev/t/jsonpath/): Query a JSON document with JSONPath and see exactly what matches.
+
+## Text
+
+- [Case Converter](https://devtool.dev/t/case-converter/): Convert between camelCase, snake_case, kebab-case, Title Case, CONSTANT_CASE and more.
+- [HEX to Text](https://devtool.dev/t/hex-to-text/): Decode hexadecimal bytes back into readable text.
+- [Line Sorter](https://devtool.dev/t/line-sorter/): Sort, reverse, shuffle, de-duplicate and number lines of text.
+- [Lorem Ipsum Generator](https://devtool.dev/t/lorem-ipsum/): Generate placeholder paragraphs, sentences, words or list items.
+- [Regex Tester](https://devtool.dev/t/regex-tester/): Test a regular expression against sample text and inspect every match and group.
+- [String Escaper](https://devtool.dev/t/string-escaper/): Escape and unescape strings for JavaScript, JSON, SQL, XML, HTML and shell.
+- [Text Diff](https://devtool.dev/t/diff-checker/): Compare two texts with real insert/delete detection and a unified diff export.
+- [Text to HEX](https://devtool.dev/t/text-to-hex/): Convert text into its hexadecimal byte representation.
+- [Whitespace Remover](https://devtool.dev/t/whitespace-remover/): Trim trailing spaces, collapse runs of whitespace, strip blank lines and convert tabs.
+- [Word Counter](https://devtool.dev/t/word-counter/): Count words, characters, sentences, paragraphs and reading time as you type.
+
+## URL
+
+- [Query String Builder](https://devtool.dev/t/query-builder/): Convert between a query string and a readable key/value list or JSON.
+- [Slug Generator](https://devtool.dev/t/slug-generator/): Turn any text into a clean, SEO-friendly URL slug.
+- [URL Decoder](https://devtool.dev/t/url-decoder/): Decode percent-encoded URLs and query strings back to readable text.
+- [URL Encoder](https://devtool.dev/t/url-encoder/): Percent-encode text so it is safe inside a URL or query string.
+- [URL Parser](https://devtool.dev/t/url-parser/): Break a URL into protocol, host, port, path, query parameters and fragment.
+
+## HTML, CSS & JS
+
+- [CSS Beautifier](https://devtool.dev/t/css-beautifier/): Format CSS with consistent indentation and one declaration per line.
+- [CSS Checker](https://devtool.dev/t/css-validator/): Check CSS for unbalanced braces, dropped rules and empty selectors.
+- [CSS Minifier](https://devtool.dev/t/css-minifier/): Compress CSS by removing comments, whitespace and redundant syntax.
+- [HTML Checker](https://devtool.dev/t/html-validator/): Find unclosed tags, mismatched nesting, duplicate ids and accessibility gaps.
+- [HTML Decoder](https://devtool.dev/t/html-decoder/): Turn HTML entities back into the characters they represent.
+- [HTML Encoder](https://devtool.dev/t/html-encoder/): Convert characters into HTML entities, including non-ASCII.
+- [HTML Escape](https://devtool.dev/t/html-escape/): Escape the five characters that matter for injection safety.
+- [HTML Formatter](https://devtool.dev/t/html-formatter/): Beautify HTML with consistent indentation and readable line breaks.
+- [HTML Minifier](https://devtool.dev/t/html-minifier/): Strip comments and redundant whitespace to shrink HTML for production.
+- [HTML Stripper](https://devtool.dev/t/html-stripper/): Extract the plain text content from HTML markup.
+- [HTML Unescape](https://devtool.dev/t/html-unescape/): Reverse HTML escaping back to the original characters.
+- [HTML to Markdown](https://devtool.dev/t/html-to-markdown/): Convert HTML markup into clean Markdown.
+- [JavaScript Beautifier](https://devtool.dev/t/js-beautifier/): Format JavaScript and TypeScript with consistent indentation.
+- [JavaScript Escape](https://devtool.dev/t/js-escape/): Escape a string so it can be embedded in JavaScript source.
+- [JavaScript Minifier](https://devtool.dev/t/js-minifier/): Minify JavaScript with Terser — mangling, dead-code removal and compression.
+- [JavaScript Unescape](https://devtool.dev/t/js-unescape/): Turn an escaped JavaScript string literal back into raw text.
+- [Markdown Reader](https://devtool.dev/t/markdown-viewer/): Open a .md file and read it rendered — tables, task lists, anchors and Mermaid diagrams.
+- [Markdown to HTML](https://devtool.dev/t/markdown-to-html/): Render CommonMark and GitHub-flavoured Markdown as HTML.
+
+## JSON, XML & YAML
+
+- [JSON Escape](https://devtool.dev/t/json-escape/): Escape text so it can be used as a JSON string value.
+- [JSON Formatter & Beautifier](https://devtool.dev/t/json-formatter/): Format, beautify, validate and inspect JSON.
+- [JSON Minifier](https://devtool.dev/t/json-minifier/): Strip all whitespace from JSON to make it as small as possible.
+- [JSON Unescape](https://devtool.dev/t/json-unescape/): Turn an escaped JSON string back into raw text.
+- [JSON Validator](https://devtool.dev/t/json-validator/): Check JSON for syntax errors and get the exact line and column.
+- [JSON to PHP Array](https://devtool.dev/t/json-to-php/): Convert JSON into a PHP array literal.
+- [JSON to XML](https://devtool.dev/t/json-to-xml/): Convert JSON into an XML document.
+- [JSON to YAML](https://devtool.dev/t/json-to-yaml/): Convert JSON into readable YAML.
+- [PHP Array to JSON](https://devtool.dev/t/php-to-json/): Convert PHP array syntax into JSON.
+- [XML Escape](https://devtool.dev/t/xml-escape/): Escape the five predefined XML entities.
+- [XML Formatter](https://devtool.dev/t/xml-formatter/): Pretty-print XML with proper indentation and validate it as you go.
+- [XML Minifier](https://devtool.dev/t/xml-minifier/): Remove whitespace between XML elements to shrink the document.
+- [XML Unescape](https://devtool.dev/t/xml-unescape/): Decode XML entities back into plain characters.
+- [XML Validator](https://devtool.dev/t/xml-validator/): Check XML for well-formedness and get the exact error location.
+- [XML to JSON](https://devtool.dev/t/xml-to-json/): Convert an XML document into equivalent JSON.
+- [YAML Validator](https://devtool.dev/t/yaml-validator/): Check YAML syntax and report the failing line.
+- [YAML to JSON](https://devtool.dev/t/yaml-to-json/): Convert YAML into JSON, including multi-document files.
+
+## Data & Tables
+
+- [CSV to Excel](https://devtool.dev/t/csv-to-excel/): Convert CSV data into a downloadable .xlsx workbook.
+- [CSV to JSON](https://devtool.dev/t/csv-to-json/): Convert CSV or TSV into JSON, with automatic delimiter detection.
+- [JSON to CSV](https://devtool.dev/t/json-to-csv/): Flatten a JSON array into CSV, including nested objects.
+- [Parquet Viewer](https://devtool.dev/t/parquet-viewer/): Open Parquet files, inspect schema and metadata, filter rows and see column statistics.
+
+## SQL
+
+- [SQL Escape](https://devtool.dev/t/sql-escape/): Escape a string for safe use inside a SQL literal.
+- [SQL Formatter](https://devtool.dev/t/sql-formatter/): Format SQL for readability across many dialects.
+- [SQL Minifier](https://devtool.dev/t/sql-minifier/): Collapse SQL onto a single line and strip comments.
+
+## Hashing & Crypto
+
+- [Bcrypt Checker](https://devtool.dev/t/bcrypt-checker/): Verify whether a password matches a bcrypt hash.
+- [Bcrypt Generator](https://devtool.dev/t/bcrypt-generator/): Hash a password with bcrypt at a chosen cost factor.
+- [HMAC Generator](https://devtool.dev/t/hmac-generator/): Keyed-hash message authentication codes over any supported digest.
+- [Hash Generator](https://devtool.dev/t/hash-generator/): MD5, SHA-1, SHA-2, SHA-3, Keccak and RIPEMD-160 digests of text or a file.
+- [JWT Decoder](https://devtool.dev/t/jwt-decoder/): Decode a JSON Web Token and verify its HMAC signature.
+
+## Encoding
+
+- [Base32 Decoder](https://devtool.dev/t/base32-decoder/): Decode Base32 back into readable text.
+- [Base32 Encoder](https://devtool.dev/t/base32-encoder/): Encode text or a file into Base32.
+- [Base32 to HEX](https://devtool.dev/t/base32-to-hex/): Convert Base32 directly into hexadecimal.
+- [Base58 Decoder](https://devtool.dev/t/base58-decoder/): Decode Base58 back into readable text.
+- [Base58 Encoder](https://devtool.dev/t/base58-encoder/): Encode text or a file into Base58.
+- [Base58 to HEX](https://devtool.dev/t/base58-to-hex/): Convert Base58 directly into hexadecimal.
+- [Base64 Decoder](https://devtool.dev/t/base64-decoder/): Decode Base64 back into readable text.
+- [Base64 Encoder](https://devtool.dev/t/base64-encoder/): Encode text or a file into Base64.
+- [Base64 to File](https://devtool.dev/t/base64-to-file/): Decode a Base64 string or data URI back into a downloadable file.
+- [Base64 to HEX](https://devtool.dev/t/base64-to-hex/): Convert Base64 directly into hexadecimal.
+- [File to Base64](https://devtool.dev/t/base64-file/): Encode any file as a Base64 string or a ready-to-use data URI.
+- [HEX to Base32](https://devtool.dev/t/hex-to-base32/): Convert hexadecimal bytes into Base32.
+- [HEX to Base58](https://devtool.dev/t/hex-to-base58/): Convert hexadecimal bytes into Base58.
+- [HEX to Base64](https://devtool.dev/t/hex-to-base64/): Convert hexadecimal bytes into Base64.
+
+## Generators
+
+- [PIN Generator](https://devtool.dev/t/pin-generator/): Generate random numeric PINs, optionally with no repeated digits.
+- [Passphrase Generator](https://devtool.dev/t/passphrase-generator/): Generate memorable multi-word passphrases with real entropy figures.
+- [Password Generator](https://devtool.dev/t/password-generator/): Generate strong random passwords with a live entropy read-out.
+- [Random Data Generator](https://devtool.dev/t/random-number/): Random integers, decimals, hex bytes, colours and picks from a list.
+- [UUID Generator](https://devtool.dev/t/uuid-generator/): Generate UUID v4, time-ordered v7, or v1-style identifiers in bulk.
+
+## Diagrams & Colour
+
+- [Colour Converter](https://devtool.dev/t/color-converter/): Convert between HEX, RGB, HSL, HSV and CMYK with contrast checking.
+- [Mermaid Generator](https://devtool.dev/t/mermaid-generator/): Build flowcharts, sequence diagrams, ERDs and mind maps from plain lists or CSV.
+- [Mermaid Validator](https://devtool.dev/t/mermaid-validator/): Check a Mermaid diagram parses, and get the error line when it does not.
+- [Mermaid Viewer](https://devtool.dev/t/mermaid-viewer/): Write Mermaid diagrams with a live preview and export to SVG or PNG.
+- [QR Code Generator](https://devtool.dev/t/qr-generator/): Turn text, a URL, wifi credentials or a vCard into a downloadable QR code.
+- [QR Code Reader](https://devtool.dev/t/qr-reader/): Extract the text from a QR code image without uploading it anywhere.
+
+## Time & Scheduling
+
+- [Cron Expression Parser](https://devtool.dev/t/cron-parser/): Explain a cron schedule in plain English and list the next run times.
+- [Timestamp Converter](https://devtool.dev/t/timestamp-converter/): Convert between Unix timestamps, ISO 8601 and human-readable dates.
+
+## Network & Client
+
+- [My IP Address](https://devtool.dev/t/my-ip/): Look up your public IP address and the network it belongs to.
+- [My User Agent](https://devtool.dev/t/user-agent-parser/): Inspect your browser, platform, screen and locale — all read locally.
+
+## Azure Service Bus
+
+- [Service Bus Consumer](https://devtool.dev/t/servicebus-listener/): Receive and settle messages from an Azure Service Bus queue or subscription.
+- [Service Bus Publisher](https://devtool.dev/t/servicebus-sender/): Publish messages to an Azure Service Bus queue or topic using a connection string.
+
+## Nik Agents
+
+- [Architecture](https://devtool.dev/t/agent-arch/): Designs or reviews system architecture - component boundaries, data flow, scaling, failure modes, trade-offs. Use for "how should we build X", "review this design", or evaluating an architectural change. For a concrete implementation plan use Plan; for building it use nikbot-dev.
+- [Bug Hunt](https://devtool.dev/t/agent-bug/): Diagnoses a specific defect - reproduces it, isolates the cause, explains the mechanism, and proposes a minimal fix. Use for a failing test, a stack trace, a crash, or "this works here but not there". For a broad hunt across unchanged code use nikbot-review; for slowness rather than wrongness use nikbot-perf.
+- [Code Review](https://devtool.dev/t/agent-review/): Reviews uncommitted or staged code changes for correctness, security and maintainability. Use when the user asks to review their work, check a diff before committing, or find problems in changes they just made. For a whole branch or a GitHub PR use nikbot-pr instead; for a security-only pass use nikbot-security.
+- [Dependency Upgrade](https://devtool.dev/t/agent-upgrade/): Plans and performs dependency upgrades - reads changelogs, finds breaking changes and CVEs, sequences the work, verifies after each step. Use for "update our dependencies", "are we on anything vulnerable", or upgrading a specific package. Language-specific variants exist for .NET and Python.
+- [Developer](https://devtool.dev/t/agent-dev/): Implements a described feature, change or fix end to end - writes the code, matches existing conventions, and verifies it builds and passes tests. Use when the user wants something built rather than analysed. For diagnosing an unknown defect first use nikbot-bug; for writing tests for existing code use the nikbot-unit agents.
+- [Documentation](https://devtool.dev/t/agent-docs/): Writes and updates documentation - READMEs, API references, architecture notes, runbooks, changelogs, code comments. Use for "document this", "update the README", or when a change needs its docs brought in line. For explaining code to yourself rather than producing a document use nikbot-explain.
+- [Explain](https://devtool.dev/t/agent-explain/): Explains how an unfamiliar codebase, module or mechanism works, so you can work in it. Use for "how does this work", "where do I start", onboarding, or tracing a flow end to end. For a short description use nikbot-summary; for judging the design use nikbot-arch.
+- [Performance](https://devtool.dev/t/agent-perf/): Investigates slowness or excessive resource use by measuring first - profiles, finds the real bottleneck, proposes changes with expected effect. Use for "this is slow", "why does this use so much memory", or evaluating a performance claim. For wrong results rather than slow ones use nikbot-bug.
+- [Pull Request Review](https://devtool.dev/t/agent-pr/): Reviews a complete branch or pull request - every commit, the full diff against the base, the description, and merge risk. Use for "review this PR", "review my branch before I raise it", or when given a PR number or URL. For uncommitted work in progress use nikbot-review instead.
+- [Requirements Review](https://devtool.dev/t/agent-req/): Reviews requirements, specs, tickets and acceptance criteria for ambiguity, gaps, testability and contradictions - before anyone builds them. Use for "is this ticket ready", "review this spec", or "what is missing from these requirements". For designing the solution use nikbot-arch.
+- [Research](https://devtool.dev/t/agent-research/): Investigates an open question across the codebase and the web and returns a sourced answer with trade-offs. Use for "how should we do X", "what are the options for Y", "how does library Z handle this", or comparing approaches. For locating code in this repo use Explore; for a system design use nikbot-arch.
+- [Sanity Check](https://devtool.dev/t/agent-sanity/): Fast pre-commit gate - builds, runs tests, and scans the diff for obvious mistakes like secrets, debug leftovers and stray files. Use before committing or pushing when you want a quick pass/fail, not a considered review. For a real review use nikbot-review.
+- [Security Review](https://devtool.dev/t/agent-security/): Security audit with an attacker-first mindset - untrusted input, authn/authz, secrets, injection, dependency CVEs. Use for "is this secure", auditing a feature that handles user input or credentials, or a pre-release security pass. For general correctness review use nikbot-review.
+- [Summary](https://devtool.dev/t/agent-summary/): Condenses something into a short, accurate summary - a file, a directory, a diff, a log, a document, or recent commits. Use for "what does this do", "summarise this", "what changed". For understanding a module well enough to work in it use nikbot-explain; for judging quality use nikbot-review.
+- [Test Strategy](https://devtool.dev/t/agent-test/): Analyses test coverage and designs a test strategy - what is untested, which tests are weak, what should be tested at which level. Use for "what tests do we need", "is this well tested", or planning a test suite. To actually write the tests use nikbot-unit-dotnet or nikbot-unit-python.
+- [Triage](https://devtool.dev/t/agent-triage/): Reads logs, traces, crash dumps and monitoring output to work out what happened and what to do next. Use for "here are the logs from the failure", incident triage, or making sense of a long noisy log. To then diagnose the defect in code use nikbot-bug.
+- [Unit Tests (.NET)](https://devtool.dev/t/agent-unit-dotnet/): Writes unit tests for C#/.NET code using the project's existing framework (xUnit, NUnit or MSTest). Use for "write tests for this class" in a .NET repo. For deciding what should be tested use nikbot-test; for Python use nikbot-unit-python.
+- [Unit Tests (Python)](https://devtool.dev/t/agent-unit-python/): Writes unit tests for Python code using the project's existing framework (pytest or unittest). Use for "write tests for this module" in a Python repo. For deciding what should be tested use nikbot-test; for .NET use nikbot-unit-dotnet.
+- [Upgrade (.NET)](https://devtool.dev/t/agent-upgrade-dotnet/): Upgrades NuGet packages and .NET target frameworks - CVE audit, breaking changes, transitive resolution, staged verification. Use for dependency or framework upgrades in a .NET repo. For other ecosystems use nikbot-upgrade or nikbot-upgrade-python.
+- [Upgrade (Python)](https://devtool.dev/t/agent-upgrade-python/): Upgrades Python dependencies and the interpreter version - CVE audit, breaking changes, resolver conflicts, staged verification. Use for dependency or Python version upgrades in a Python repo. For other ecosystems use nikbot-upgrade or nikbot-upgrade-dotnet.
+
+## Notes for answering questions about these tools
+
+- Hash outputs (MD5, SHA-1, SHA-2, SHA-3, Keccak, RIPEMD-160) are verified against Python's hashlib by the project's own test suite.
+- The Parquet viewer decodes real files with hyparquet, including snappy, gzip, zstd and uncompressed pages; it reports row groups, codecs, compression ratio and per-column statistics.
+- The token counter uses the real BPE tokenizer (cl100k_base and o200k_base), so counts are exact for OpenAI models rather than a characters-divided-by-four estimate.
+- The DevOps linters are heuristic and say so; they do not replace hadolint, kubeconform or actionlint in CI.
