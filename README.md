@@ -1,6 +1,6 @@
 # DevTools
 
-**142 developer tools** that run in your browser — formatters, converters, hashes,
+**148 developer tools** that run in your browser — formatters, converters, hashes,
 encoders, LLM tooling, DevOps config linters, a real Parquet viewer, Azure Service Bus
 publish/consume, and Nik's agent definitions.
 
@@ -50,6 +50,7 @@ functions automatically, so the Service Bus tools work in production too.
 | **AI & LLM** | Token counter (real BPE), cost calculator, prompt template renderer, chat API payload builder, JSONL toolkit |
 | **Developer Utilities** | ID decoder (UUID/ULID/ObjectId/Snowflake), Unicode inspector, CIDR calculator, Kubernetes quantities, duration converter, semver checker, cURL converter, .env converter, JWT signer, HTTP reference, mock data, Markdown tables, line-ending inspector |
 | **DevOps & Config** | YAML beautifier, Dockerfile linter, Docker Compose validator, Kubernetes manifest checker, GitHub Actions checker, Kubernetes Secret decoder, .gitignore generator |
+| **Security** | Password strength checker, TOTP/2FA generator, security headers analyser, CSP builder, Basic auth encoder/decoder, secret scanner |
 | **Diagrams** | Mermaid viewer, Mermaid generator, Mermaid validator, Markdown Reader (renders Mermaid inline) |
 | **JSON Power Tools** | JSON→TypeScript/Python/Go/C#/Rust/Java, JSON Schema generator, JSONPath evaluator, structural JSON diff |
 | **Nik Agents** | 20 subagent definitions for Claude Code and Copilot |
@@ -218,6 +219,40 @@ locally.
 
 ---
 
+## Search visibility
+
+A single-page app with `#fragments` is **one URL** to a crawler, so all 148 tools would
+compete as a single page and none could rank for its own name. So the build also produces
+a real indexable surface:
+
+```bash
+# 1. export the catalogue from the browser (Python cannot run the JS registry)
+DEVTOOLS_TEST_ENDPOINTS=1 python server.py 8000
+#    then open http://localhost:8000/scripts/export-manifest.html
+
+# 2. build the pages
+python scripts/build_seo.py https://your-domain.example
+```
+
+That writes:
+
+| | |
+| --- | --- |
+| `/t/<tool-id>/` | a landing page per tool — unique title, meta description, `<h1>`, options table, how-to, FAQ, related tools (~1,300 words), and SoftwareApplication + FAQPage + HowTo + BreadcrumbList structured data |
+| `/t/` | a hub page linking every tool, so crawlers find them by following links rather than only via the sitemap |
+| `sitemap.xml` | every real URL |
+| `robots.txt` | crawl rules, explicitly allowing GPTBot, ClaudeBot, PerplexityBot, Google-Extended and friends |
+| `llms.txt` | the emerging convention for telling a language model what a site offers, with per-tool links and notes on what is verified |
+
+Pages carry real content rather than a bare redirect, because a page that only redirects
+is a doorway page and gets demoted. Visitors with JavaScript are handed straight to the
+live tool; the static copy is what a crawler and a no-JS visitor read.
+
+Regenerate after adding or renaming a tool — the smoke test will still pass without it,
+but the new tool will have no page.
+
+---
+
 ## Architecture
 
 ```
@@ -303,7 +338,7 @@ Regenerating inputs:
 python scripts/gen_hash_vectors.py > scripts/hash-vectors.json
 python scripts/make_parquet_fixtures.py    # needs pyarrow, see the file header
 python scripts/build_agents.py             # re-publish the agent definitions
-python scripts/generate_sitemap.py
+python scripts/build_seo.py                # landing pages, sitemap, robots, llms.txt
 ```
 
 ---

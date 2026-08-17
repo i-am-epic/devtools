@@ -81,13 +81,18 @@ export class UIManager {
         document.querySelectorAll('.tool-card').forEach((card) => {
             card.addEventListener('click', () => {
                 const tool = lookup.get(card.dataset.toolId);
-                if (tool) this.openTool(tool);
+                // Routed through the Application so a history entry is created.
+                if (tool) window.app.navigateToTool(tool);
             });
         });
     }
 
     // --------------------------------------------------------- tool view --
 
+    /**
+     * Render a tool. History is owned by the Application — this only touches
+     * the DOM, so back/forward can drive it without fighting over the URL.
+     */
     openTool(toolConfig) {
         let tool;
         try {
@@ -103,6 +108,7 @@ export class UIManager {
         this.closeCurrent();
         this.currentTool = tool;
         this.currentConfig = toolConfig;
+        this.currentId = toolConfig.id;
 
         const title = document.getElementById('toolViewTitle');
         if (title) {
@@ -118,17 +124,15 @@ export class UIManager {
         document.body.classList.add('tool-open');
         window.scrollTo({ top: 0, behavior: 'instant' });
 
-        if (location.hash.slice(1) !== toolConfig.id) {
-            history.replaceState(null, '', `#${toolConfig.id}`);
-        }
-
         tool.onOpen();
     }
 
     /** Environment settings reuse the same full-page surface. */
     openPanel(html, { title = 'Settings', icon = '⚙', category = 'utility' } = {}) {
+        if (!document.body.classList.contains('tool-open')) this.scrollBeforeOpen = window.scrollY;
         this.closeCurrent();
         this.currentConfig = null;
+        this.currentId = null;
 
         const titleNode = document.getElementById('toolViewTitle');
         if (titleNode) {
@@ -154,15 +158,15 @@ export class UIManager {
         }
     }
 
+    /** DOM only — the Application decides what happens to the URL. */
     closeModal() {
         if (!document.body.classList.contains('tool-open')) return;
 
         document.body.classList.remove('tool-open');
         this.closeCurrent();
         this.currentConfig = null;
+        this.currentId = null;
         document.getElementById('modalBody').innerHTML = '';
-
-        if (location.hash) history.replaceState(null, '', location.pathname + location.search);
 
         // Put the user back where they were in the grid.
         window.scrollTo({ top: this.scrollBeforeOpen, behavior: 'instant' });

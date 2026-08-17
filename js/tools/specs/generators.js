@@ -5,6 +5,7 @@
 import { randomInt, randomBytes, bytesToHex, hexToBytes, utf8ToBytes } from '../../lib/bytes.js';
 import { digest } from '../../lib/hashes.js';
 import { WORDS } from '../../lib/wordlist.js';
+import { copyText } from '../../ui/toast.js';
 
 /** The four namespaces defined in RFC 4122 for name-based UUIDs. */
 const UUID_NAMESPACES = {
@@ -107,8 +108,11 @@ export const generatorTools = [
                 { id: 'symbols', type: 'checkbox', label: 'Symbols', default: true },
                 { id: 'noAmbiguous', type: 'checkbox', label: 'Avoid lookalikes (Il1O0)', default: false },
                 { id: 'everySet', type: 'checkbox', label: 'Require one of each set', default: true },
+                // Off by default: clipboard managers keep history, and a password
+                // sitting in one is a worse trade than a second click.
+                { id: 'autoCopy', type: 'checkbox', label: 'Copy to clipboard automatically', default: false },
             ],
-            run: ({ options }) => {
+            run: ({ options, trigger }) => {
                 let alphabet = '';
                 const required = [];
                 for (const key of ['lower', 'upper', 'digits', 'symbols']) {
@@ -141,6 +145,10 @@ export const generatorTools = [
 
                 const passwords = Array.from({ length: Math.min(100, options.count) }, makeOne);
                 const bits = length * Math.log2(alphabet.length);
+
+                if (options.autoCopy && trigger === 'user') {
+                    copyText(passwords.join('\n'), passwords.length === 1 ? 'Password copied' : 'Passwords copied');
+                }
 
                 return {
                     output: passwords.join('\n'),
@@ -180,8 +188,9 @@ export const generatorTools = [
                   ] },
                 { id: 'capitalise', type: 'checkbox', label: 'Capitalise each word', default: false },
                 { id: 'number', type: 'checkbox', label: 'Append a digit', default: false },
+                { id: 'autoCopy', type: 'checkbox', label: 'Copy to clipboard automatically', default: false },
             ],
-            run: ({ options }) => {
+            run: ({ options, trigger }) => {
                 const wordCount = Math.max(2, Math.min(20, options.words));
 
                 const makeOne = () => {
@@ -195,6 +204,9 @@ export const generatorTools = [
                 };
 
                 const phrases = Array.from({ length: Math.min(50, options.count) }, makeOne);
+                if (options.autoCopy && trigger === 'user') {
+                    copyText(phrases.join('\n'), phrases.length === 1 ? 'Passphrase copied' : 'Passphrases copied');
+                }
                 const bits = wordCount * Math.log2(WORDS.length) + (options.number ? Math.log2(10) : 0);
 
                 return {
@@ -230,8 +242,9 @@ export const generatorTools = [
                 { id: 'count', type: 'number', label: 'How many', default: 10, min: 1, max: 200 },
                 { id: 'unique', type: 'checkbox', label: 'No repeated digits', default: false },
                 { id: 'noSequence', type: 'checkbox', label: 'Reject runs like 1234 and 1111', default: true },
+                { id: 'autoCopy', type: 'checkbox', label: 'Copy to clipboard automatically', default: false },
             ],
-            run: ({ options }) => {
+            run: ({ options, trigger }) => {
                 const length = Math.max(3, Math.min(32, options.length));
                 if (options.unique && length > 10) {
                     throw new Error('A PIN with no repeated digits cannot be longer than 10');
@@ -267,6 +280,9 @@ export const generatorTools = [
                 };
 
                 const pins = Array.from({ length: Math.min(200, options.count) }, makeOne);
+                if (options.autoCopy && trigger === 'user') {
+                    copyText(pins.join('\n'), pins.length === 1 ? 'PIN copied' : 'PINs copied');
+                }
                 const bits = options.unique
                     ? Math.log2(Array.from({ length }, (_, i) => 10 - i).reduce((a, b) => a * b, 1))
                     : length * Math.log2(10);
@@ -289,7 +305,7 @@ export const generatorTools = [
         icon: 'ID',
         keywords: ['uuid', 'guid', 'unique', 'identifier', 'v4', 'v7', 'random', 'id', 'key'],
         spec: {
-            lede: 'v4 is fully random. v7 embeds a millisecond timestamp in the high bits, so IDs sort chronologically — much kinder to database indexes.',
+            lede: 'One v4 UUID, copied to your clipboard the moment you press Generate. v7 embeds a millisecond timestamp in the high bits so IDs sort chronologically — much kinder to database indexes — and v5 derives a stable UUID from a name.',
             layout: 'output',
             actionLabel: 'Generate',
             output: { label: 'UUIDs', filename: 'uuids.txt' },
@@ -303,7 +319,8 @@ export const generatorTools = [
                       { value: 'nil', label: 'Nil UUID' },
                       { value: 'max', label: 'Max UUID' },
                   ] },
-                { id: 'count', type: 'number', label: 'How many', default: 10, min: 1, max: 1000 },
+                { id: 'count', type: 'number', label: 'How many', default: 1, min: 1, max: 1000 },
+                { id: 'autoCopy', type: 'checkbox', label: 'Copy to clipboard automatically', default: true },
                 { id: 'names', type: 'text', label: 'Names for v3/v5 (comma separated)',
                   placeholder: 'example.com, api.example.com',
                   hint: 'Same name + namespace always produces the same UUID' },
@@ -325,7 +342,7 @@ export const generatorTools = [
                   ] },
                 { id: 'upper', type: 'checkbox', label: 'Uppercase', default: false },
             ],
-            run: async ({ options }) => {
+            run: async ({ options, trigger }) => {
                 const dashed = (hex) =>
                     `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
 
@@ -434,9 +451,17 @@ export const generatorTools = [
                         </div>`;
                 }
 
-                const note = options.version === 'v5' || options.version === 'v3'
+                let note = options.version === 'v5' || options.version === 'v3'
                     ? `${list.length} deterministic UUID${list.length === 1 ? '' : 's'} from ${options.namespace.toUpperCase()} namespace`
                     : `${count.toLocaleString()} × ${options.version.toUpperCase()}${options.version === 'v4' ? ' · 122 bits of randomness each' : ''}`;
+
+                // Copy straight away so the common case — open, take one id, paste —
+                // is a single click. Only on a real interaction: a clipboard write
+                // without a user gesture is refused by the browser anyway.
+                if (options.autoCopy && trigger === 'user' && output) {
+                    copyText(output, formatted.length === 1 ? 'UUID copied' : `${formatted.length} UUIDs copied`);
+                    note += ' · copied';
+                }
 
                 return { output, extraHtml, note };
             },
@@ -469,10 +494,16 @@ export const generatorTools = [
                 { id: 'min', type: 'number', label: 'Minimum (integers/decimals)', default: 1 },
                 { id: 'max', type: 'number', label: 'Maximum (integers/decimals)', default: 100 },
                 { id: 'size', type: 'number', label: 'Length in bytes (hex/bytes)', default: 16, min: 1, max: 512 },
+                { id: 'autoCopy', type: 'checkbox', label: 'Copy to clipboard automatically', default: true },
             ],
-            run: ({ options }) => {
+            run: ({ options, trigger }) => {
                 const count = Math.max(1, Math.min(1000, options.count));
                 const size = Math.max(1, Math.min(512, options.size));
+
+                const finish = (value) => {
+                    if (options.autoCopy && trigger === 'user' && value) copyText(value, 'Copied');
+                    return value;
+                };
 
                 switch (options.kind) {
                     case 'integer': {
@@ -480,23 +511,23 @@ export const generatorTools = [
                         const hi = Math.floor(Math.max(options.min, options.max));
                         const span = hi - lo + 1;
                         if (span < 1) throw new Error('Maximum must be greater than or equal to minimum');
-                        return Array.from({ length: count }, () => lo + randomInt(span)).join('\n');
+                        return finish(Array.from({ length: count }, () => lo + randomInt(span)).join('\n'));
                     }
                     case 'decimal': {
                         const lo = Math.min(options.min, options.max);
                         const hi = Math.max(options.min, options.max);
                         const buf = new Uint32Array(count);
                         crypto.getRandomValues(buf);
-                        return [...buf].map((n) => (lo + (n / 4294967296) * (hi - lo)).toFixed(6)).join('\n');
+                        return finish([...buf].map((n) => (lo + (n / 4294967296) * (hi - lo)).toFixed(6)).join('\n'));
                     }
                     case 'hex':
-                        return Array.from({ length: count }, () => bytesToHex(randomBytes(size))).join('\n');
+                        return finish(Array.from({ length: count }, () => bytesToHex(randomBytes(size))).join('\n'));
                     case 'bytes':
-                        return Array.from({ length: count }, () => `[${[...randomBytes(size)].join(', ')}]`).join('\n');
+                        return finish(Array.from({ length: count }, () => `[${[...randomBytes(size)].join(', ')}]`).join('\n'));
                     case 'color':
-                        return Array.from({ length: count }, () => `#${bytesToHex(randomBytes(3))}`).join('\n');
+                        return finish(Array.from({ length: count }, () => `#${bytesToHex(randomBytes(3))}`).join('\n'));
                     case 'boolean':
-                        return Array.from({ length: count }, () => (randomInt(2) ? 'true' : 'false')).join('\n');
+                        return finish(Array.from({ length: count }, () => (randomInt(2) ? 'true' : 'false')).join('\n'));
                     default:
                         return '';
                 }

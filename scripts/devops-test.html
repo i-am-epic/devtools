@@ -23,6 +23,7 @@ const check = (label, cond, detail = '') => {
 };
 
 for (const u of ['../js/tools/specs/devops.js','../js/tools/specs/diagram.js','../js/lib/sanitize.js',
+                 '../js/tools/specs/security.js','../js/lib/hashes.js','../js/lib/bytes.js',
                  '../js/tools/registry.js','../js/tools/MarkdownViewerTool.js']) {
   await fetch(u, { cache: 'reload' }).catch(() => {});
 }
@@ -325,6 +326,115 @@ jobs:
     check('slugify basic', slugify('Hello World!', taken) === 'hello-world');
     check('slugify dedupes', slugify('Hello World!', taken) === 'hello-world-1');
     check('slugify handles empty', slugify('!!!', taken) === 'section');
+  }
+
+  // ---------------------------------------------------------- security ----
+  lines.push('\n<b>Security tools</b>');
+  {
+    const { totpAt, analysePassword, parseHeaders } = await import('../js/tools/specs/security.js');
+    const { utf8ToBytes, base32ToBytes } = await import('../js/lib/bytes.js');
+
+    // RFC 6238 Appendix B reference vectors, secret "12345678901234567890".
+    const seed = utf8ToBytes('12345678901234567890');
+    const vectors = [[59, '94287082'], [1111111109, '07081804'], [1111111111, '14050471'],
+                     [1234567890, '89005924'], [2000000000, '69279037']];
+    for (const [time, expected] of vectors) {
+      const code = await totpAt(seed, time, { digits: 8, period: 30, algorithm: 'sha1' });
+      check(`TOTP RFC 6238 vector at T=${time}`, code === expected, `${code} vs ${expected}`);
+    }
+    const six = await totpAt(base32ToBytes('JBSWY3DPEHPK3PXP'), 0, { digits: 6, period: 30, algorithm: 'sha1' });
+    check('TOTP honours the digit count', six.length === 6, six);
+    const t0 = await totpAt(seed, 0, { digits: 6, period: 30, algorithm: 'sha1' });
+    const t29 = await totpAt(seed, 29, { digits: 6, period: 30, algorithm: 'sha1' });
+    const t30 = await totpAt(seed, 30, { digits: 6, period: 30, algorithm: 'sha1' });
+    check('TOTP is stable within a period', t0 === t29);
+    check('TOTP rolls at the period boundary', t0 !== t30);
+
+    // Password analysis
+    const weak = analysePassword('password');
+    check('common password flagged', weak.findings.some(f => f.name === 'Known password'));
+    check('common password scores near zero', weak.bits <= 10, String(weak.bits));
+
+    const suffixed = analysePassword('password123');
+    check('common word plus suffix flagged', suffixed.findings.some(f => f.name.includes('suffix')));
+
+    const keyboard = analysePassword('qwertyuiop99');
+    check('keyboard run flagged', keyboard.findings.some(f => f.name === 'Keyboard pattern'));
+
+    const repeated = analysePassword('aaabbbccc111');
+    check('repeated characters flagged', repeated.findings.some(f => f.name === 'Repeated characters'));
+
+    const strong = analysePassword('correct-horse-battery-staple-7Q');
+    check('long passphrase scores well', strong.bits > 100, String(strong.bits));
+    check('strong password has no error findings', !strong.findings.some(f => f.level === 'error'));
+    check('longer password scores higher', analysePassword('Tr0ub4dor&3xyzQ').bits > analysePassword('Tr0ub4d').bits);
+
+    // Header parsing + analyser
+    const parsed = parseHeaders('HTTP/2 200\nContent-Type: text/html\nX-Frame-Options: DENY\n');
+    check('header parsing lowercases names', parsed['content-type'] === 'text/html');
+    check('status line ignored', !('http/2 200' in parsed));
+
+    const bad = await run('security-headers', 'content-type: text/html\nserver: nginx/1.24.0\nset-cookie: a=b; Path=/\naccess-control-allow-origin: *');
+    check('missing HSTS reported', bad.output.includes('Strict-Transport-Security'));
+    check('missing CSP reported', bad.output.includes('Content-Security-Policy'));
+    check('missing nosniff reported', bad.output.includes('X-Content-Type-Options'));
+    check('insecure cookie reported', bad.output.includes('HttpOnly'));
+    check('server banner reported', bad.output.toLowerCase().includes('nginx'));
+    check('wildcard CORS reported', bad.output.includes('CORS'));
+    check('grades low', /Grade [DEF]/.test(bad.note), bad.note);
+
+    const good = await run('security-headers', [
+      'strict-transport-security: max-age=31536000; includeSubDomains',
+      "content-security-policy: default-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'",
+      'x-content-type-options: nosniff',
+      'referrer-policy: strict-origin-when-cross-origin',
+      'permissions-policy: geolocation=()',
+      'set-cookie: s=1; Path=/; Secure; HttpOnly; SameSite=Lax',
+    ].join('\n'));
+    check('good headers grade well', /Grade [AB]/.test(good.note), good.note);
+
+    // Basic auth
+    const enc = await run('basic-auth', 'admin:hunter2');
+    check('basic auth encodes', enc.output.includes('YWRtaW46aHVudGVyMg=='), enc.output);
+    const dec = await run('basic-auth', 'Basic YWRtaW46aHVudGVyMg==');
+    check('basic auth decodes', dec.output.includes('admin') && dec.output.includes('hunter2'), dec.output);
+    let badCreds = false;
+    try { await run('basic-auth', 'nocolonhere'); } catch { badCreds = true; }
+    check('basic auth rejects input with no colon', badCreds);
+
+    // Secret scanner
+    const scan = await run('secret-scanner', [
+      'AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE',
+      'github_token: ghp_1234567890abcdefghijklmnopqrstuvwx',
+      'STRIPE=sk_live_EXAMPLEONLYnotreal',
+      'DATABASE_URL=postgres://admin:s3cr3tp4ss@db.example.com:5432/app',
+      '-----BEGIN RSA PRIVATE KEY-----',
+      'nothing = "harmless"',
+    ].join('\n'));
+    check('finds AWS key', scan.output.includes('AWS access key'));
+    check('finds GitHub token', scan.output.includes('GitHub token'));
+    check('finds Stripe key', scan.output.includes('Stripe'));
+    check('finds password in URL', scan.output.includes('Password in a URL'));
+    check('finds private key block', scan.output.includes('Private key'));
+    check('masks the matched value', !scan.output.includes('ghp_1234567890abcdefghijklmnopqrstuvwx'), 'secret must not be echoed in full');
+    check('reports criticals', /critical/.test(scan.note), scan.note);
+
+    const clean = await run('secret-scanner', 'const greeting = "hello";\nconst count = 42;');
+    check('clean text reports nothing', clean.note === 'clean', clean.note);
+
+    const redacted = await run('secret-scanner', 'token: ghp_1234567890abcdefghijklmnopqrstuvwx', { redact: true });
+    check('redact mode replaces the secret', redacted.output.includes('[REDACTED') && !redacted.output.includes('ghp_1234567890abcdefghijklmnopqrstuvwx'), redacted.output);
+
+    // CSP
+    const csp = await run('csp-builder', "default-src *; script-src 'unsafe-inline' 'unsafe-eval'");
+    check('CSP flags unsafe-inline', csp.output.includes('unsafe-inline'));
+    check('CSP flags unsafe-eval', csp.output.includes('unsafe-eval'));
+    check('CSP flags wildcard', csp.output.toLowerCase().includes('wildcard'));
+    check('CSP flags missing frame-ancestors', csp.output.includes('frame-ancestors'));
+
+    const preset = await run('csp-builder', '', { preset: 'strict' });
+    check('CSP strict preset generates a nonce', preset.output.includes('nonce-'), preset.output.slice(0, 120));
+    check('CSP strict preset has no unsafe directives', !preset.output.includes('unsafe-'));
   }
 
 } catch (err) {

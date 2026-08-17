@@ -1,13 +1,14 @@
 {
   "name": "devtool",
-  "version": "4.1.0",
+  "version": "4.2.0",
   "description": "Developer tools that run in the browser: formatters, converters, hashes, a real Parquet viewer and Azure Service Bus publish/consume",
   "type": "module",
   "scripts": {
     "dev": "python server.py 8000",
     "start": "python server.py 8000",
     "build": "echo 'No build step - static site plus serverless functions'",
-    "sitemap": "python scripts/generate_sitemap.py",
+    "seo": "python scripts/build_seo.py",
+    "agents": "python scripts/build_agents.py",
     "fixtures": "python scripts/make_parquet_fixtures.py",
     "test": "echo 'Open http://localhost:8000/scripts/ in a browser, then run: python scripts/test_servicebus.py'",
     "test:servicebus": "python scripts/test_servicebus.py"

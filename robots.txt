@@ -1,4 +1,4 @@
-# DevTools — 142 developer tools that run in the browser
+# DevTools — 148 developer tools that run in the browser
 # https://github.com/i-am-epic/devtools
 
 User-agent: *

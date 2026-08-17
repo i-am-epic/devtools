@@ -20,6 +20,7 @@ import { codegenTools } from './specs/codegen.js';
 import { devxTools } from './specs/devx.js';
 import { devopsTools } from './specs/devops.js';
 import { diagramTools } from './specs/diagram.js';
+import { securityTools } from './specs/security.js';
 
 import { ParquetViewerTool } from './ParquetViewerTool.js';
 import { MarkdownViewerTool } from './MarkdownViewerTool.js';
@@ -33,21 +34,22 @@ export const CATEGORIES = {
     ai:         { name: 'AI & LLM',          icon: '✳',   order: 1 },
     devx:       { name: 'Developer Utilities', icon: '⚙', order: 2 },
     devops:     { name: 'DevOps & Config',   icon: '🐳',  order: 3 },
-    codegen:    { name: 'JSON Power Tools',  icon: '{→}', order: 4 },
-    text:       { name: 'Text',              icon: '¶',   order: 5 },
-    url:        { name: 'URL',               icon: '🔗',  order: 6 },
-    web:        { name: 'HTML, CSS & JS',    icon: '</>', order: 7 },
-    json:       { name: 'JSON, XML & YAML',  icon: '{ }', order: 8 },
-    data:       { name: 'Data & Tables',     icon: '▦',   order: 9 },
-    sql:        { name: 'SQL',               icon: 'SQL', order: 10 },
-    crypto:     { name: 'Hashing & Crypto',  icon: '#',   order: 11 },
-    encoding:   { name: 'Encoding',          icon: 'b64', order: 12 },
-    generators: { name: 'Generators',        icon: '🎲',  order: 13 },
-    image:      { name: 'Diagrams & Colour', icon: '🎨',  order: 14 },
-    time:       { name: 'Time & Scheduling', icon: '🕐',  order: 15 },
-    network:    { name: 'Network & Client',  icon: '🌐',  order: 16 },
-    cloud:      { name: 'Azure Service Bus', icon: '☁',   order: 17 },
-    agents:     { name: 'Nik Agents',        icon: '🤖',  order: 18 },
+    security:   { name: 'Security',          icon: '🛡',   order: 4 },
+    codegen:    { name: 'JSON Power Tools',  icon: '{→}', order: 5 },
+    text:       { name: 'Text',              icon: '¶',   order: 6 },
+    url:        { name: 'URL',               icon: '🔗',  order: 7 },
+    web:        { name: 'HTML, CSS & JS',    icon: '</>', order: 8 },
+    json:       { name: 'JSON, XML & YAML',  icon: '{ }', order: 9 },
+    data:       { name: 'Data & Tables',     icon: '▦',   order: 10 },
+    sql:        { name: 'SQL',               icon: 'SQL', order: 11 },
+    crypto:     { name: 'Hashing & Crypto',  icon: '#',   order: 12 },
+    encoding:   { name: 'Encoding',          icon: 'b64', order: 13 },
+    generators: { name: 'Generators',        icon: '🎲',  order: 14 },
+    image:      { name: 'Diagrams & Colour', icon: '🎨',  order: 15 },
+    time:       { name: 'Time & Scheduling', icon: '🕐',  order: 16 },
+    network:    { name: 'Network & Client',  icon: '🌐',  order: 17 },
+    cloud:      { name: 'Azure Service Bus', icon: '☁',   order: 18 },
+    agents:     { name: 'Nik Agents',        icon: '🤖',  order: 19 },
 };
 
 /** Tools with their own implementation class. */
@@ -126,6 +128,7 @@ const specTools = [
     ...aiTools,
     ...devxTools,
     ...devopsTools,
+    ...securityTools,
     ...diagramTools,
     ...codegenTools,
     ...textTools,

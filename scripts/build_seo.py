@@ -354,15 +354,28 @@ def build():
     tools = data["tools"]
     categories = data.get("categories", {})
 
-    if os.path.isdir(OUT_DIR):
-        shutil.rmtree(OUT_DIR)
-    os.makedirs(OUT_DIR)
+    # Overwrite in place and prune what is no longer wanted, rather than wiping
+    # the tree: on Windows a sync client or an open file makes rmtree fail, and
+    # a half-deleted output directory is worse than a stale page.
+    os.makedirs(OUT_DIR, exist_ok=True)
 
+    wanted = {tool["id"] for tool in tools}
     for tool in tools:
         directory = os.path.join(OUT_DIR, tool["id"])
         os.makedirs(directory, exist_ok=True)
         with open(os.path.join(directory, "index.html"), "w", encoding="utf-8", newline="\n") as handle:
             handle.write(landing_page(tool, tools, categories))
+
+    stale = []
+    for entry in os.listdir(OUT_DIR):
+        path = os.path.join(OUT_DIR, entry)
+        if os.path.isdir(path) and entry not in wanted:
+            try:
+                shutil.rmtree(path)
+            except OSError as err:
+                stale.append(f"{entry} ({err.strerror})")
+    if stale:
+        print(f"warning: could not remove {len(stale)} stale page(s): {', '.join(stale[:5])}")
 
     # ---- hub page ----------------------------------------------------------
     # Crawlers find pages by following links, not only by reading a sitemap.

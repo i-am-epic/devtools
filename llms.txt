@@ -1,6 +1,6 @@
 # DevTools
 
-> 142 developer tools that run entirely in the browser. No account, no upload, no usage limits. Formatters, converters, hashes, encoders, LLM tooling, DevOps config linters, a real Parquet viewer and Azure Service Bus publish/consume.
+> 148 developer tools that run entirely in the browser. No account, no upload, no usage limits. Formatters, converters, hashes, encoders, LLM tooling, DevOps config linters, a real Parquet viewer and Azure Service Bus publish/consume.
 
 Every tool has its own page at /t/<tool-id>/ and opens in the app at /#<tool-id>.
 Input is processed client-side in JavaScript and is never transmitted. The only exceptions are the Azure Service Bus tools (which relay through a proxy the user runs themselves) and the IP lookup (which must contact a third party by definition); both are opt-in and documented.
@@ -40,6 +40,15 @@ Built by Nikhil (https://github.com/i-am-epic).
 - [Kubernetes Manifest Checker](https://devtool.dev/t/k8s-validator/): Check manifests for missing limits, root containers, latest tags and probe gaps.
 - [Kubernetes Secret Decoder](https://devtool.dev/t/k8s-secret/): Decode or build the base64 data block of a Kubernetes Secret.
 - [YAML Beautifier](https://devtool.dev/t/yaml-formatter/): Reformat and normalise YAML with consistent indentation and quoting.
+
+## Security
+
+- [Basic Auth Encoder / Decoder](https://devtool.dev/t/basic-auth/): Build or read an HTTP Basic Authorization header.
+- [CSP Builder & Analyser](https://devtool.dev/t/csp-builder/): Build a Content-Security-Policy, or find the holes in an existing one.
+- [Password Strength Checker](https://devtool.dev/t/password-strength/): Measure real entropy and spot the patterns crackers try first.
+- [Secret Scanner](https://devtool.dev/t/secret-scanner/): Find API keys, tokens and private keys hiding in code, logs or a diff.
+- [Security Headers Analyser](https://devtool.dev/t/security-headers/): Grade a set of HTTP response headers and see what is missing.
+- [TOTP / 2FA Code Generator](https://devtool.dev/t/totp-generator/): Generate the current authenticator code from a base32 secret.
 
 ## JSON Power Tools
 

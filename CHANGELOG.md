@@ -5,6 +5,48 @@ All notable changes to DevToolkit will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.0] - 2026-08-17
+
+### Fixed
+- **Back did not return to the grid.** Opening a tool used `history.replaceState`, so it
+  never created a history entry — pressing Back left the site entirely. Tools now push a
+  history entry, the URL is the single source of truth, and `popstate` re-syncs the view.
+  Back returns to the grid, Forward reopens the tool, two tools deep unwinds one at a
+  time, and the in-page back arrow on a deep link lands on the grid instead of bouncing
+  off the site.
+
+### Added
+- **SEO surface.** A single-page app with `#fragments` is one URL to a crawler, so 148
+  tools were competing as one page. Every tool now has a real indexable URL at
+  `/t/<id>/` with a unique title, meta description, `<h1>`, options table, how-to,
+  FAQ and related-tool links (~1,300 words each), plus SoftwareApplication, FAQPage,
+  HowTo and BreadcrumbList structured data. Also a `/t/` hub page linking all of them,
+  a regenerated `sitemap.xml`, a `robots.txt` that explicitly welcomes the AI crawlers,
+  and an `llms.txt` describing the site for language models.
+- **Security category** — password strength checker (entropy plus the patterns crackers
+  try first), TOTP/2FA generator (matches the RFC 6238 reference vectors), security
+  headers analyser with a grade, CSP builder and analyser, Basic auth encoder/decoder,
+  and a secret scanner for API keys, tokens and private keys.
+- **Speciality features** on the most-used tools:
+  - Text diff detects **moved blocks** — a line deleted here and added there is shown as
+    moved rather than as an unrelated delete plus insert, with a colour legend.
+  - UUID generator does **deterministic v3/v5** name-based UUIDs (verified against
+    Python's `uuid` module), plus SQL / JSON / C# / TypeScript output formats.
+  - JSON formatter has a **repair mode** (single quotes, trailing commas, bare keys,
+    comments, `NaN`, Python literals) that reports every change it made, and a
+    **size breakdown** showing which paths are costing the bytes.
+- MCP server announced as coming soon on the homepage — not implemented.
+
+### Changed
+- UUID generator defaults to **1** and **copies to the clipboard automatically** on
+  Generate. Password, passphrase and PIN generators have the same option but default it
+  off, because clipboard managers keep history and a password sitting in one is a worse
+  trade than a second click. Copying only happens on a real interaction — a clipboard
+  write without a user gesture is refused by the browser anyway.
+- The SEO build reads `tools-manifest.json`, exported from the browser by
+  `scripts/export-manifest.html`, because Python cannot execute the JS registry. The
+  registry stays the single source of truth.
+
 ## [4.1.0] - 2026-08-17
 
 ### Fixed

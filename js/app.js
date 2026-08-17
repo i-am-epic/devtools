@@ -24,6 +24,9 @@ class Application {
         this.envUI = new EnvironmentUI();
         this.allTools = [];
         this.currentCategory = 'all';
+        // How many history entries we have pushed within the site, so goBack()
+        // knows whether history.back() would leave it.
+        this.depth = 0;
     }
 
     async init() {
@@ -37,7 +40,7 @@ class Application {
 
             this.palette = new CommandPalette({
                 searchService: this.searchService,
-                onSelect: (tool) => this.uiManager.openTool(tool),
+                onSelect: (tool) => this.navigateToTool(tool),
             });
             this.palette.mount();
 
@@ -53,7 +56,8 @@ class Application {
 
             this.setupEventListeners();
             this.updateEnvironmentIndicator();
-            this.openFromHash();
+            // A deep link is the entry in history, so it must not be pushed again.
+            this.syncFromLocation();
         } catch (error) {
             console.error('Failed to initialise:', error);
             const grid = document.getElementById('toolsGrid');
@@ -168,12 +172,49 @@ class Application {
     }
 
     // ------------------------------------------------------------ routing --
+    //
+    // Opening a tool pushes a history entry, so Back returns to the grid
+    // instead of leaving the site. The URL is the single source of truth:
+    // popstate and hashchange both just re-sync the view to it.
 
-    openFromHash() {
+    /** Open a tool because the user asked for it. Adds a history entry. */
+    navigateToTool(tool) {
+        if (decodeURIComponent(location.hash.slice(1)) !== tool.id) {
+            history.pushState({ tool: tool.id }, '', `#${tool.id}`);
+            this.depth++;
+        }
+        this.uiManager.openTool(tool);
+    }
+
+    /** Make the view match the current URL. Safe to call repeatedly. */
+    syncFromLocation() {
         const id = decodeURIComponent(location.hash.slice(1));
-        if (!id) return;
+
+        if (!id) {
+            this.uiManager.closeModal();
+            this.updateEnvironmentIndicator();
+            return;
+        }
+        if (this.uiManager.currentId === id) return;
+
         const tool = this.configManager.getTool(id);
         if (tool) this.uiManager.openTool(tool);
+        else this.uiManager.closeModal();
+    }
+
+    /**
+     * The back arrow and Escape. Rewinds history when we have somewhere to
+     * rewind to, so forward still works; otherwise (a deep link straight into
+     * a tool) it rewrites the URL rather than throwing the user off the site.
+     */
+    goBack() {
+        if (this.depth > 0) {
+            history.back();
+            return;
+        }
+        if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+        this.uiManager.closeModal();
+        this.updateEnvironmentIndicator();
     }
 
     // ------------------------------------------------------ environments --
@@ -207,15 +248,18 @@ class Application {
 
         document.getElementById('themeToggle')?.addEventListener('click', () => this.toggleTheme());
         document.getElementById('openEnvSettings')?.addEventListener('click', () => this.openEnvironmentSettings());
-        document.getElementById('closeModal')?.addEventListener('click', () => this.closeModal());
+        document.getElementById('closeModal')?.addEventListener('click', () => this.goBack());
         document.getElementById('modalShare')?.addEventListener('click', () => this.uiManager.shareLink());
         document.getElementById('modalSettings')?.addEventListener('click', () => this.openEnvironmentSettings());
 
-        window.addEventListener('hashchange', () => {
-            const id = decodeURIComponent(location.hash.slice(1));
-            if (!id) this.closeModal();
-            else this.openFromHash();
+        // Back / forward.
+        window.addEventListener('popstate', () => {
+            this.depth = Math.max(0, this.depth - 1);
+            this.syncFromLocation();
         });
+
+        // Someone editing the hash in the address bar.
+        window.addEventListener('hashchange', () => this.syncFromLocation());
 
         // One delegated handler serves every click-to-copy affordance on the
         // site, so individual tools only need to add data-copy.
@@ -252,15 +296,10 @@ class Application {
 
             if (this.palette?.handleShortcut(event)) return;
 
-            if (event.key === 'Escape') {
-                this.closeModal();
+            if (event.key === 'Escape' && this.uiManager.isOpen()) {
+                this.goBack();
             }
         });
-    }
-
-    closeModal() {
-        this.uiManager.closeModal();
-        this.updateEnvironmentIndicator();
     }
 }
 

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UUID Generator — Free Online Tool | DevTools</title>
-<meta name="description" content="Generate UUID v4, time-ordered v7, or v1-style identifiers in bulk. v4 is fully random. v7 embeds a millisecond timestamp in the high bits, so IDs sort…">
+<meta name="description" content="Generate UUID v4, time-ordered v7, or v1-style identifiers in bulk. One v4 UUID, copied to your clipboard the moment you press Generate. v7 embeds a…">
 <meta name="keywords" content="uuid, guid, unique, identifier, v4, v7, random, id, key">
 <meta name="author" content="Nikhil">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
@@ -14,11 +14,11 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://devtool.dev/t/uuid-generator/">
 <meta property="og:title" content="UUID Generator — Free Online Tool | DevTools">
-<meta property="og:description" content="Generate UUID v4, time-ordered v7, or v1-style identifiers in bulk. v4 is fully random. v7 embeds a millisecond timestamp in the high bits, so IDs sort…">
+<meta property="og:description" content="Generate UUID v4, time-ordered v7, or v1-style identifiers in bulk. One v4 UUID, copied to your clipboard the moment you press Generate. v7 embeds a…">
 <meta property="og:site_name" content="DevTools">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="UUID Generator — Free Online Tool | DevTools">
-<meta name="twitter:description" content="Generate UUID v4, time-ordered v7, or v1-style identifiers in bulk. v4 is fully random. v7 embeds a millisecond timestamp in the high bits, so IDs sort…">
+<meta name="twitter:description" content="Generate UUID v4, time-ordered v7, or v1-style identifiers in bulk. One v4 UUID, copied to your clipboard the moment you press Generate. v7 embeds a…">
 
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23ff5e3a'/%3E%3C/svg%3E">
 <script type="application/ld+json">
@@ -28,7 +28,7 @@
   {
    "@type": "SoftwareApplication",
    "name": "UUID Generator",
-   "description": "Generate UUID v4, time-ordered v7, or v1-style identifiers in bulk. v4 is fully random. v7 embeds a millisecond timestamp in the high bits, so IDs sort\u2026",
+   "description": "Generate UUID v4, time-ordered v7, or v1-style identifiers in bulk. One v4 UUID, copied to your clipboard the moment you press Generate. v7 embeds a\u2026",
    "url": "https://devtool.dev/t/uuid-generator/",
    "applicationCategory": "DeveloperApplication",
    "operatingSystem": "Any",
@@ -73,7 +73,7 @@
      "name": "What options does UUID Generator have?",
      "acceptedAnswer": {
       "@type": "Answer",
-      "text": "You can configure: Version, How many, Format, Uppercase."
+      "text": "You can configure: Version, How many, Copy to clipboard automatically, Names for v3/v5 (comma separated), Namespace for v3/v5."
      }
     },
     {
@@ -182,7 +182,7 @@
        name — inside it, "ID" + "UUID Generator" extracts as "IDUUID Generator". -->
   <p class="ico" aria-hidden="true">ID</p>
   <h1>UUID Generator</h1>
-  <p class="lede">v4 is fully random. v7 embeds a millisecond timestamp in the high bits, so IDs sort chronologically — much kinder to database indexes.</p>
+  <p class="lede">One v4 UUID, copied to your clipboard the moment you press Generate. v7 embeds a millisecond timestamp in the high bits so IDs sort chronologically — much kinder to database indexes — and v5 derives a stable UUID from a name.</p>
 
   <p><a class="cta" href="https://devtool.dev/#uuid-generator">Open UUID Generator →</a></p>
 
@@ -194,9 +194,12 @@
       <table>
         <thead><tr><th>Setting</th><th>Values</th><th>Notes</th></tr></thead>
         <tbody>
-        <tr><td><strong>Version</strong></td><td>v4 — random, v7 — time-ordered (recommended for keys), Nil UUID, Max UUID</td><td></td></tr>
+        <tr><td><strong>Version</strong></td><td>v4 — random, v7 — time-ordered (recommended for keys), v5 — deterministic from a name (SHA-1), v3 — deterministic from a name (MD5), Nil UUID, Max UUID</td><td></td></tr>
         <tr><td><strong>How many</strong></td><td>number</td><td></td></tr>
-        <tr><td><strong>Format</strong></td><td>Standard (8-4-4-4-12), No hyphens, Braced {…}, URN (urn:uuid:…)</td><td></td></tr>
+        <tr><td><strong>Copy to clipboard automatically</strong></td><td>checkbox</td><td></td></tr>
+        <tr><td><strong>Names for v3/v5 (comma separated)</strong></td><td>text</td><td>Same name + namespace always produces the same UUID</td></tr>
+        <tr><td><strong>Namespace for v3/v5</strong></td><td>DNS, URL, OID, X.500</td><td></td></tr>
+        <tr><td><strong>Format</strong></td><td>Standard (8-4-4-4-12), No hyphens, Braced {…}, URN (urn:uuid:…), SQL INSERT values, JSON array, C# Guid.Parse, TypeScript array</td><td></td></tr>
         <tr><td><strong>Uppercase</strong></td><td>checkbox</td><td></td></tr>
         </tbody>
       </table>
@@ -212,7 +215,7 @@
   <h2>Frequently asked questions</h2>
       <details open><summary>Is UUID Generator free to use?</summary><p>Yes. Every tool on this site is free, needs no account, and has no usage limits.</p></details>
       <details open><summary>Does UUID Generator upload my data?</summary><p>No. It runs entirely in your browser using JavaScript. Your input is never sent to a server, which makes it safe for data you would not paste into a hosted tool. The two exceptions across the whole site (the Azure Service Bus relay and the IP lookup) are documented and opt-in.</p></details>
-      <details open><summary>What options does UUID Generator have?</summary><p>You can configure: Version, How many, Format, Uppercase.</p></details>
+      <details open><summary>What options does UUID Generator have?</summary><p>You can configure: Version, How many, Copy to clipboard automatically, Names for v3/v5 (comma separated), Namespace for v3/v5.</p></details>
       <details open><summary>Does UUID Generator work offline?</summary><p>Once the page has loaded it keeps working without a connection. A few tools fetch a library on first use, after which they are cached.</p></details>
 
   <h2>Related tools</h2>

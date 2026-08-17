@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-08-17T08:56:23.084Z",
+ "generatedAt": "2026-08-17T13:59:16.337Z",
  "categories": {
   "ai": {
    "name": "AI & LLM",
@@ -16,80 +16,85 @@
    "icon": "🐳",
    "order": 3
   },
+  "security": {
+   "name": "Security",
+   "icon": "🛡",
+   "order": 4
+  },
   "codegen": {
    "name": "JSON Power Tools",
    "icon": "{→}",
-   "order": 4
+   "order": 5
   },
   "text": {
    "name": "Text",
    "icon": "¶",
-   "order": 5
+   "order": 6
   },
   "url": {
    "name": "URL",
    "icon": "🔗",
-   "order": 6
+   "order": 7
   },
   "web": {
    "name": "HTML, CSS & JS",
    "icon": "</>",
-   "order": 7
+   "order": 8
   },
   "json": {
    "name": "JSON, XML & YAML",
    "icon": "{ }",
-   "order": 8
+   "order": 9
   },
   "data": {
    "name": "Data & Tables",
    "icon": "▦",
-   "order": 9
+   "order": 10
   },
   "sql": {
    "name": "SQL",
    "icon": "SQL",
-   "order": 10
+   "order": 11
   },
   "crypto": {
    "name": "Hashing & Crypto",
    "icon": "#",
-   "order": 11
+   "order": 12
   },
   "encoding": {
    "name": "Encoding",
    "icon": "b64",
-   "order": 12
+   "order": 13
   },
   "generators": {
    "name": "Generators",
    "icon": "🎲",
-   "order": 13
+   "order": 14
   },
   "image": {
    "name": "Diagrams & Colour",
    "icon": "🎨",
-   "order": 14
+   "order": 15
   },
   "time": {
    "name": "Time & Scheduling",
    "icon": "🕐",
-   "order": 15
+   "order": 16
   },
   "network": {
    "name": "Network & Client",
    "icon": "🌐",
-   "order": 16
+   "order": 17
   },
   "cloud": {
    "name": "Azure Service Bus",
    "icon": "☁",
-   "order": 17
+   "order": 18
   },
   "agents": {
    "name": "Nik Agents",
    "icon": "🤖",
-   "order": 18
+   "order": 19
   }
  },
  "tools": [
@@ -1327,6 +1332,257 @@
      "id": "explicitStart",
      "label": "Start documents with ---",
      "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "basic-auth",
+   "name": "Basic Auth Encoder / Decoder",
+   "description": "Build or read an HTTP Basic Authorization header.",
+   "category": "security",
+   "icon": "B64",
+   "keywords": [
+    "basic auth",
+    "authorization",
+    "header",
+    "base64",
+    "credentials",
+    "http",
+    "curl",
+    "encode",
+    "decode",
+    "username",
+    "password",
+    "security"
+   ],
+   "lede": "Basic auth is username:password base64-encoded — encoding, not encryption. Anyone who sees the header sees the password.",
+   "footnote": "",
+   "inputLabel": "user:password, or an Authorization header",
+   "outputLabel": "Result",
+   "sample": "admin:hunter2",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "csp-builder",
+   "name": "CSP Builder & Analyser",
+   "description": "Build a Content-Security-Policy, or find the holes in an existing one.",
+   "category": "security",
+   "icon": "CSP",
+   "keywords": [
+    "csp",
+    "content security policy",
+    "xss",
+    "header",
+    "nonce",
+    "unsafe-inline",
+    "directive",
+    "build",
+    "analyse",
+    "analyzer",
+    "security"
+   ],
+   "lede": "Paste a policy to have it broken down and checked, or start from a preset.",
+   "footnote": "",
+   "inputLabel": "Content-Security-Policy",
+   "outputLabel": "Analysis",
+   "sample": "default-src *; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.example.com; style-src 'self' 'unsafe-inline'; img-src *",
+   "options": [
+    {
+     "id": "preset",
+     "label": "Or start from a preset",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Analyse what I pasted",
+      "Strict — nonce based",
+      "Moderate — self plus a CDN",
+      "API / JSON only"
+     ]
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "password-strength",
+   "name": "Password Strength Checker",
+   "description": "Measure real entropy and spot the patterns crackers try first.",
+   "category": "security",
+   "icon": "🛡",
+   "keywords": [
+    "password",
+    "strength",
+    "entropy",
+    "crack",
+    "secure",
+    "check",
+    "weak",
+    "audit",
+    "brute force",
+    "dictionary",
+    "security"
+   ],
+   "lede": "Scores by actual entropy rather than the usual \"one uppercase, one digit\" theatre — and names the specific pattern that weakens it.",
+   "footnote": "Typed here, this never leaves your browser — but as a rule, do not paste a password you actually use into any website. Test the <em>pattern</em>, not the real thing. The strongest practical advice remains: a long passphrase from a password manager, unique per site, with 2FA on top.",
+   "inputLabel": "Password",
+   "outputLabel": "Analysis",
+   "sample": "P@ssw0rd2024",
+   "options": [
+    {
+     "id": "rate",
+     "label": "Attacker capability",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "Online, rate-limited — 10⁴/sec",
+      "Offline, slow hash (bcrypt) — 10⁹/sec",
+      "Offline, fast hash (SHA-256) — 10¹¹/sec",
+      "Nation-state, fast hash — 10¹³/sec"
+     ]
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "secret-scanner",
+   "name": "Secret Scanner",
+   "description": "Find API keys, tokens and private keys hiding in code, logs or a diff.",
+   "category": "security",
+   "icon": "🔎",
+   "keywords": [
+    "secret",
+    "scanner",
+    "leak",
+    "api key",
+    "token",
+    "credential",
+    "private key",
+    "detect",
+    "git",
+    "commit",
+    "gitleaks",
+    "trufflehog",
+    "security",
+    "audit",
+    "aws",
+    "password"
+   ],
+   "lede": "Paste a diff, a config file or a log before you commit or share it. Detection runs locally — nothing is uploaded, which is rather the point for a tool like this.",
+   "footnote": "Pattern matching finds known key shapes; it will miss a secret that looks like ordinary text, and it will occasionally flag something harmless. Values are shown masked and never leave your browser. For repository-wide and history scanning use <code>gitleaks</code> or <code>trufflehog</code> in CI.",
+   "inputLabel": "Text to scan",
+   "outputLabel": "Findings",
+   "sample": "DATABASE_URL=postgres://admin:s3cr3tp4ss@db.example.com:5432/app\nAWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE\ngithub_token: ghp_1234567890abcdefghijklmnopqrstuvwx\nSTRIPE_KEY=sk_live_EXAMPLEONLYnotreal\n-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA1234\n-----END RSA PRIVATE KEY-----\nnormal_config = \"nothing to see here\"\nemail: someone@example.com",
+   "options": [
+    {
+     "id": "redact",
+     "label": "Output a redacted copy instead",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    }
+   ],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "security-headers",
+   "name": "Security Headers Analyser",
+   "description": "Grade a set of HTTP response headers and see what is missing.",
+   "category": "security",
+   "icon": "🔒",
+   "keywords": [
+    "security headers",
+    "http",
+    "hsts",
+    "csp",
+    "x-frame-options",
+    "headers",
+    "scan",
+    "grade",
+    "owasp",
+    "clickjacking",
+    "mime sniffing",
+    "referrer policy",
+    "security"
+   ],
+   "lede": "Paste the response headers (curl -I, or the Network tab) — this grades them offline, so it works for localhost and internal sites a hosted scanner cannot reach.",
+   "footnote": "Scoring is a rule of thumb for comparing before and after, not an industry standard. A header being present does not mean it is correct for your app — a CSP that allows <code>unsafe-inline</code> looks compliant and blocks very little.",
+   "inputLabel": "HTTP response headers",
+   "outputLabel": "Report",
+   "sample": "HTTP/2 200\ncontent-type: text/html; charset=utf-8\nserver: nginx/1.24.0\nx-powered-by: Express\nset-cookie: session=abc123; Path=/\naccess-control-allow-origin: *",
+   "options": [],
+   "isAgent": false,
+   "bespoke": false
+  },
+  {
+   "id": "totp-generator",
+   "name": "TOTP / 2FA Code Generator",
+   "description": "Generate the current authenticator code from a base32 secret.",
+   "category": "security",
+   "icon": "🔐",
+   "keywords": [
+    "totp",
+    "2fa",
+    "mfa",
+    "otp",
+    "authenticator",
+    "google authenticator",
+    "two factor",
+    "rfc 6238",
+    "hotp",
+    "code",
+    "security",
+    "otpauth"
+   ],
+   "lede": "RFC 6238 TOTP computed locally. Useful for testing an enrolment flow, or checking that your server and a device agree.",
+   "footnote": "A TOTP secret is a second factor — putting it in a browser tool alongside the password defeats the point of having two factors. Use this for <strong>test</strong> secrets and integration work, not for your real accounts.",
+   "inputLabel": "Base32 secret (or an otpauth:// URI)",
+   "outputLabel": "Codes",
+   "sample": "JBSWY3DPEHPK3PXP",
+   "options": [
+    {
+     "id": "digits",
+     "label": "Digits",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "period",
+     "label": "Period (seconds)",
+     "type": "number",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "algorithm",
+     "label": "Algorithm",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "SHA-1 (the default everywhere)",
+      "SHA-256",
+      "SHA-512"
+     ]
+    },
+    {
+     "id": "issuer",
+     "label": "Issuer (for the otpauth URI)",
+     "type": "text",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "account",
+     "label": "Account",
+     "type": "text",
      "hint": "",
      "choices": []
     }
@@ -2844,6 +3100,20 @@
      "type": "checkbox",
      "hint": "",
      "choices": []
+    },
+    {
+     "id": "repair",
+     "label": "Repair broken JSON",
+     "type": "checkbox",
+     "hint": "Trailing commas, single quotes, bare keys, comments, NaN",
+     "choices": []
+    },
+    {
+     "id": "sizes",
+     "label": "Show what is taking up the space",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
     }
    ],
    "isAgent": false,
@@ -4331,6 +4601,13 @@
      "type": "checkbox",
      "hint": "",
      "choices": []
+    },
+    {
+     "id": "autoCopy",
+     "label": "Copy to clipboard automatically",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
     }
    ],
    "isAgent": false,
@@ -4412,6 +4689,13 @@
      "type": "checkbox",
      "hint": "",
      "choices": []
+    },
+    {
+     "id": "autoCopy",
+     "label": "Copy to clipboard automatically",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
     }
    ],
    "isAgent": false,
@@ -4461,6 +4745,13 @@
     {
      "id": "noSequence",
      "label": "Reject runs like 1234 and 1111",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "autoCopy",
+     "label": "Copy to clipboard automatically",
      "type": "checkbox",
      "hint": "",
      "choices": []
@@ -4534,6 +4825,13 @@
      "type": "number",
      "hint": "",
      "choices": []
+    },
+    {
+     "id": "autoCopy",
+     "label": "Copy to clipboard automatically",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
     }
    ],
    "isAgent": false,
@@ -4556,7 +4854,7 @@
     "id",
     "key"
    ],
-   "lede": "v4 is fully random. v7 embeds a millisecond timestamp in the high bits, so IDs sort chronologically — much kinder to database indexes.",
+   "lede": "One v4 UUID, copied to your clipboard the moment you press Generate. v7 embeds a millisecond timestamp in the high bits so IDs sort chronologically — much kinder to database indexes — and v5 derives a stable UUID from a name.",
    "footnote": "",
    "inputLabel": "",
    "outputLabel": "UUIDs",
@@ -4570,6 +4868,8 @@
      "choices": [
       "v4 — random",
       "v7 — time-ordered (recommended for keys)",
+      "v5 — deterministic from a name (SHA-1)",
+      "v3 — deterministic from a name (MD5)",
       "Nil UUID",
       "Max UUID"
      ]
@@ -4582,6 +4882,32 @@
      "choices": []
     },
     {
+     "id": "autoCopy",
+     "label": "Copy to clipboard automatically",
+     "type": "checkbox",
+     "hint": "",
+     "choices": []
+    },
+    {
+     "id": "names",
+     "label": "Names for v3/v5 (comma separated)",
+     "type": "text",
+     "hint": "Same name + namespace always produces the same UUID",
+     "choices": []
+    },
+    {
+     "id": "namespace",
+     "label": "Namespace for v3/v5",
+     "type": "select",
+     "hint": "",
+     "choices": [
+      "DNS",
+      "URL",
+      "OID",
+      "X.500"
+     ]
+    },
+    {
      "id": "format",
      "label": "Format",
      "type": "select",
@@ -4590,7 +4916,11 @@
       "Standard (8-4-4-4-12)",
       "No hyphens",
       "Braced {…}",
-      "URN (urn:uuid:…)"
+      "URN (urn:uuid:…)",
+      "SQL INSERT values",
+      "JSON array",
+      "C# Guid.Parse",
+      "TypeScript array"
      ]
     },
     {

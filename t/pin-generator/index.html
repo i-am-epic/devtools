@@ -73,7 +73,7 @@
      "name": "What options does PIN Generator have?",
      "acceptedAnswer": {
       "@type": "Answer",
-      "text": "You can configure: Digits, How many, No repeated digits, Reject runs like 1234 and 1111."
+      "text": "You can configure: Digits, How many, No repeated digits, Reject runs like 1234 and 1111, Copy to clipboard automatically."
      }
     },
     {
@@ -206,6 +206,7 @@
         <tr><td><strong>How many</strong></td><td>number</td><td></td></tr>
         <tr><td><strong>No repeated digits</strong></td><td>checkbox</td><td></td></tr>
         <tr><td><strong>Reject runs like 1234 and 1111</strong></td><td>checkbox</td><td></td></tr>
+        <tr><td><strong>Copy to clipboard automatically</strong></td><td>checkbox</td><td></td></tr>
         </tbody>
       </table>
 
@@ -222,7 +223,7 @@
   <h2>Frequently asked questions</h2>
       <details open><summary>Is PIN Generator free to use?</summary><p>Yes. Every tool on this site is free, needs no account, and has no usage limits.</p></details>
       <details open><summary>Does PIN Generator upload my data?</summary><p>No. It runs entirely in your browser using JavaScript. Your input is never sent to a server, which makes it safe for data you would not paste into a hosted tool. The two exceptions across the whole site (the Azure Service Bus relay and the IP lookup) are documented and opt-in.</p></details>
-      <details open><summary>What options does PIN Generator have?</summary><p>You can configure: Digits, How many, No repeated digits, Reject runs like 1234 and 1111.</p></details>
+      <details open><summary>What options does PIN Generator have?</summary><p>You can configure: Digits, How many, No repeated digits, Reject runs like 1234 and 1111, Copy to clipboard automatically.</p></details>
       <details open><summary>What should I watch out for when using PIN Generator?</summary><p>A numeric PIN is inherently low-entropy — a 6-digit PIN has only ~20 bits. PINs are only safe where the number of attempts is strictly rate-limited (a phone, a bank card), never as a standalone password.</p></details>
       <details open><summary>Does PIN Generator work offline?</summary><p>Once the page has loaded it keeps working without a connection. A few tools fetch a library on first use, after which they are cached.</p></details>
 
@@ -232,8 +233,8 @@
         <li><a href="https://devtool.dev/t/passphrase-generator/">Passphrase Generator</a> — Generate memorable multi-word passphrases with real entropy figures.</li>
         <li><a href="https://devtool.dev/t/password-generator/">Password Generator</a> — Generate strong random passwords with a live entropy read-out.</li>
         <li><a href="https://devtool.dev/t/uuid-generator/">UUID Generator</a> — Generate UUID v4, time-ordered v7, or v1-style identifiers in bulk.</li>
+        <li><a href="https://devtool.dev/t/totp-generator/">TOTP / 2FA Code Generator</a> — Generate the current authenticator code from a base32 secret.</li>
         <li><a href="https://devtool.dev/t/agent-review/">Code Review</a> — Reviews uncommitted or staged code changes for correctness, security and maintainability. Use when the user asks to review their work, check a diff before committing, or find problems in changes they just made. For a whole branch or a GitHub PR use nikbot-pr instead; for a security-only pass use nikbot-security.</li>
-        <li><a href="https://devtool.dev/t/gha-validator/">GitHub Actions Checker</a> — Lint a workflow for unpinned actions, script injection and missing permissions.</li>
   </ul>
 
   <footer>

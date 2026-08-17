@@ -208,7 +208,7 @@ export class SimpleTool extends BaseTool {
         const live = this.spec.live !== false && (this.spec.layout || 'io') === 'io';
 
         if (input) {
-            const debounced = this.debounce(() => this.execute(), 140);
+            const debounced = this.debounce(() => this.execute('input'), 140);
             input.addEventListener('input', () => {
                 this.updateInputMeta();
                 if (live) debounced();
@@ -217,13 +217,13 @@ export class SimpleTool extends BaseTool {
 
         // Options re-run immediately
         document.querySelectorAll(`[id^="${this.ns}_opt_"]`).forEach((node) => {
-            node.addEventListener('change', () => this.execute());
+            node.addEventListener('change', () => this.execute('user'));
             if (node.type === 'text' || node.type === 'number') {
-                node.addEventListener('input', this.debounce(() => this.execute(), 200));
+                node.addEventListener('input', this.debounce(() => this.execute('input'), 200));
             }
         });
 
-        this.el('run')?.addEventListener('click', () => this.execute());
+        this.el('run')?.addEventListener('click', () => this.execute('user'));
         this.el('copy')?.addEventListener('click', () => copyText(this.el('output')?.value || ''));
         this.el('download')?.addEventListener('click', () => this.save());
         this.el('clear')?.addEventListener('click', () => {
@@ -240,7 +240,7 @@ export class SimpleTool extends BaseTool {
         this.el('sample')?.addEventListener('click', () => {
             if (input) input.value = this.spec.input.sample;
             this.updateInputMeta();
-            this.execute();
+            this.execute('user');
         });
 
         this.el('pick')?.addEventListener('click', () => this.el('file')?.click());
@@ -292,7 +292,12 @@ export class SimpleTool extends BaseTool {
 
     // ------------------------------------------------------------- execute --
 
-    async execute() {
+    /**
+     * @param {'auto'|'user'|'input'} trigger why this ran. Tools that copy to
+     *   the clipboard need to know: a write without a user gesture is blocked
+     *   by the browser, and silently copying while someone types is hostile.
+     */
+    async execute(trigger = 'auto') {
         const inputNode = this.el('input');
         const value = inputNode ? inputNode.value : '';
         const options = this.readOptions();
@@ -312,6 +317,7 @@ export class SimpleTool extends BaseTool {
                 options,
                 bytes: this.fileBytes,
                 fileName: this.fileName,
+                trigger,
                 tool: this,
             });
 
