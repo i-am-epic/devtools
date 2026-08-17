@@ -10,6 +10,11 @@ import crypto from 'node:crypto';
 
 const MAX_BODY = 4 * 1024 * 1024;
 
+// The relay must only ever talk to Azure Service Bus. Without this it is an
+// open proxy that will fetch any host a caller names, including link-local
+// metadata endpoints.
+const ALLOWED_HOST = /^[a-z0-9][a-z0-9-]*\.servicebus\.(windows\.net|chinacloudapi\.cn|usgovcloudapi\.net|cloudapi\.de)$/i;
+
 class SbError extends Error {
     constructor(message, status = 400) {
         super(message);
@@ -45,6 +50,9 @@ function parseConnectionString(text) {
 
     const host = endpoint.replace(/^sb:\/\/|^https:\/\//, '').replace(/\/+$/, '');
     if (!host) throw new SbError('Could not read the namespace host from the Endpoint value');
+    if (!ALLOWED_HOST.test(host)) {
+        throw new SbError('The Endpoint must be an Azure Service Bus namespace, e.g. sb://<namespace>.servicebus.windows.net/');
+    }
 
     return { host, keyName, key, entityPath: parts.entitypath || null };
 }

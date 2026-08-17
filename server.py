@@ -19,6 +19,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -28,6 +29,15 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 MAX_BODY = 4 * 1024 * 1024  # 4 MB
+
+# The relay must only ever talk to Azure Service Bus. Without this it is an
+# open proxy that will fetch any host a caller names, including link-local
+# metadata endpoints.
+ALLOWED_HOST = re.compile(
+    r"^[a-z0-9][a-z0-9-]*\.servicebus\."
+    r"(windows\.net|chinacloudapi\.cn|usgovcloudapi\.net|cloudapi\.de)$",
+    re.IGNORECASE,
+)
 
 
 # --------------------------------------------------------------------------
@@ -80,6 +90,11 @@ def parse_connection_string(cs: str) -> dict:
     host = endpoint.replace("sb://", "").replace("https://", "").strip("/")
     if not host:
         raise SbError("Could not read the namespace host from the Endpoint value")
+    if not ALLOWED_HOST.match(host):
+        raise SbError(
+            "The Endpoint must be an Azure Service Bus namespace, e.g. "
+            "sb://<namespace>.servicebus.windows.net/"
+        )
 
     return {
         "host": host,
