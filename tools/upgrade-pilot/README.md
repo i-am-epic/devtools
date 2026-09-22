@@ -28,6 +28,7 @@ restore ─→ inventory ─→ scans ─→ correlate ─→ apply ─→ verif
 | `report.py` | Correlates findings with the inventory, applies the branch policy, and emits the plan plus a Markdown summary for the build page. |
 | `apply.py` | Applies the automatic set **one package at a time**, verifying after each and reverting anything that fails. |
 | `metadefender_poll.py` | Polls OPSWAT for submitted artifacts and writes one combined result file. |
+| `discover.py` | Walks the Azure DevOps organisation: projects, repos, pipelines, release branches. Reads every manifest over the items API without cloning, then builds the build tree, the package cascade, the release trains and the drift table. |
 | `tests/` | The toolchain's own tests. Standard library `unittest`: `python -m unittest discover -s tests`. |
 
 ## Azure DevOps UI
@@ -39,6 +40,37 @@ apply receipt in project navigation. It uses the signed-in user's Azure DevOps
 identity and requests only the `vso.build` read scope; no evidence is copied to
 an external service. See `ado-extension/README.md` for packaging and private
 installation instructions.
+
+## Two graphs, not one
+
+The fleet view keeps these apart, and conflating them is the usual mistake:
+
+- **The build tree** — pipeline A's artifact feeds pipeline B. Comes from
+  `resources.pipelines`. Answers *what do I rebuild after this lands?*
+- **The package cascade** — repo X consumes a package repo Y publishes. Comes from
+  manifests joined against feed provenance. Answers *in what order do I upgrade?*
+
+They overlap but are not the same. A release pipeline depends on a build pipeline
+without consuming its library; an internal package cascade often has no pipeline
+edge at all. For a remediation cycle you need the second.
+
+**Azure DevOps has no "who consumes package P" endpoint.** The feed knows what was
+published and by whom; consumers are derived by reading each repo's manifests. That
+is why the fleet inventory exists, and there is no shortcut around it.
+
+```bash
+python discover.py --org https://dev.azure.com/contoso --out fleet.json
+python discover.py --from-dir captured/          # replay saved responses offline
+```
+
+`discover.py` keeps its transport in one thin class; every graph function below it
+is a pure function of plain data, tested against `fixtures/fleet.json`. The first
+run against a live organisation therefore only has to prove authentication and the
+endpoints, not the algorithms.
+
+Run it from `azure-pipelines-fleet.yml` — once for the organisation, on a schedule
+an hour ahead of the per-repo sweep. It publishes `fleet.json` into the same
+`upgrade-pilot` artifact the hub already reads.
 
 ## Accepted risks
 

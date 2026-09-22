@@ -1,6 +1,7 @@
 import * as SDK from "azure-devops-extension-sdk";
 import JSZip from "jszip";
 import { severityCounts, searchableRows, type Evidence, type Finding, type Plan } from "./model";
+import { renderEstate, renderBuildTree, renderCascade, renderTrains, type Fleet } from "./fleet";
 
 const app = document.querySelector<HTMLElement>("#app")!;
 const ARTIFACT = "upgrade-pilot";
@@ -12,6 +13,18 @@ interface BuildRef {
   _links?: { web?: { href?: string } };
 }
 let currentBuild: BuildRef | undefined;
+let fleet: Fleet | undefined;
+
+type View = "build" | "estate" | "tree" | "cascade" | "trains";
+const VIEWS: Array<{ id: View; label: string }> = [
+  { id: "build", label: "This build" },
+  { id: "estate", label: "Estate" },
+  { id: "tree", label: "Build tree" },
+  { id: "cascade", label: "Cascade" },
+  { id: "trains", label: "Release trains" },
+];
+let view: View = "build";
+let cascadePick: string | undefined;
 let projectId = "";
 let hostUri = "";
 let accessToken = "";
@@ -31,6 +44,8 @@ async function evidenceFromZip(bytes: ArrayBuffer): Promise<Evidence> {
   const [plan, findings, applied] = await Promise.all([
     jsonFrom(zip, "plan.json"), jsonFrom(zip, "findings.json"), jsonFrom(zip, "applied.json"),
   ]);
+  // The fleet document is optional: a repo-scoped run publishes evidence without it.
+  fleet = (await jsonFrom(zip, "fleet.json").catch(() => undefined)) as Fleet | undefined;
   return { plan: plan as Plan, findings: findings as Finding[], applied: applied as Evidence["applied"] };
 }
 
@@ -93,6 +108,43 @@ function renderRows(query = ""): void {
   }).join("") : `<tr><td class="no-results" colspan="6">No decisions match this filter.</td></tr>`;
 }
 
+function nav(): string {
+  const available = (id: View): boolean => id === "build" || Boolean(fleet);
+  return `<nav class="views" role="tablist">${VIEWS.map(v => {
+    const on = v.id === view;
+    return `<button role="tab" class="view-tab${on ? " on" : ""}" data-view="${v.id}"
+      aria-selected="${on}"${available(v.id) ? "" : " disabled title='No fleet.json in this artifact'"}>${v.label}</button>`;
+  }).join("")}</nav>`;
+}
+
+function viewBody(): string {
+  if (view === "estate") return renderEstate(fleet!);
+  if (view === "tree") return renderBuildTree(fleet!);
+  if (view === "cascade") return renderCascade(fleet!, cascadePick);
+  if (view === "trains") return renderTrains(fleet!);
+  return buildView();
+}
+
+function wireNav(): void {
+  document.querySelectorAll<HTMLButtonElement>("[data-view]").forEach(button =>
+    button.addEventListener("click", () => {
+      if (button.disabled) return;
+      view = button.dataset.view as View;
+      render();
+    }));
+  document.querySelector<HTMLSelectElement>("#cascadePick")?.addEventListener("change", event => {
+    cascadePick = (event.target as HTMLSelectElement).value;
+    render();
+  });
+  const driftSearch = document.querySelector<HTMLInputElement>("#driftSearch");
+  driftSearch?.addEventListener("input", () => {
+    const q = driftSearch.value.trim().toLowerCase();
+    document.querySelectorAll<HTMLTableRowElement>("#driftRows tr").forEach(row => {
+      row.hidden = Boolean(q) && !row.innerText.toLowerCase().includes(q);
+    });
+  });
+}
+
 function render(): void {
   if (!current) return;
   const counts = severityCounts(current.findings);
@@ -109,15 +161,31 @@ function render(): void {
       </div>
     </header>
     <main>
+      ${nav()}
+      ${viewBody()}
+    </main>`;
+  wireNav();
+  if (view === "build") {
+    document.querySelector<HTMLInputElement>("#search")?.addEventListener("input", event => renderRows((event.target as HTMLInputElement).value));
+    renderRows();
+  }
+  document.querySelector<HTMLInputElement>("#evidenceFile")?.addEventListener("change", importEvidence);
+}
+
+function buildView(): string {
+  const counts = severityCounts(current!.findings);
+  const gateTone = current!.plan.may_automerge ? "ok" : "held";
+  const plan = current!.plan;
+  return `
       <section class="decision-strip">
-        <div><span class="overline">Branch policy</span><h1>${esc(current.plan.branch ?? "Unknown branch")}</h1><p>${esc(current.plan.policy?.note ?? current.plan.gate_reason)}</p></div>
-        <div class="decision ${gateTone}"><span>${statusText()}</span><strong>${current.plan.may_automerge ? "GO" : "HOLD"}</strong><small>${esc(current.plan.policy?.name ?? "unclassified")}</small></div>
+        <div><span class="overline">Branch policy</span><h1>${esc(current!.plan.branch ?? "Unknown branch")}</h1><p>${esc(current!.plan.policy?.note ?? current!.plan.gate_reason)}</p></div>
+        <div class="decision ${gateTone}"><span>${statusText()}</span><strong>${current!.plan.may_automerge ? "GO" : "HOLD"}</strong><small>${esc(current!.plan.policy?.name ?? "unclassified")}</small></div>
       </section>
       <section class="metrics" aria-label="Finding summary">
         ${metric("Critical", counts.critical, "critical")}${metric("High", counts.high, "high")}
-        ${metric("Needs review", current.plan.review?.length ?? 0, "review")}
-        ${metric("Automatic", current.plan.auto?.length ?? 0, "automatic")}
-        ${metric("No fix", current.plan.unfixable?.length ?? 0)}
+        ${metric("Needs review", current!.plan.review?.length ?? 0, "review")}
+        ${metric("Automatic", current!.plan.auto?.length ?? 0, "automatic")}
+        ${metric("No fix", current!.plan.unfixable?.length ?? 0)}
       </section>
       <section class="workspace">
         <article class="panel decisions">
@@ -126,16 +194,12 @@ function render(): void {
         </article>
         <aside class="panel evidence-panel">
           <span class="overline">Verification contract</span><h2>Evidence</h2>
-          <div class="evidence-line"><span class="evidence-icon ${gateTone}">${current.plan.may_automerge ? "✓" : "!"}</span><div><strong>Quality gate</strong><p>${esc(current.plan.gate_reason)}</p></div></div>
-          <div class="evidence-line"><span class="evidence-icon">${current.findings.length}</span><div><strong>Scanner findings</strong><p>Trivy, Sonar and MetaDefender normalized into one model.</p></div></div>
-          <div class="evidence-line"><span class="evidence-icon">${current.plan.base_image?.length ?? 0}</span><div><strong>Base image route</strong><p>OS packages kept out of language package managers.</p></div></div>
-          <div class="receipt"><span>Apply receipt</span><strong>${esc(current.applied?.summary ?? "Not run or not published")}</strong></div>
+          <div class="evidence-line"><span class="evidence-icon ${gateTone}">${current!.plan.may_automerge ? "✓" : "!"}</span><div><strong>Quality gate</strong><p>${esc(current!.plan.gate_reason)}</p></div></div>
+          <div class="evidence-line"><span class="evidence-icon">${current!.findings.length}</span><div><strong>Scanner findings</strong><p>Trivy, Sonar and MetaDefender normalized into one model.</p></div></div>
+          <div class="evidence-line"><span class="evidence-icon">${current!.plan.base_image?.length ?? 0}</span><div><strong>Base image route</strong><p>OS packages kept out of language package managers.</p></div></div>
+          <div class="receipt"><span>Apply receipt</span><strong>${esc(current!.applied?.summary ?? "Not run or not published")}</strong></div>
         </aside>
-      </section>
-    </main>`;
-  document.querySelector<HTMLInputElement>("#search")?.addEventListener("input", event => renderRows((event.target as HTMLInputElement).value));
-  document.querySelector<HTMLInputElement>("#evidenceFile")?.addEventListener("change", importEvidence);
-  renderRows();
+      </section>`;
 }
 
 async function importEvidence(event: Event): Promise<void> {
@@ -180,6 +244,7 @@ function loadPreview(): void {
     },
     applied: { summary: "2 applied, 0 reverted, 1 awaiting review" },
   };
+  fleet = {"org":"https://dev.azure.com/contoso","projects":["Payments"],"counts":{"repos":4,"pipelines":4,"packages":7,"release_branches":2},"build_tree":{"nodes":[{"id":1,"name":"contoso-http-ci","project":"Payments"},{"id":2,"name":"payments-api-ci","project":"Payments"},{"id":3,"name":"payments-api-release","project":"Payments"},{"id":4,"name":"onboarding-web-ci","project":"Payments"}],"edges":[{"from":1,"to":2,"via":"contoso-http-ci"},{"from":2,"to":3,"via":"payments-api-ci"}]},"package_graph":{"nodes":[{"id":"Payments/contoso-http","publishes":["Contoso.Http"]},{"id":"Payments/contoso-auth","publishes":["Contoso.Auth.Tokens"]},{"id":"Payments/payments-api","publishes":[]},{"id":"Payments/onboarding-web","publishes":[]}],"edges":[{"from":"Payments/contoso-http","to":"Payments/contoso-auth","package":"Contoso.Http","version":"4.1.0"},{"from":"Payments/contoso-http","to":"Payments/payments-api","package":"Contoso.Http","version":"4.0.2"},{"from":"Payments/contoso-auth","to":"Payments/onboarding-web","package":"Contoso.Auth.Tokens","version":"2.8.4"}]},"internal_packages":["Contoso.Auth.Tokens","Contoso.Http"],"cascades":{"Contoso.Http":[["Payments/contoso-auth","Payments/payments-api"],["Payments/onboarding-web"]],"Contoso.Auth.Tokens":[["Payments/onboarding-web"]]},"cycles":[],"drift":[{"ecosystem":"nuget","name":"Newtonsoft.Json","consumers":4,"versions":["12.0.3","13.0.1","13.0.3"],"latest":"13.0.3","median_majors_behind":0.5,"max_majors_behind":1,"median_minors_behind":0.0,"split_major":true,"repos":["Payments/contoso-http","Payments/contoso-auth","Payments/payments-api","Payments/onboarding-web"]},{"ecosystem":"nuget","name":"Contoso.Http","consumers":2,"versions":["4.0.2","4.1.0"],"latest":"4.2.1","median_majors_behind":0.0,"max_majors_behind":0,"median_minors_behind":1.5,"split_major":false,"repos":["Payments/contoso-auth","Payments/payments-api"]}],"release_trains":[{"repo":"Payments/payments-api","branch":"release/26.1","behind":[{"package":"Contoso.Http","release":"3.9.0","mainline":"4.0.2","jump":"major"}],"count":1},{"repo":"Payments/contoso-http","branch":"release/26.1","behind":[],"count":0}],"repos":[{"key":"Payments/contoso-http","publishes":["Contoso.Http"]},{"key":"Payments/contoso-auth","publishes":["Contoso.Auth.Tokens"]},{"key":"Payments/payments-api","publishes":[]},{"key":"Payments/onboarding-web","publishes":[]}]} as Fleet;
   render();
 }
 

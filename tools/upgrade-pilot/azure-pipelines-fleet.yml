@@ -1,0 +1,94 @@
+# Fleet discovery — one run for the whole organisation, not one per repository.
+#
+# Walks projects, repos, pipelines and release branches, reads every manifest over
+# the items API (no clones), and publishes one fleet.json. The Upgrade Pilot hub
+# reads that document to draw the estate, the build tree, the cascade waves and
+# the release trains.
+#
+# Runs on the pipeline's own identity. The build service needs read access to the
+# projects in scope; nothing here writes.
+
+trigger: none
+pr: none
+
+schedules:
+  - cron: "0 1 * * 1"          # Monday 01:00 UTC, before the per-repo sweep at 02:00
+    displayName: Weekly fleet discovery
+    branches:
+      include: [main]
+    always: true
+
+parameters:
+  - name: project
+    displayName: Limit to one project (blank = whole organisation)
+    type: string
+    default: ' '
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.11'
+
+  - script: python -m unittest discover -s tools/upgrade-pilot/tests
+    displayName: Test the toolchain
+
+  - script: |
+      set -e
+      mkdir -p "$(Build.ArtifactStagingDirectory)/upgrade-pilot"
+      PROJECT_ARG=""
+      if [ -n "$(echo '${{ parameters.project }}' | tr -d '[:space:]')" ]; then
+        PROJECT_ARG="--project ${{ parameters.project }}"
+      fi
+      python tools/upgrade-pilot/discover.py \
+        --org "$(System.CollectionUri)" \
+        $PROJECT_ARG \
+        --out "$(Build.ArtifactStagingDirectory)/upgrade-pilot/fleet.json"
+    displayName: Discover the fleet
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+  # Azure Artifacts knows what was published and by whom, but not who consumes it.
+  # Provenance is what marks a package "internal"; consumers come from the manifests
+  # discover.py already read.
+  - script: |
+      python - <<'PY'
+      import json, os, urllib.request, base64, pathlib, sys
+      org = os.environ["SYSTEM_COLLECTIONURI"].rstrip("/")
+      feed = os.environ.get("UpgradePilotFeed", "")
+      out = pathlib.Path(os.environ["ARTIFACT_DIR"]) / "fleet.json"
+      if not feed or not out.exists():
+          print("no feed configured, or no fleet.json; leaving publishes empty")
+          sys.exit(0)
+      token = os.environ["SYSTEM_ACCESSTOKEN"]
+      auth = base64.b64encode(f":{token}".encode()).decode()
+      url = (f"{org}/_apis/packaging/feeds/{feed}/packages"
+             "?includeAllVersions=false&api-version=7.1-preview.1")
+      req = urllib.request.Request(url, headers={"Authorization": f"Basic {auth}"})
+      packages = json.load(urllib.request.urlopen(req, timeout=30)).get("value", [])
+      fleet = json.loads(out.read_text())
+      names = {p["name"] for p in packages}
+      # A repo publishes a package when the feed carries it and the repo's name
+      # matches the package's; refine this mapping once the real feed is in view.
+      for repo in fleet.get("repos", []):
+          slug = repo["repo"].replace("-", "").lower()
+          repo["publishes"] = sorted(n for n in names if n.replace(".", "").lower().startswith(slug))
+      out.write_text(json.dumps(fleet, indent=1))
+      print(f"{len(names)} feed packages; "
+            f"{sum(len(r['publishes']) for r in fleet['repos'])} publisher links")
+      PY
+    displayName: Mark internal packages from feed provenance
+    condition: ne(variables['UpgradePilotFeed'], '')
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+      ARTIFACT_DIR: $(Build.ArtifactStagingDirectory)/upgrade-pilot
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish fleet evidence
+    inputs:
+      PathtoPublish: $(Build.ArtifactStagingDirectory)/upgrade-pilot
+      ArtifactName: upgrade-pilot
