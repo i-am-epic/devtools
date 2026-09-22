@@ -248,14 +248,29 @@ function loadPreview(): void {
   render();
 }
 
+/** Loopback covers IPv6 too; `::1` was previously missed. */
+const PREVIEW_HOSTS = ["localhost", "127.0.0.1", "[::1]", "::1"];
+const SDK_TIMEOUT_MS = 2500;
+
 async function start(): Promise<void> {
-  if (["localhost", "127.0.0.1"].includes(location.hostname)) {
+  if (PREVIEW_HOSTS.includes(location.hostname)) {
     loadPreview();
     return;
   }
+  // Outside an Azure DevOps host the SDK never answers rather than rejecting, so
+  // race it. Anyone opening the bundle directly gets the preview instead of an
+  // error about an extension host they are not in.
+  let hosted = false;
   try {
-    await SDK.init({ loaded: false, applyTheme: true });
-    await SDK.ready();
+    await Promise.race([
+      (async () => {
+        await SDK.init({ loaded: false, applyTheme: true });
+        await SDK.ready();
+        hosted = true;
+      })(),
+      new Promise((_resolve, reject) =>
+        setTimeout(() => reject(new Error("No Azure DevOps host responded.")), SDK_TIMEOUT_MS)),
+    ]);
     projectId = SDK.getWebContext().project?.id ?? "";
     if (!projectId) throw new Error("Open Upgrade Pilot from inside an Azure DevOps project.");
     const host = SDK.getHost();
@@ -265,6 +280,10 @@ async function start(): Promise<void> {
     SDK.notifyLoadSucceeded();
     await loadLatest();
   } catch (error) {
+    if (!hosted) {
+      loadPreview();
+      return;
+    }
     renderEmpty(error instanceof Error ? error.message : "Azure DevOps could not initialize the extension.");
   }
 }
