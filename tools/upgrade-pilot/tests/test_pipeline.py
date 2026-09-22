@@ -276,6 +276,32 @@ class TestManifestReaders(unittest.TestCase):
             serilog = next(r for r in rows if r["name"] == "Serilog")
             self.assertEqual(serilog["spec"], "4.0.0")
 
+    def test_extras_marker_does_not_truncate_the_dependency_list(self):
+        # A regex ending at the first "]" stopped inside uvicorn[standard] and
+        # silently dropped every dependency after it. Found on a real repo.
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "pyproject.toml").write_text(
+                '[project]\nname = "x"\ndependencies = [\n'
+                '    "fastapi>=0.115.0",\n'
+                '    "uvicorn[standard]>=0.32.0",\n'
+                '    "pydantic>=2.0",\n'
+                '    "numpy>=1.26",\n]\n'
+                '[project.optional-dependencies]\ndev = ["pytest>=8.0"]\n')
+            rows = {r["name"]: r for r in inventory.read_pypi(root)}
+            self.assertEqual(sorted(rows),
+                             ["fastapi", "numpy", "pydantic", "pytest", "uvicorn"])
+            # The extras marker is not part of the version constraint.
+            self.assertEqual(rows["uvicorn"]["spec"], ">=0.32.0")
+
+    def test_poetry_dependencies_are_read(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "pyproject.toml").write_text(
+                '[tool.poetry.dependencies]\npython = "^3.11"\nflask = "^3.1.0"\n')
+            rows = {r["name"] for r in inventory.read_pypi(root)}
+            self.assertEqual(rows, {"flask"})      # python itself is not a package
+
     def test_unpinned_python_requirement_is_flagged(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)

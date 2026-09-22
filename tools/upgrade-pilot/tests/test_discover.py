@@ -15,8 +15,30 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import discover                      # noqa: E402
+import inventory as inv              # noqa: E402
 
 FLEET = json.loads((Path(__file__).resolve().parent.parent / "fixtures" / "fleet.json").read_text())
+
+
+class TestRegistryMetadataShapes(unittest.TestCase):
+    """npm permits more than one shape for the same field; a crash on an
+    unexpected one aborted an entire inventory run on a real repository."""
+
+    def test_repository_shorthand_string_is_handled(self):
+        self.assertEqual(inv.changelog_sources({"repo_url": "github:vercel/next.js"}),
+                         inv.changelog_sources({"repo_url": "github:vercel/next.js"}))
+
+    def test_changelog_sources_survives_a_missing_repository(self):
+        self.assertEqual(inv.changelog_sources({}), [])
+
+    def test_changelog_sources_derives_paths_from_a_git_url(self):
+        got = inv.changelog_sources({"repo_url": "git+https://github.com/eslint/eslint.git"})
+        self.assertTrue(any("eslint/eslint/main/CHANGELOG.md" in u for u in got))
+
+    def test_a_monorepo_directory_is_included_in_the_path(self):
+        got = inv.changelog_sources({"repo_url": "https://github.com/vitejs/vite",
+                                     "repo_dir": "packages/vite"})
+        self.assertTrue(any("packages/vite/CHANGELOG.md" in u for u in got))
 
 
 class TestReferencedPipelines(unittest.TestCase):
@@ -177,6 +199,29 @@ class TestDrift(unittest.TestCase):
 
     def test_worst_major_drift_sorts_first(self):
         self.assertEqual(discover.drift(FLEET["repos"])[0]["name"], "Newtonsoft.Json")
+
+
+class TestConvergence(unittest.TestCase):
+    def setUp(self):
+        self.conv = discover.convergence(FLEET["repos"])
+
+    def test_repos_sharing_a_package_are_linked(self):
+        pairs = {(e["a"].split("/")[1], e["b"].split("/")[1]) for e in self.conv["edges"]}
+        # Every fixture repo depends on Newtonsoft.Json, so all pairs link.
+        self.assertEqual(len(pairs), 6)
+
+    def test_edge_weight_is_the_shared_package_count(self):
+        heaviest = self.conv["edges"][0]
+        self.assertGreaterEqual(heaviest["n"], 1)
+        self.assertEqual(heaviest["n"], len(set(heaviest["packages"])))
+
+    def test_a_repo_with_no_packages_is_not_a_node(self):
+        conv = discover.convergence([{"key": "a/empty", "repo": "empty", "packages": []}])
+        self.assertEqual(conv["nodes"], [])
+
+    def test_edges_are_sorted_heaviest_first(self):
+        counts = [e["n"] for e in self.conv["edges"]]
+        self.assertEqual(counts, sorted(counts, reverse=True))
 
 
 class TestAssemble(unittest.TestCase):

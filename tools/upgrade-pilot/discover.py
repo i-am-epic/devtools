@@ -375,7 +375,31 @@ def assemble(raw: dict, org: str = "") -> dict:
         "cycles": cycles(pkg_graph),
         "drift": drift(repos),
         "release_trains": release_trains(repos),
+        "convergence": convergence(repos),
     }
+
+
+def convergence(repos: list[dict]) -> dict:
+    """Repositories linked by the third-party packages they share.
+
+    Distinct from both other graphs: no build edge, no publisher. It answers
+    "which repos should be upgraded as one group", because bumping React once
+    across a cluster is cheaper than bumping it in each repo separately.
+    """
+    names = {r["key"]: {p["name"] for p in r.get("packages", [])} for r in repos}
+    nodes = [{"id": r["key"], "label": r.get("repo") or r["key"],
+              "deps": len(r.get("packages", [])), "kind": r.get("kind", "")}
+             for r in repos if r.get("packages")]
+    keys = [n["id"] for n in nodes]
+    edges = []
+    for i, a in enumerate(keys):
+        for b in keys[i + 1:]:
+            common = names[a] & names[b]
+            if common:
+                edges.append({"a": a, "b": b, "n": len(common),
+                              "packages": sorted(common)[:8]})
+    edges.sort(key=lambda e: -e["n"])
+    return {"nodes": nodes, "edges": edges}
 
 
 def release_trains(repos: list[dict]) -> list[dict]:

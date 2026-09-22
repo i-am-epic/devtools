@@ -92,7 +92,10 @@ def npm_meta(name: str) -> dict:
     d = _get_json(f"{base}/{urllib.parse.quote(name, safe='@')}")
     latest = d.get("dist-tags", {}).get("latest")
     v = d.get("versions", {}).get(latest, {})
+    # npm permits both {"type","url"} and the "github:owner/repo" shorthand.
     repo = v.get("repository") or {}
+    if isinstance(repo, str):
+        repo = {"url": repo}
     return {
         "latest": latest,
         "peers": v.get("peerDependencies") or {},
@@ -207,17 +210,42 @@ def read_pypi(root: Path) -> list[dict]:
             })
     pyproject = root / "pyproject.toml"
     if pyproject.exists():
-        text = pyproject.read_text()
-        block = re.search(r"dependencies\s*=\s*\[(.*?)\]", text, re.S)
-        if block:
-            for raw in re.findall(r'"([^"]+)"', block.group(1)):
-                m = re.match(r"^([A-Za-z0-9_.\-]+)", raw)
-                if m and m.group(1).lower() not in seen:
-                    out.append({
-                        "name": m.group(1), "spec": raw[len(m.group(1)):].strip() or None,
-                        "resolved": None, "direct": True, "dev": False,
-                    })
+        for raw in _pyproject_requirements(pyproject):
+            m = re.match(r"^([A-Za-z0-9_.\-]+)", raw)
+            if m and m.group(1).lower() not in seen:
+                seen.add(m.group(1).lower())
+                spec = raw[len(m.group(1)):].strip()
+                out.append({
+                    "name": m.group(1),
+                    # Drop an extras marker: uvicorn[standard]>=0.32 pins uvicorn.
+                    "spec": spec.lstrip("[").split("]")[-1].strip() or None,
+                    "resolved": None, "direct": True, "dev": False,
+                })
     return out
+
+
+def _pyproject_requirements(path: Path) -> list[str]:
+    """Runtime and optional dependencies from pyproject.toml.
+
+    Parsed with the standard library TOML reader rather than a regex: a pattern
+    that stops at the first "]" truncates the list at the first extras marker,
+    which silently drops every dependency after it.
+    """
+    try:
+        import tomllib
+        data = tomllib.loads(path.read_text())
+    except Exception:                                    # malformed or pre-3.11
+        text = path.read_text()
+        block = re.search(r"dependencies\s*=\s*\[(.*?)^\s*\]", text, re.S | re.M)
+        return re.findall(r'"([^"]+)"', block.group(1)) if block else []
+    project = data.get("project") or {}
+    reqs = list(project.get("dependencies") or [])
+    for group in (project.get("optional-dependencies") or {}).values():
+        reqs.extend(group)
+    poetry = ((data.get("tool") or {}).get("poetry") or {}).get("dependencies") or {}
+    reqs.extend(f"{name}{spec if isinstance(spec, str) else ''}"
+                for name, spec in poetry.items() if name.lower() != "python")
+    return reqs
 
 
 def read_nuget(root: Path) -> list[dict]:
@@ -360,8 +388,11 @@ def main() -> int:
                         cache[key] = REGISTRIES[eco](dep["name"])
                     except NotFound:
                         cache[key] = {"absent": True}
-                    except (Unavailable, KeyError, ValueError) as exc:
-                        cache[key] = {"error": str(exc)}
+                    except (Unavailable, KeyError, ValueError, TypeError,
+                            AttributeError) as exc:
+                        # A single unreadable record is recorded and skipped; it
+                        # must never take the rest of the inventory down with it.
+                        cache[key] = {"error": f"{type(exc).__name__}: {exc}"}
                         unreachable.append(f"{eco}:{dep['name']}")
                 meta = cache[key]
             current = dep["resolved"] or (dep["spec"] or "").lstrip("^~>=< ")

@@ -33,6 +33,11 @@ export interface TrainRow {
   behind: Array<{ package: string; release: string; mainline: string; jump: string }>;
 }
 
+export interface Convergence {
+  nodes: Array<{ id: string; label: string; deps: number; kind?: string }>;
+  edges: Array<{ a: string; b: string; n: number; packages: string[] }>;
+}
+
 export interface Fleet {
   org?: string;
   projects?: string[];
@@ -45,6 +50,7 @@ export interface Fleet {
   cycles?: string[][];
   drift?: DriftRow[];
   release_trains?: TrainRow[];
+  convergence?: Convergence;
 }
 
 const esc = (v: unknown): string => String(v ?? "—")
@@ -86,6 +92,11 @@ export function renderEstate(fleet: Fleet): string {
       <article class="metric review"><span>Release branches</span><strong>${c.release_branches}</strong></article>
       <article class="metric critical"><span>Shared packages</span><strong>${drift.length}</strong></article>
     </section>
+    <article class="panel" style="margin-bottom:16px">
+      <div class="panel-head"><div><span class="overline">Shared dependencies</span><h2>Which repositories move together</h2></div>
+        <div class="filter"><span>${fleet.convergence?.edges.length ?? 0} links</span></div></div>
+      ${renderConvergence(fleet.convergence)}
+    </article>
     <article class="panel">
       <div class="panel-head">
         <div><span class="overline">Convergence</span><h2>Packages more than one repo depends on</h2></div>
@@ -96,6 +107,65 @@ export function renderEstate(fleet: Fleet): string {
         <tbody id="driftRows">${rows}</tbody>
       </table></div>
     </article>`;
+}
+
+/* ----------------------------------------------------------- convergence */
+
+/**
+ * Repositories placed on a ring, linked by the packages they share. A ring
+ * rather than columns because convergence has no direction — neither repo
+ * depends on the other, they simply agree on a version and should move together.
+ */
+export function renderConvergence(conv: Convergence | undefined): string {
+  const nodes = conv?.nodes ?? [];
+  if (nodes.length < 2) {
+    return `<div class="panel-body"><p class="no-results">
+      Not enough repositories with dependencies to compare.</p></div>`;
+  }
+  const edges = conv!.edges;
+  const W = 760, H = 460, cx = W / 2, cy = H / 2;
+  const rx = Math.min(300, 120 + nodes.length * 14), ry = Math.min(180, 80 + nodes.length * 9);
+  const pos = new Map(nodes.map((n, i) => {
+    const angle = (i / nodes.length) * Math.PI * 2 - Math.PI / 2;
+    return [n.id, { x: cx + Math.cos(angle) * rx, y: cy + Math.sin(angle) * ry }];
+  }));
+
+  const heaviest = Math.max(...edges.map(e => e.n), 1);
+  const lines = edges.map(e => {
+    const a = pos.get(e.a), b = pos.get(e.b);
+    if (!a || !b) return "";
+    const strong = e.n >= heaviest * 0.6;
+    return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"
+      class="conv-edge${strong ? " strong" : ""}" stroke-width="${Math.max(1, (e.n / heaviest) * 7).toFixed(1)}">
+      <title>${esc(e.a)} ↔ ${esc(e.b)}: ${e.n} shared</title></line>`;
+  }).join("");
+
+  const maxDeps = Math.max(...nodes.map(n => n.deps), 1);
+  const circles = nodes.map(n => {
+    const { x, y } = pos.get(n.id)!;
+    const r = 15 + (n.deps / maxDeps) * 18;
+    return `<g class="conv-node">
+      <circle cx="${x}" cy="${y}" r="${r}"><title>${esc(n.label)}: ${n.deps} dependencies${n.kind ? ` · ${esc(n.kind)}` : ""}</title></circle>
+      <text x="${x}" y="${y + 4}" text-anchor="middle" class="conv-count">${n.deps}</text>
+      <text x="${x}" y="${y + r + 15}" text-anchor="middle" class="conv-label">${esc(n.label)}</text>
+    </g>`;
+  }).join("");
+
+  const top = edges.slice(0, 5).map(e => `<li>
+      <span class="conv-pair">${esc(short(e.a))} ↔ ${esc(short(e.b))}</span>
+      <span class="conv-n">${e.n} shared</span>
+      <span class="conv-pkgs mono">${e.packages.slice(0, 5).map(esc).join(", ")}${e.packages.length > 5 ? " …" : ""}</span>
+    </li>`).join("");
+
+  return `<div class="panel-body">
+    <p class="lead">Neither repo depends on the other — they simply agree on a package.
+    Node size is dependency count, edge weight is packages in common. <strong>A tight cluster
+    should be upgraded as one group</strong>: bumping React once across it is cheaper than
+    bumping it in each repo separately.</p>
+    <div class="graph-scroll"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"
+      role="img" aria-label="Repositories linked by shared dependencies">${lines}${circles}</svg></div>
+    <ol class="conv-top">${top}</ol>
+  </div>`;
 }
 
 /* ------------------------------------------------------------ layered graph */
