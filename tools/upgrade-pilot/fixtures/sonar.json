@@ -1,0 +1,10 @@
+{"component":{"key":"familytree","measures":[
+  {"metric":"coverage","value":"71.4"},
+  {"metric":"duplicated_lines_density","value":"2.1"},
+  {"metric":"ncloc","value":"4812"}]},
+ "projectStatus":{"status":"OK"},
+ "issues":[
+  {"rule":"typescript:S6478","severity":"MAJOR","type":"CODE_SMELL",
+   "message":"Move this component definition out of the parent component","component":"familytree:src/App.jsx"},
+  {"rule":"javascript:S2245","severity":"CRITICAL","type":"VULNERABILITY",
+   "message":"Make sure this weak pseudorandom number generator is not used for security","component":"familytree:src/id.js"}]}
