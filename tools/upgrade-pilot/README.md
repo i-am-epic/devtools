@@ -29,6 +29,16 @@ restore ─→ inventory ─→ scans ─→ correlate ─→ apply ─→ verif
 | `apply.py` | Applies the automatic set **one package at a time**, verifying after each and reverting anything that fails. |
 | `metadefender_poll.py` | Polls OPSWAT for submitted artifacts and writes one combined result file. |
 
+## Azure DevOps UI
+
+`ado-extension/` contains an optional, read-only Azure DevOps project hub. It
+finds the latest pipeline run with an `upgrade-pilot` artifact and presents the
+branch decision, scanner findings, automatic and review lanes, quality gate and
+apply receipt in project navigation. It uses the signed-in user's Azure DevOps
+identity and requests only the `vso.build` read scope; no evidence is copied to
+an external service. See `ado-extension/README.md` for packaging and private
+installation instructions.
+
 ## Branch policy
 
 The branch decides what is allowed. This is the part that matters for a release
