@@ -155,7 +155,39 @@ function renderEmpty(message: string): void {
   document.querySelector<HTMLInputElement>("#evidenceFile")?.addEventListener("change", importEvidence);
 }
 
+function loadPreview(): void {
+  currentBuild = { buildNumber: "PREVIEW-1042", finishTime: new Date().toISOString() };
+  current = {
+    findings: [
+      { id: "CVE-2026-11002", package: "framer-motion", severity: "critical", source: "trivy", actionable: true },
+      { id: "CVE-2025-31125", package: "vite", severity: "high", source: "trivy", actionable: true },
+      { id: "CVE-2024-45590", package: "postcss", severity: "medium", source: "trivy", actionable: true },
+      { id: "quality-gate", title: "Sonar quality gate", severity: "info", source: "sonar", actionable: false },
+    ],
+    plan: {
+      branch: "main",
+      policy: { name: "mainline", note: "Security first, then grouped patch and minor. Majors remain in the human lane." },
+      may_automerge: true,
+      gate_reason: "coverage 71.4% clears the 60% bar",
+      auto: [
+        { package: "vite", from: "5.4.21", to: "5.4.22", reason: "security", jump: "patch", severity: "high", advisories: ["CVE-2025-31125"] },
+        { package: "postcss", from: "8.5.6", to: "8.6.0", reason: "security", jump: "patch", severity: "medium", advisories: ["CVE-2024-45590"] },
+      ],
+      review: [
+        { package: "framer-motion", from: "13.4.0", to: "14.0.1", reason: "security", jump: "major", severity: "critical", advisories: ["CVE-2026-11002"], why_manual: "major version change" },
+      ],
+      deferred: [], unfixable: [], base_image: [],
+    },
+    applied: { summary: "2 applied, 0 reverted, 1 awaiting review" },
+  };
+  render();
+}
+
 async function start(): Promise<void> {
+  if (["localhost", "127.0.0.1"].includes(location.hostname)) {
+    loadPreview();
+    return;
+  }
   try {
     await SDK.init({ loaded: false, applyTheme: true });
     await SDK.ready();

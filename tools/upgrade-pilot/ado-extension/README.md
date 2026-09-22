@@ -34,6 +34,10 @@ inside a project. The empty state also accepts the artifact ZIP downloaded from
 **Pipelines → Run → Artifacts → upgrade-pilot**. This exercises the same ZIP
 reader and rendering path without granting extra access.
 
+For a populated design preview, run `npm run build`, serve `dist/` on localhost,
+and open it in a browser. Localhost automatically uses representative fixture
+data; installed Azure DevOps instances always use live pipeline evidence.
+
 ## Artifact contract
 
 The hub reads these files from the pipeline artifact:
