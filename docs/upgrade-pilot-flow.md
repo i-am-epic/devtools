@@ -151,16 +151,21 @@ inventory rows are already shaped for it — they need somewhere to land and a
 
 ---
 
-## Missing: correctness gaps worth fixing early
+## Correctness gaps — closed
 
-| Gap | Why it bites |
-| --- | --- |
-| **No cross-scanner dedupe** | The same CVE from Trivy and MetaDefender counts twice, inflating every number the report prints. Dedupe on `(id, package)` before correlation. |
-| **`guess_eco` defaults to npm** | In `apply.py`, a package absent from the inventory is assumed to be npm. On a mixed repo that sends the wrong installer at it. Make the plan carry `ecosystem` for every item and fail loudly when it is missing. |
-| **No exception / VEX path** | A finding with no fixed version, or one the team has formally accepted, reappears every single run with no way to silence it. Needs an `exceptions.yml` with an expiry date, so suppression is explicit and time-boxed. |
-| **No registry retry or caching** | Every run re-queries every package. One rate-limited response and the inventory is silently incomplete — `inventory.py` swallows the error into `{"error": ...}` and carries on, which is worse than failing. |
-| **PRs only on release branches** | `azure-pipelines.yml` opens a PR under `eq(variables.isRelease, 'true')`. On mainline it pushes a branch and nothing asks anyone to look at it. |
-| **The toolchain has no tests** | Uncomfortable, given it refuses to auto-merge repos whose tests it does not trust. The fixtures are there; they need assertions around them. |
+These are fixed, with tests. Kept here because the reasoning is the useful part.
+
+| Gap | Why it bit | Resolution |
+| --- | --- | --- |
+| No cross-scanner dedupe | Trivy and MetaDefender both report CVEs, and an image scan overlaps the source scan, so the same advisory counted twice and inflated every figure in the report. | `scans.dedupe` keys on `(advisory, package)`; the survivor keeps the highest severity, the most specific fixed version, a known ecosystem over an unknown one, and every reporting source. |
+| `guess_eco` defaulted to npm | On a mixed repository this sent `npm install` at NuGet packages. | `apply.resolve_eco` returns `None` when the ecosystem cannot be established, and the package is skipped with that reason recorded. Scanner types are mapped to one vocabulary; an unrecognised type is `unknown`, never a guess. |
+| No exception / VEX path | An unfixable or formally accepted finding reappeared every run with no way to answer it. | `exceptions.json`, where every entry needs an expiry. An expired entry stops suppressing and is reported under its own heading. Suppressed findings are listed, never silently dropped. |
+| No registry retry or caching | One rate-limited response and the inventory was silently incomplete — the error was swallowed into `{"error": ...}` and every missed package read as "nothing to upgrade". | Three attempts with backoff on 429, 5xx and transport errors; 404 distinguished from unreachable; answers cached to disk. **`inventory.py` now exits 2** when anything could not be resolved, unless `--allow-incomplete`. |
+| The toolchain had no tests | Uncomfortable, given it refuses to auto-merge repos whose tests it does not trust. | 36 tests, standard-library `unittest`. The pipeline runs them before it trusts the toolchain with a repository. |
+
+Still open: **PRs are opened only on release branches.** `azure-pipelines.yml`
+gates PR creation on `eq(variables.isRelease, 'true')`, so on mainline it pushes a
+branch and nothing asks anyone to look at it.
 
 ---
 
@@ -183,9 +188,8 @@ inventory rows are already shaped for it — they need somewhere to land and a
 
 ## Suggested order
 
-1. **Dedupe, ecosystem tagging, exceptions, registry retry.** Small, and everything
-   downstream is wrong without them.
-2. **Tests around the fixtures.** Cheap, and it makes every later change safe.
+1. ~~**Dedupe, ecosystem tagging, exceptions, registry retry.**~~ Done.
+2. ~~**Tests around the fixtures.**~~ Done — 36 of them.
 3. **Run the pipeline once, for real, on one .NET repo.** This is the step that
    converts three "never executed" rows into knowledge. Expect the NuGet path to
    need work on first contact.
@@ -195,5 +199,7 @@ inventory rows are already shaped for it — they need somewhere to land and a
    mark its own homework.
 6. **Fleet store, then the cascade planner.**
 
-Steps 1–3 are days. Step 4 is a week. Step 5 is where the value is, and it is only
-safe once 4 exists.
+Steps 1 and 2 are done. Step 3 is the next one that matters, because it converts
+three "never executed" rows into knowledge and is the only way to learn what the
+NuGet path actually needs. Step 4 is a week. Step 5 is where the value is, and it
+is only safe once 4 exists.
