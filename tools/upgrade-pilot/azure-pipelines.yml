@@ -43,6 +43,10 @@ steps:
     inputs:
       versionSpec: '3.11'
 
+  # The toolchain gates auto-merge on test quality; it runs its own tests first.
+  - script: python -m unittest discover -s tools/upgrade-pilot/tests
+    displayName: Test the toolchain
+
   # ---------------------------------------------------------------- inventory
   # Restore first: the lockfile is the input, and it must reflect this branch.
   - script: |
@@ -53,9 +57,18 @@ steps:
       if [ -f pubspec.yaml ]; then flutter pub get || true; fi
     displayName: Restore (resolve the lockfile)
 
+  # Registry answers are the same for every repo in the estate, so cache them.
+  - task: Cache@2
+    displayName: Restore registry cache
+    inputs:
+      key: 'upgrade-pilot-registry | "$(Agent.OS)"'
+      path: $(Pipeline.Workspace)/.upgrade-pilot-cache
+    continueOnError: true
+
   - script: |
       python tools/upgrade-pilot/inventory.py . \
         --out "$(artifactDir)/inventory.json" \
+        --cache-dir "$(Pipeline.Workspace)/.upgrade-pilot-cache" \
         --include-transitive
     displayName: Inventory — what is actually resolved
     env:
@@ -129,6 +142,7 @@ steps:
         --inventory "$(artifactDir)/inventory.json" \
         --findings  "$(artifactDir)/findings.json" \
         --branch    "$(Build.SourceBranchName)" \
+        --exceptions tools/upgrade-pilot/exceptions.json \
         --min-coverage ${{ parameters.minCoverage }} \
         --out-md   "$(artifactDir)/summary.md" \
         --out-json "$(artifactDir)/plan.json"
@@ -148,6 +162,7 @@ steps:
       # you nothing about which member broke it.
       python tools/upgrade-pilot/apply.py \
         --plan "$(artifactDir)/plan.json" \
+        --inventory "$(artifactDir)/inventory.json" \
         --verify "npm run build --if-present && npm test --if-present" \
         --report "$(artifactDir)/applied.json"
 

@@ -14,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import re
 import sys
@@ -21,6 +22,54 @@ from pathlib import Path
 
 SEV_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 BLOCKING = {"critical", "high"}
+
+
+def load_exceptions(path: str | None) -> list[dict]:
+    """Accepted-risk register. Every entry needs an expiry, so suppression is
+    time-boxed rather than permanent — an exception that never expires is
+    indistinguishable from a finding nobody looked at."""
+    if not path:
+        return []
+    f = Path(path)
+    if not f.exists():
+        print(f"exceptions file {path} not found; treating as empty", file=sys.stderr)
+        return []
+    data = json.loads(f.read_text())
+    entries = data.get("exceptions", data) if isinstance(data, dict) else data
+    out = []
+    for e in entries:
+        if not e.get("advisory") or not e.get("expires"):
+            print(f"exception missing 'advisory' or 'expires', ignored: {e}", file=sys.stderr)
+            continue
+        out.append(e)
+    return out
+
+
+def apply_exceptions(findings: list[dict], exceptions: list[dict],
+                     today: str) -> tuple[list[dict], list[dict], list[dict]]:
+    """Return (kept, suppressed, expired).
+
+    An expired exception does not suppress; it is surfaced instead, so the
+    decision gets revisited rather than quietly outliving its reasoning.
+    """
+    kept, suppressed, expired = [], [], []
+    for f in findings:
+        match = None
+        for e in exceptions:
+            if e["advisory"] != f.get("id"):
+                continue
+            if e.get("package") and e["package"].lower() != (f.get("package") or "").lower():
+                continue
+            match = e
+            break
+        if match is None:
+            kept.append(f)
+        elif match["expires"] < today:
+            expired.append({**f, "exception": match})
+            kept.append(f)
+        else:
+            suppressed.append({**f, "exception": match})
+    return kept, suppressed, expired
 
 
 def parse(v: str | None) -> list[int]:
@@ -65,9 +114,12 @@ def gate(findings: list[dict], min_coverage: float) -> tuple[bool, str]:
     return True, f"coverage {coverage:.1f}% clears the {min_coverage:.0f}% bar"
 
 
-def build(inventory: dict, findings: list[dict], branch: str, min_coverage: float) -> dict:
+def build(inventory: dict, findings: list[dict], branch: str, min_coverage: float,
+          exceptions: list[dict] | None = None, today: str | None = None) -> dict:
     policy = branch_policy(branch)
     packages = {p["name"].lower(): p for p in inventory.get("packages", [])}
+    today = today or dt.date.today().isoformat()
+    findings, suppressed, expired = apply_exceptions(findings, exceptions or [], today)
     may_automerge, gate_reason = gate(findings, min_coverage)
 
     security: dict[str, dict] = {}
@@ -108,7 +160,10 @@ def build(inventory: dict, findings: list[dict], branch: str, min_coverage: floa
             "package": sec["package"], "from": pkg.get("resolved") or sec.get("installed"),
             "to": sec["target"], "reason": "security", "jump": jump,
             "severity": sec["severity"],
-            "ecosystem": sec.get("ecosystem"),
+            # The inventory read the manifest, so it knows better than a scanner
+            # that inferred the ecosystem from a file path.
+            "ecosystem": pkg.get("ecosystem") or (
+                sec.get("ecosystem") if sec.get("ecosystem") != "unknown" else None),
             "advisories": [a["id"] for a in sec["advisories"] if a["id"]],
             "changelog": (pkg.get("changelog") or [None])[0],
         }
@@ -151,6 +206,7 @@ def build(inventory: dict, findings: list[dict], branch: str, min_coverage: floa
         "branch": branch, "policy": policy, "may_automerge": may_automerge,
         "gate_reason": gate_reason, "auto": auto, "review": review,
         "deferred": deferred, "unfixable": unfixable, "base_image": base_image,
+        "suppressed": suppressed, "expired_exceptions": expired,
     }
 
 
@@ -184,6 +240,23 @@ def markdown(plan: dict, inventory: dict, findings: list[dict]) -> str:
             lines.append(f"- **`{r['package']}`** {r['from'] or '—'} → {r['to']}{adv}  ")
             lines.append(f"  {r['why_manual']}" + (f" · [changelog]({r['changelog']})" if r.get("changelog") else ""))
         lines.append("")
+    if plan.get("expired_exceptions"):
+        lines += [f"### Expired exceptions ({len(plan['expired_exceptions'])})", "",
+                  "These were accepted once and the acceptance has lapsed. They are counted "
+                  "as live findings again until someone renews or resolves them.", ""]
+        for e in plan["expired_exceptions"]:
+            exc = e["exception"]
+            lines.append(f"- `{e.get('package') or e.get('target')}` — {e['id']} "
+                         f"(expired {exc['expires']}, accepted by {exc.get('added_by', 'unknown')}): "
+                         f"{exc.get('reason', 'no reason recorded')}")
+        lines.append("")
+    if plan.get("suppressed"):
+        lines += [f"### Suppressed by exception ({len(plan['suppressed'])})", ""]
+        for e in plan["suppressed"]:
+            exc = e["exception"]
+            lines.append(f"- `{e.get('package') or e.get('target')}` — {e['id']} "
+                         f"(until {exc['expires']}): {exc.get('reason', 'no reason recorded')}")
+        lines.append("")
     if plan.get("base_image"):
         lines += [f"### Base image ({len(plan['base_image'])})", "",
                   "OS packages. These are fixed by rebuilding on a newer base image, "
@@ -215,19 +288,23 @@ def main() -> int:
     ap.add_argument("--findings", required=True)
     ap.add_argument("--branch", default="main")
     ap.add_argument("--min-coverage", type=float, default=60.0)
+    ap.add_argument("--exceptions", help="JSON register of accepted risks")
+    ap.add_argument("--today", help="override today's date (YYYY-MM-DD), for testing")
     ap.add_argument("--out-md", default="summary.md")
     ap.add_argument("--out-json", default="plan.json")
     args = ap.parse_args()
 
     inventory = json.loads(Path(args.inventory).read_text())
     findings = json.loads(Path(args.findings).read_text())
-    plan = build(inventory, findings, args.branch, args.min_coverage)
+    plan = build(inventory, findings, args.branch, args.min_coverage,
+                 load_exceptions(args.exceptions), args.today)
 
     Path(args.out_json).write_text(json.dumps(plan, indent=1))
     Path(args.out_md).write_text(markdown(plan, inventory, findings))
     print(f"branch={args.branch} policy={plan['policy']['name']} "
           f"auto={len(plan['auto'])} review={len(plan['review'])} "
-          f"unfixable={len(plan['unfixable'])} hygiene={len(plan['deferred'])}")
+          f"unfixable={len(plan['unfixable'])} hygiene={len(plan['deferred'])} "
+          f"suppressed={len(plan['suppressed'])} expired={len(plan['expired_exceptions'])}")
     print(f"auto-merge: {plan['may_automerge']} ({plan['gate_reason']})")
     return 0
 

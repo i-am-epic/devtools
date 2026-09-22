@@ -12,30 +12,79 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
 
 TIMEOUT = 25
+RETRIES = 3
+BACKOFF = (1, 3, 8)          # seconds; a rate limit needs room, not a tight loop
+CACHE_TTL = 6 * 3600
 FEED = os.environ.get("UPGRADE_PILOT_FEED")  # e.g. https://pkgs.dev.azure.com/org/_packaging/feed/npm/registry
 
 
 # --------------------------------------------------------------------------- registries
 
+class NotFound(Exception):
+    """The registry answered, and the package genuinely is not there."""
+
+
+class Unavailable(Exception):
+    """The registry did not answer. The inventory is incomplete, not empty."""
+
+
+_cache_dir: Path | None = None
+
+
+def _cache_path(url: str) -> Path | None:
+    if _cache_dir is None:
+        return None
+    return _cache_dir / (hashlib.sha256(url.encode()).hexdigest()[:32] + ".json")
+
+
 def _get_json(url: str):
+    cached = _cache_path(url)
+    if cached and cached.exists() and time.time() - cached.stat().st_mtime < CACHE_TTL:
+        try:
+            return json.loads(cached.read_text())
+        except json.JSONDecodeError:
+            cached.unlink(missing_ok=True)
+
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
     token = os.environ.get("SYSTEM_ACCESSTOKEN")
     if token and "dev.azure.com" in url:
         import base64
         basic = base64.b64encode(f":{token}".encode()).decode()
         req.add_header("Authorization", f"Basic {basic}")
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-        return json.load(r)
+
+    last = ""
+    for attempt in range(RETRIES):
+        try:
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+                data = json.load(r)
+            if cached:
+                cached.parent.mkdir(parents=True, exist_ok=True)
+                cached.write_text(json.dumps(data))
+            return data
+        except urllib.error.HTTPError as exc:
+            if exc.code == 404:
+                raise NotFound(url) from exc
+            # 429 and 5xx are worth another go; 4xx otherwise is not.
+            if exc.code != 429 and exc.code < 500:
+                raise Unavailable(f"HTTP {exc.code} for {url}") from exc
+            last = f"HTTP {exc.code}"
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            last = str(exc)
+        if attempt < RETRIES - 1:
+            time.sleep(BACKOFF[attempt])
+    raise Unavailable(f"{last} after {RETRIES} attempts: {url}")
 
 
 def npm_meta(name: str) -> dict:
@@ -287,10 +336,17 @@ def main() -> int:
     ap.add_argument("--out", default="inventory.json")
     ap.add_argument("--offline", action="store_true", help="skip registry lookups")
     ap.add_argument("--include-transitive", action="store_true")
+    ap.add_argument("--cache-dir", help="reuse registry answers across runs")
+    ap.add_argument("--allow-incomplete", action="store_true",
+                    help="exit 0 even when some registry lookups failed")
     args = ap.parse_args()
+
+    global _cache_dir
+    _cache_dir = Path(args.cache_dir) if args.cache_dir else None
 
     root = Path(args.root).resolve()
     rows, cache = [], {}
+    unreachable: list[str] = []
 
     for eco in detect(root):
         for dep in READERS[eco](root):
@@ -302,8 +358,11 @@ def main() -> int:
                 if key not in cache:
                     try:
                         cache[key] = REGISTRIES[eco](dep["name"])
-                    except (urllib.error.URLError, urllib.error.HTTPError, KeyError, ValueError) as exc:
+                    except NotFound:
+                        cache[key] = {"absent": True}
+                    except (Unavailable, KeyError, ValueError) as exc:
                         cache[key] = {"error": str(exc)}
+                        unreachable.append(f"{eco}:{dep['name']}")
                 meta = cache[key]
             current = dep["resolved"] or (dep["spec"] or "").lstrip("^~>=< ")
             rows.append({
@@ -322,11 +381,12 @@ def main() -> int:
                 "changelog": changelog_sources(meta) if meta else [],
             })
 
-    summary = {"repo": root.name, "total": len(rows)}
+    summary = {"repo": root.name, "total": len(rows), "unreachable": len(unreachable)}
     for row in rows:
         summary[row["gap"]] = summary.get(row["gap"], 0) + 1
 
-    Path(args.out).write_text(json.dumps({"summary": summary, "packages": rows}, indent=1))
+    Path(args.out).write_text(json.dumps(
+        {"summary": summary, "packages": rows, "unreachable": unreachable}, indent=1))
     print(json.dumps(summary, indent=1))
 
     # A manifest range that already floats above what it declares is worth saying
@@ -336,6 +396,17 @@ def main() -> int:
     if drift:
         print(f"\n{len(drift)} packages resolve above their declared range "
               f"(e.g. {drift[0]['name']} {drift[0]['spec']} -> {drift[0]['resolved']})")
+
+    # A partial inventory that looks complete is the dangerous outcome: every
+    # unreachable package silently reads as "nothing to upgrade".
+    if unreachable:
+        print(f"\n{len(unreachable)} package(s) could not be resolved: "
+              f"{', '.join(unreachable[:8])}{' ...' if len(unreachable) > 8 else ''}",
+              file=sys.stderr)
+        if not args.allow_incomplete:
+            print("inventory is incomplete; rerun or pass --allow-incomplete",
+                  file=sys.stderr)
+            return 2
     return 0
 
 

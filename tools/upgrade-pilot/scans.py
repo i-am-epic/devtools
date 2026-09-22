@@ -19,11 +19,68 @@ from pathlib import Path
 
 SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 
+# Scanners name ecosystems their own way; downstream needs one vocabulary,
+# because the ecosystem decides which installer (if any) can fix the finding.
+ECOSYSTEM = {
+    "npm": "npm", "yarn": "npm", "pnpm": "npm", "node-pkg": "npm",
+    "pip": "pypi", "poetry": "pypi", "pipenv": "pypi", "python-pkg": "pypi",
+    "nuget": "nuget", "dotnet-core": "nuget",
+    "pubspec": "pub",
+}
+
 
 def _norm_sev(value: str | None) -> str:
     v = (value or "").lower()
     return v if v in SEVERITY_ORDER else {"blocker": "critical", "major": "high",
                                           "minor": "medium", "warning": "medium"}.get(v, "info")
+
+
+def ecosystem_of(result_class: str | None, result_type: str | None) -> str:
+    """Resolve a scanner's own type name to our vocabulary.
+
+    An unrecognised language type returns "unknown" rather than a guess: a wrong
+    ecosystem sends the wrong installer at the package, which is worse than
+    admitting we do not know.
+    """
+    if result_class == "os-pkgs":
+        return "os"
+    return ECOSYSTEM.get((result_type or "").lower(), "unknown")
+
+
+def dedupe(findings: list[dict]) -> list[dict]:
+    """Collapse the same advisory reported by more than one scanner.
+
+    Trivy and MetaDefender both report CVEs, and an artifact scan of a built
+    image overlaps the dependency scan of its source. Counting those twice
+    inflates every number downstream.
+
+    Identity is (advisory id, package). The surviving record keeps the highest
+    severity seen, the most specific fixed version, and records every source.
+    """
+    merged: dict[tuple, dict] = {}
+    passthrough: list[dict] = []
+    for f in findings:
+        key = (f.get("id"), (f.get("package") or "").lower())
+        if not f.get("id") or not f.get("package"):
+            passthrough.append(f)          # secrets, gates, malware verdicts
+            continue
+        if key not in merged:
+            f = {**f, "sources": [f["source"]]}
+            merged[key] = f
+            continue
+        kept = merged[key]
+        if f["source"] not in kept["sources"]:
+            kept["sources"].append(f["source"])
+        if SEVERITY_ORDER.get(f["severity"], 9) < SEVERITY_ORDER.get(kept["severity"], 9):
+            kept["severity"] = f["severity"]
+        # Prefer a record that knows how to fix it, and a known ecosystem.
+        if f.get("fixed") and not kept.get("fixed"):
+            kept["fixed"], kept["actionable"] = f["fixed"], True
+        if kept.get("ecosystem") in (None, "unknown") and f.get("ecosystem") not in (None, "unknown"):
+            kept["ecosystem"] = f["ecosystem"]
+        if not kept.get("title") and f.get("title"):
+            kept["title"] = f["title"]
+    return list(merged.values()) + passthrough
 
 
 # --------------------------------------------------------------------------- Trivy
@@ -48,7 +105,7 @@ def load_trivy(path: Path) -> list[dict]:
                 "class": kind,
                 # An OS package is fixed by rebuilding the base image, never by
                 # a language package manager. Carry that through.
-                "ecosystem": "os" if kind == "os-pkgs" else (result.get("Type") or "lang"),
+                "ecosystem": ecosystem_of(kind, result.get("Type")),
                 # Trivy reports the resolved version, so a missing FixedVersion
                 # means no upgrade closes this - it needs a mitigation, not a bump.
                 "actionable": bool(v.get("FixedVersion")),
@@ -131,7 +188,8 @@ def load_metadefender(path: Path) -> list[dict]:
                     "installed": detected.get("version"),
                     "fixed": None,
                     "title": (v or {}).get("description", "")[:160] if isinstance(v, dict) else "",
-                    "target": name, "class": "artifact", "actionable": False, "refs": [],
+                    "target": name, "class": "artifact", "ecosystem": "unknown",
+                    "actionable": False, "refs": [],
                 })
     return out
 
@@ -160,6 +218,12 @@ def main() -> int:
                 continue
             findings.extend(got)
             print(f"{name:<13} {len(got):>4} findings from {p.name}")
+
+    before = len(findings)
+    findings = dedupe(findings)
+    if before != len(findings):
+        print(f"\ndeduped {before - len(findings)} duplicate finding(s) "
+              f"reported by more than one scanner")
 
     findings.sort(key=lambda f: (SEVERITY_ORDER.get(f["severity"], 9), f["source"]))
     Path(args.out).write_text(json.dumps(findings, indent=1))

@@ -1,0 +1,19 @@
+{
+  "exceptions": [
+    {
+      "advisory": "CVE-2026-90210",
+      "package": "reactflow",
+      "reason": "No patched release exists. Node labels are rendered from a fixed internal schema, never from user input, so the XSS path is not reachable here.",
+      "added_by": "security-review@corp",
+      "ticket": "SEC-4412",
+      "expires": "2026-12-31"
+    },
+    {
+      "advisory": "CVE-2024-5535",
+      "reason": "OpenSSL in a vendor binary we do not build. Vendor fix tracked upstream.",
+      "added_by": "platform@corp",
+      "ticket": "SEC-4398",
+      "expires": "2026-01-15"
+    }
+  ]
+}

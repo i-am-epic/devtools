@@ -54,12 +54,20 @@ def run(cmd: list[str] | str, root: Path, timeout: int) -> tuple[int, str]:
         return 127, str(exc)
 
 
-def guess_eco(package: str, inventory: dict | None) -> str:
+def resolve_eco(package: str, declared: str | None, inventory: dict | None) -> str | None:
+    """Return the ecosystem, or None if it cannot be established.
+
+    Never guess. Defaulting to npm on a mixed repository sends `npm install` at
+    a NuGet package, which fails noisily at best and resolves something unrelated
+    from the public registry at worst.
+    """
+    if declared and declared not in ("unknown", "os"):
+        return declared
     if inventory:
         for p in inventory.get("packages", []):
             if p["name"].lower() == package.lower():
                 return p["ecosystem"]
-    return "npm"
+    return None
 
 
 def main() -> int:
@@ -94,7 +102,11 @@ def main() -> int:
         if not target:
             skipped.append({**item, "why": "no target version"})
             continue
-        eco = item.get("ecosystem") or guess_eco(pkg, inventory)
+        eco = resolve_eco(pkg, item.get("ecosystem"), inventory)
+        if eco is None:
+            skipped.append({**item, "why": "ecosystem unknown - refusing to guess an installer"})
+            print(f"SKIP   {pkg} (ecosystem unknown)")
+            continue
         cmd = install_cmd(eco, pkg, target, item.get("dev", False))
         if cmd is None or (eco == "nuget" and shutil.which("dotnet") is None):
             skipped.append({**item, "why": f"no installer available for {eco}"})
