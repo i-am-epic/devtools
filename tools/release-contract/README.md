@@ -1,0 +1,95 @@
+# release-contract
+
+These tools answer, for npm packages with TypeScript declarations, what a
+release actually changed and whom it actually breaks. The design, and the case
+for making this how releases work, is in
+[`docs/release-contract.md`](../../docs/release-contract.md).
+
+```
+npm install
+npm test                                   # 24 offline tests, no registry needed
+```
+
+## The tools
+
+| Command | Answers |
+|---|---|
+| `node semver-check.mjs <pkg> <from> <to> [--json]` | What did this release do to the API? Declared bump vs computed bump. |
+| `node usage.mjs <repo> [pkg…]` | Which exports of which packages does this repo use, and where? |
+| `node blast.mjs <repo> <pkg> <from> <to>` | Does this release break this repo? |
+| `node consumers.mjs <pkg> <to> <repo>… [--json out]` | The owner's view: before publishing, which consumers break, at which lines? |
+| `node audit.mjs <pkg>[@major]… [--json out]` | How often does this package's declared version understate the change? |
+
+Each run installs the two versions side by side under `.work/`, as npm aliases
+`old-api` and `new-api`, with install scripts disabled. Set
+`RELEASE_CONTRACT_WORK` to move that directory and
+`RELEASE_CONTRACT_REGISTRY` to point at a private feed.
+
+## How a verdict is reached
+
+1. **API diff** (`lib/apidiff.mjs`). Every export of the old version is looked
+   up in the new one:
+   - A value must be assignable from new to old, so code written against the
+     old one still compiles.
+   - A type must match in both directions, because consumers both build and
+     receive it.
+
+   Two things TypeScript compares by identity are normalised away first:
+   private and protected members are stripped (with the parser), and each
+   `unique symbol` gets a name-based type. Otherwise two copies of an
+   identical declaration never match. Generic declarations are compared as
+   normalised text, since their type parameters never unify. Only the TSDoc
+   release tags (`@beta`, `@alpha`, `@experimental`, `@internal`) exempt a
+   symbol. `@deprecated` makes a removal "announced".
+
+   Each incompatible export is then traced to its root cause. The walk goes
+   through properties, parameters, returns, overloads, unions and enums, and
+   exports are grouped by cause: axios 1.20's 19 incompatible exports are one
+   line, `enum HttpStatusCode gained ContentTooLarge, UnprocessableContent`.
+2. **Usage index** (`lib/usage.mjs`). This parses each source file with no
+   type-check. It records named, renamed, default and namespace imports, JSX
+   member tags, `require` destructuring and re-exports.
+3. **Reachability** (`lib/reach.mjs`). Follows imports from framework entry
+   points through `tsconfig` path aliases. Entry points are:
+   - Next.js app and pages routes;
+   - the Vite `index.html`;
+   - `package.json` entry fields;
+   - tests, configs and scripts.
+
+   A usage in a file nothing imports is dead code.
+4. **Blast radius** (`lib/blast.mjs`). The diff intersected with the usage:
+
+   | Verdict | When |
+   |---|---|
+   | `breaks` | a removed export is used in live code |
+   | `breaks dead code` | a removed export is used, but only in unreachable files; the fix is deleting them |
+   | `type-check` | a type changed incompatibly and a `.ts`/`.tsx` file uses it; run the real type-check |
+   | `safe` | none of the above: the release touches nothing this consumer uses, whatever its version says |
+
+5. **Consumer pin** (`lib/resolve.mjs`). The consumer is compared from the
+   version its lockfile pins. A `package-lock.json` that is out of sync with
+   `package.json` loses to one that is in sync, and the disagreement is
+   reported.
+
+## Validated against real builds
+
+| Check | Prediction | Reality |
+|---|---|---|
+| FamilyTree × lucide-react 0.390.0 → 1.47.0 | safe (17 icons used, none removed) | `vite build` passes |
+| FamilyTree + a `Facebook` icon, same release | breaks at `src/FamilyTree.jsx:47` | `vite build` exits 1: `"Facebook" is not exported`, at 47:2 |
+| FamilyTree × framer-motion 11.18.2 → 13.4.0 | safe | `vite build` passes |
+| portfolio × lucide-react → 1.47.0 | breaks dead code: 4 icons at `components/footer.tsx:2`, which nothing imports | `tsc`: exactly those 4 errors and no others. `next build` passes. |
+| portfolio × framer-motion → 13.4.0 | type-check (`motion`, `useAnimation`) | `tsc`: no new errors |
+| portfolio × @google/genai 1.46.0 → 2.24.0 | type-check (`GoogleGenAI`) | `tsc`: no new errors |
+
+## Limits
+
+- It checks types, not behaviour. "Safe" means safe to build and test.
+- It trusts declarations. A package without them reports
+  `untyped - build it`.
+- Computed member access (`Icons[name]`) records the namespace, not the name.
+- A consumer that subclasses a package class needs the real type-check,
+  because protected members are excluded from the comparison.
+- Root causes are best-effort. Whether an export is incompatible is always
+  the compiler's verdict; the walk that explains why can pair overloads or
+  union members imprecisely.
