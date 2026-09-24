@@ -248,6 +248,48 @@ class TestApplyEcosystemResolution(unittest.TestCase):
         self.assertIsNone(apply_mod.install_cmd("os", "glibc", "2.36", False))
 
 
+class TestManifestDiscovery(unittest.TestCase):
+    """Looking only at the repository root reported a monorepo as having no
+    dependencies at all - worse than reporting none, because it reads as clean."""
+
+    def _repo(self, d: str) -> Path:
+        root = Path(d)
+        (root / "package.json").write_text('{"dependencies":{"react":"^19.0.0"}}')
+        (root / "web").mkdir()
+        (root / "web" / "package.json").write_text('{"dependencies":{"next":"16.0.0"}}')
+        (root / "services" / "api").mkdir(parents=True)
+        (root / "services" / "api" / "requirements.txt").write_text("flask==3.1.3\n")
+        (root / "node_modules" / "left-pad").mkdir(parents=True)
+        (root / "node_modules" / "left-pad" / "package.json").write_text(
+            '{"dependencies":{"should-not-appear":"1.0.0"}}')
+        return root
+
+    def test_nested_manifests_are_found(self):
+        with tempfile.TemporaryDirectory() as d:
+            found = inventory.detect(self._repo(d))
+            ecos = {eco for eco, _ in found}
+            self.assertEqual(ecos, {"npm", "pypi"})
+            self.assertEqual(len(found), 3)      # root, web/, services/api/
+
+    def test_vendored_directories_are_skipped(self):
+        with tempfile.TemporaryDirectory() as d:
+            paths = [str(where) for _eco, where in inventory.detect(self._repo(d))]
+            self.assertFalse(any("node_modules" in p for p in paths))
+
+    def test_depth_is_bounded(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            deep = root / "a" / "b" / "c" / "d" / "e"
+            deep.mkdir(parents=True)
+            (deep / "package.json").write_text("{}")
+            self.assertEqual(inventory.detect(root, max_depth=3), [])
+
+    def test_a_repo_with_no_manifest_returns_nothing(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "README.md").write_text("# docs only")
+            self.assertEqual(inventory.detect(Path(d)), [])
+
+
 class TestManifestReaders(unittest.TestCase):
     def test_lockfile_beats_manifest(self):
         with tempfile.TemporaryDirectory() as d:

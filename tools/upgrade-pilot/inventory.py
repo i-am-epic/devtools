@@ -345,17 +345,42 @@ def changelog_sources(meta: dict) -> list[str]:
     return out
 
 
-def detect(root: Path) -> list[str]:
-    found = []
-    if (root / "package.json").exists():
-        found.append("npm")
-    if (root / "requirements.txt").exists() or (root / "pyproject.toml").exists():
-        found.append("pypi")
-    if any(root.rglob("*.csproj")) or (root / "Directory.Packages.props").exists():
-        found.append("nuget")
-    if (root / "pubspec.yaml").exists():
-        found.append("pub")
-    return found
+# Directories whose manifests describe something other than this repo's own
+# dependencies, or a copy of them.
+SKIP_DIRS = {"node_modules", ".git", "vendor", "dist", "build", "out", ".venv",
+             "venv", "env", "site-packages", "third_party", "bower_components",
+             ".next", ".nuxt", "__pycache__", ".tox", "Pods"}
+
+MANIFEST_ECOSYSTEM = {
+    "package.json": "npm",
+    "requirements.txt": "pypi", "pyproject.toml": "pypi",
+    "pubspec.yaml": "pub",
+    "Directory.Packages.props": "nuget",
+}
+
+
+def detect(root: Path, max_depth: int = 4) -> list[tuple[str, Path]]:
+    """Every manifest in the repository, not only the ones at its root.
+
+    A monorepo keeps its manifests in `web/`, `frontend/`, `services/x/`; looking
+    only at the root reports such a repo as having no dependencies at all, which
+    is worse than reporting none, because it looks like a clean result.
+    """
+    found: set[tuple[str, Path]] = set()
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(root)
+        if any(part in SKIP_DIRS for part in rel.parts[:-1]):
+            continue
+        if len(rel.parts) > max_depth:
+            continue
+        eco = MANIFEST_ECOSYSTEM.get(path.name)
+        if eco:
+            found.add((eco, path.parent))
+        elif path.suffix in (".csproj", ".fsproj"):
+            found.add(("nuget", path.parent))
+    return sorted(found, key=lambda pair: (str(pair[1]), pair[0]))
 
 
 def main() -> int:
@@ -375,9 +400,11 @@ def main() -> int:
     root = Path(args.root).resolve()
     rows, cache = [], {}
     unreachable: list[str] = []
+    seen_rows: set[tuple[str, str, str]] = set()
 
-    for eco in detect(root):
-        for dep in READERS[eco](root):
+    for eco, where in detect(root):
+        rel = str(where.relative_to(root)) if where != root else "."
+        for dep in READERS[eco](where):
             if not dep["direct"] and not args.include_transitive:
                 continue
             meta = {}
@@ -396,8 +423,15 @@ def main() -> int:
                         unreachable.append(f"{eco}:{dep['name']}")
                 meta = cache[key]
             current = dep["resolved"] or (dep["spec"] or "").lstrip("^~>=< ")
+            # The same package declared in two workspaces is one dependency of
+            # the repository, not two.
+            key = (eco, dep["name"], current or "")
+            if key in seen_rows:
+                continue
+            seen_rows.add(key)
             rows.append({
                 "ecosystem": eco,
+                "manifest": rel,
                 "name": dep["name"],
                 "spec": dep["spec"],
                 "resolved": dep["resolved"],
@@ -412,12 +446,15 @@ def main() -> int:
                 "changelog": changelog_sources(meta) if meta else [],
             })
 
-    summary = {"repo": root.name, "total": len(rows), "unreachable": len(unreachable)}
+    manifests = sorted({r["manifest"] for r in rows})
+    summary = {"repo": root.name, "total": len(rows), "unreachable": len(unreachable),
+               "manifests": len(manifests)}
     for row in rows:
         summary[row["gap"]] = summary.get(row["gap"], 0) + 1
 
     Path(args.out).write_text(json.dumps(
-        {"summary": summary, "packages": rows, "unreachable": unreachable}, indent=1))
+        {"summary": summary, "packages": rows, "manifest_paths": manifests,
+         "unreachable": unreachable}, indent=1))
     print(json.dumps(summary, indent=1))
 
     # A manifest range that already floats above what it declares is worth saying
