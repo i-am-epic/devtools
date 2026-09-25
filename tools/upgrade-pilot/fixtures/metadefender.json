@@ -1,0 +1,6 @@
+[{"data_id":"f1e2d3","file_info":{"display_name":"FamilyTree.Setup.exe"},
+  "scan_results":{"scan_all_result_a":"No Threat Detected"},
+  "vulnerability_info":{"result":[{"detected_product":{"product":"openssl","version":"3.0.11"},
+   "cve":[{"cve":"CVE-2024-5535","severity_name":"High","description":"SSL_select_next_proto buffer overread"}]}]}},
+ {"data_id":"a9b8c7","file_info":{"display_name":"vendor/legacy-plugin.dll"},
+  "scan_results":{"scan_all_result_a":"Infected"}}]

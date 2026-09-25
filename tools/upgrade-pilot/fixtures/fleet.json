@@ -1,0 +1,159 @@
+{
+  "projects": [
+    "Payments"
+  ],
+  "pipelines": [
+    {
+      "id": 1,
+      "name": "contoso-http-ci",
+      "project": "Payments",
+      "yaml": "trigger:\n  - main\nstages:\n  - stage: build\n"
+    },
+    {
+      "id": 2,
+      "name": "payments-api-ci",
+      "project": "Payments",
+      "yaml": "resources:\n  pipelines:\n    - pipeline: lib\n      source: contoso-http-ci\n      trigger: true\nstages:\n  - stage: build\n"
+    },
+    {
+      "id": 3,
+      "name": "payments-api-release",
+      "project": "Payments",
+      "yaml": "resources:\n  pipelines:\n    - pipeline: ci\n      source: payments-api-ci\n  repositories:\n    - repository: templates\nstages:\n  - stage: deploy\n"
+    },
+    {
+      "id": 4,
+      "name": "onboarding-web-ci",
+      "project": "Payments",
+      "yaml": "# no upstream pipelines\ntrigger:\n  - main\n"
+    }
+  ],
+  "repos": [
+    {
+      "key": "Payments/contoso-http",
+      "project": "Payments",
+      "repo": "contoso-http",
+      "branches": [
+        "main",
+        "release/26.1"
+      ],
+      "release_branches": [
+        "release/26.1"
+      ],
+      "publishes": [
+        "Contoso.Http"
+      ],
+      "packages": [
+        {
+          "name": "Newtonsoft.Json",
+          "ecosystem": "nuget",
+          "resolved": "12.0.3",
+          "latest": "13.0.3"
+        }
+      ],
+      "branch_packages": {
+        "release/26.1": [
+          {
+            "name": "Newtonsoft.Json",
+            "ecosystem": "nuget",
+            "resolved": "12.0.3",
+            "latest": "13.0.3"
+          }
+        ]
+      }
+    },
+    {
+      "key": "Payments/contoso-auth",
+      "project": "Payments",
+      "repo": "contoso-auth",
+      "branches": [
+        "main"
+      ],
+      "release_branches": [],
+      "publishes": [
+        "Contoso.Auth.Tokens"
+      ],
+      "packages": [
+        {
+          "name": "Contoso.Http",
+          "ecosystem": "nuget",
+          "resolved": "4.1.0",
+          "latest": "4.2.1"
+        },
+        {
+          "name": "Newtonsoft.Json",
+          "ecosystem": "nuget",
+          "resolved": "13.0.1",
+          "latest": "13.0.3"
+        }
+      ]
+    },
+    {
+      "key": "Payments/payments-api",
+      "project": "Payments",
+      "repo": "payments-api",
+      "branches": [
+        "main",
+        "release/26.1"
+      ],
+      "release_branches": [
+        "release/26.1"
+      ],
+      "publishes": [],
+      "packages": [
+        {
+          "name": "Contoso.Http",
+          "ecosystem": "nuget",
+          "resolved": "4.0.2",
+          "latest": "4.2.1"
+        },
+        {
+          "name": "Newtonsoft.Json",
+          "ecosystem": "nuget",
+          "resolved": "12.0.3",
+          "latest": "13.0.3"
+        }
+      ],
+      "branch_packages": {
+        "release/26.1": [
+          {
+            "name": "Contoso.Http",
+            "ecosystem": "nuget",
+            "resolved": "3.9.0",
+            "latest": "4.2.1"
+          },
+          {
+            "name": "Newtonsoft.Json",
+            "ecosystem": "nuget",
+            "resolved": "12.0.3",
+            "latest": "13.0.3"
+          }
+        ]
+      }
+    },
+    {
+      "key": "Payments/onboarding-web",
+      "project": "Payments",
+      "repo": "onboarding-web",
+      "branches": [
+        "main"
+      ],
+      "release_branches": [],
+      "publishes": [],
+      "packages": [
+        {
+          "name": "Contoso.Auth.Tokens",
+          "ecosystem": "nuget",
+          "resolved": "2.8.4",
+          "latest": "3.0.0"
+        },
+        {
+          "name": "Newtonsoft.Json",
+          "ecosystem": "nuget",
+          "resolved": "13.0.3",
+          "latest": "13.0.3"
+        }
+      ]
+    }
+  ]
+}

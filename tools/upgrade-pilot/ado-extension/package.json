@@ -1,0 +1,21 @@
+{
+  "name": "upgrade-pilot-ado-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "package": "npm run build && tfx extension create --manifest-globs vss-extension.json --output-path dist",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "azure-devops-extension-sdk": "^4.0.2",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "esbuild": "^0.25.10",
+    "tfx-cli": "^0.22.3",
+    "typescript": "^5.9.2"
+  }
+}

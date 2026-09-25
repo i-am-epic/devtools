@@ -1,0 +1,198 @@
+# Upgrade Pilot — dependency analysis and upgrade PRs, driven by the scans you already run.
+#
+# Runs on the pipeline's own identity, so it needs no new app registration and no
+# external service can reach your code. Add it once per repository, or template it.
+
+trigger: none            # never on push — this is a scheduled maintenance job
+pr: none
+
+schedules:
+  - cron: "0 2 * * 1"    # Monday 02:00 UTC, so PRs are waiting on Monday morning
+    displayName: Weekly upgrade sweep
+    branches:
+      include:
+        - main
+        - release/*
+    always: true
+
+parameters:
+  - name: applyUpgrades
+    displayName: Push a branch with the automatic upgrades applied
+    type: boolean
+    default: true
+  - name: minCoverage
+    displayName: Coverage percentage required before anything auto-merges
+    type: number
+    default: 60
+
+variables:
+  - name: isRelease
+    value: $[startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')]
+  - name: artifactDir
+    value: $(Build.ArtifactStagingDirectory)/upgrade-pilot
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+    persistCredentials: true     # required for the push step below
+    fetchDepth: 0
+
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.11'
+
+  # The toolchain gates auto-merge on test quality; it runs its own tests first.
+  - script: python -m unittest discover -s tools/upgrade-pilot/tests
+    displayName: Test the toolchain
+
+  # ---------------------------------------------------------------- inventory
+  # Restore first: the lockfile is the input, and it must reflect this branch.
+  - script: |
+      set -e
+      mkdir -p "$(artifactDir)"
+      if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; fi
+      if [ -f packages.lock.json ] || ls *.sln >/dev/null 2>&1; then dotnet restore --locked-mode || dotnet restore; fi
+      if [ -f pubspec.yaml ]; then flutter pub get || true; fi
+    displayName: Restore (resolve the lockfile)
+
+  # Registry answers are the same for every repo in the estate, so cache them.
+  - task: Cache@2
+    displayName: Restore registry cache
+    inputs:
+      key: 'upgrade-pilot-registry | "$(Agent.OS)"'
+      path: $(Pipeline.Workspace)/.upgrade-pilot-cache
+    continueOnError: true
+
+  - script: |
+      python tools/upgrade-pilot/inventory.py . \
+        --out "$(artifactDir)/inventory.json" \
+        --cache-dir "$(Pipeline.Workspace)/.upgrade-pilot-cache" \
+        --include-transitive
+    displayName: Inventory — what is actually resolved
+    env:
+      # Point at your Azure Artifacts upstream so this works on a locked-down agent.
+      UPGRADE_PILOT_FEED: $(UpgradePilotFeed)
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+  # ---------------------------------------------------------------- scans
+  # These are your existing tasks. Each one only has to leave JSON on disk.
+  - script: |
+      trivy fs --format json --output "$(artifactDir)/trivy.json" --scanners vuln,secret . || true
+      trivy image --format json --output "$(artifactDir)/trivy-image.json" "$(imageName)" || true
+    displayName: Trivy
+    continueOnError: true
+
+  - task: SonarQubePublish@5
+    displayName: Sonar — publish and wait for the gate
+    inputs:
+      pollingTimeoutSec: '300'
+    continueOnError: true
+
+  - script: |
+      # Sonar's own task does not leave a machine-readable artifact, so pull it.
+      curl -sS -u "$(SonarToken):" \
+        "$(SonarHostUrl)/api/measures/component?component=$(SonarProjectKey)&metricKeys=coverage,duplicated_lines_density,ncloc" \
+        -o "$(artifactDir)/sonar-measures.json" || true
+      curl -sS -u "$(SonarToken):" \
+        "$(SonarHostUrl)/api/qualitygates/project_status?projectKey=$(SonarProjectKey)" \
+        -o "$(artifactDir)/sonar-gate.json" || true
+      python - <<'PY'
+      import json, os, pathlib
+      d = pathlib.Path(os.environ["ARTIFACT_DIR"])
+      merged = {}
+      for name in ("sonar-measures.json", "sonar-gate.json", "sonar-issues.json"):
+          f = d / name
+          if f.exists():
+              try: merged.update(json.loads(f.read_text()))
+              except json.JSONDecodeError: pass
+      (d / "sonar.json").write_text(json.dumps(merged))
+      PY
+    displayName: Sonar — collect results
+    env:
+      ARTIFACT_DIR: $(artifactDir)
+    continueOnError: true
+
+  - script: |
+      # MetaDefender: submit the build output, poll, save the verdict.
+      for f in $(find "$(Build.ArtifactStagingDirectory)" -maxdepth 2 -type f \
+                 \( -name '*.exe' -o -name '*.dll' -o -name '*.zip' -o -name '*.jar' \) | head -20); do
+        curl -sS -X POST "$(MetaDefenderUrl)/file" -H "apikey: $(MetaDefenderApiKey)" \
+             -H "filename: $(basename "$f")" --data-binary "@$f" >> "$(artifactDir)/md-submit.jsonl" || true
+      done
+      python tools/upgrade-pilot/metadefender_poll.py \
+        --submissions "$(artifactDir)/md-submit.jsonl" \
+        --out "$(artifactDir)/metadefender.json" || true
+    displayName: MetaDefender
+    condition: ne(variables['MetaDefenderUrl'], '')
+    continueOnError: true
+
+  # ---------------------------------------------------------------- correlate
+  - script: |
+      set -e
+      python tools/upgrade-pilot/scans.py \
+        --trivy "$(artifactDir)/trivy.json" \
+        --trivy "$(artifactDir)/trivy-image.json" \
+        --sonar "$(artifactDir)/sonar.json" \
+        --metadefender "$(artifactDir)/metadefender.json" \
+        --out "$(artifactDir)/findings.json"
+
+      python tools/upgrade-pilot/report.py \
+        --inventory "$(artifactDir)/inventory.json" \
+        --findings  "$(artifactDir)/findings.json" \
+        --branch    "$(Build.SourceBranchName)" \
+        --exceptions tools/upgrade-pilot/exceptions.json \
+        --min-coverage ${{ parameters.minCoverage }} \
+        --out-md   "$(artifactDir)/summary.md" \
+        --out-json "$(artifactDir)/plan.json"
+
+      echo "##vso[task.uploadsummary]$(artifactDir)/summary.md"
+    displayName: Correlate and decide
+
+  # ---------------------------------------------------------------- apply
+  - script: |
+      set -e
+      BRANCH="bot/upgrade-$(Build.SourceBranchName)-$(Build.BuildId)"
+      git config user.email "upgrade-pilot@noreply"
+      git config user.name  "Upgrade Pilot"
+      git checkout -b "$BRANCH"
+
+      # One package at a time, verifying after each. A batch that fails tells
+      # you nothing about which member broke it.
+      python tools/upgrade-pilot/apply.py \
+        --plan "$(artifactDir)/plan.json" \
+        --inventory "$(artifactDir)/inventory.json" \
+        --verify "npm run build --if-present && npm test --if-present" \
+        --report "$(artifactDir)/applied.json"
+
+      if git diff --quiet; then
+        echo "nothing applied"
+      else
+        git add -A
+        git commit -m "chore(deps): automatic upgrades for $(Build.SourceBranchName)"
+        git push origin "$BRANCH"
+        echo "##vso[task.setvariable variable=upgradeBranch]$BRANCH"
+      fi
+    displayName: Apply the automatic upgrades
+    condition: and(succeeded(), ${{ parameters.applyUpgrades }})
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish evidence
+    condition: always()
+    inputs:
+      PathtoPublish: $(artifactDir)
+      ArtifactName: upgrade-pilot
+
+  # Release branches carry a stricter bar: nothing merges without a human.
+  - script: |
+      echo "Release branch — opening PR as draft, requiring review."
+      az repos pr create --source-branch "$(upgradeBranch)" \
+        --target-branch "$(Build.SourceBranchName)" \
+        --title "Security upgrades for $(Build.SourceBranchName)" \
+        --description "$(cat "$(artifactDir)/summary.md")" \
+        --draft true --auto-complete false
+    displayName: Open PR (release branch)
+    condition: and(succeeded(), eq(variables.isRelease, 'true'), ne(variables['upgradeBranch'], ''))
+    env:
+      AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)

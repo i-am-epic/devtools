@@ -1,0 +1,44 @@
+{
+  "manifestVersion": 1,
+  "id": "upgrade-pilot",
+  "version": "0.1.0",
+  "name": "Upgrade Pilot",
+  "description": "Dependency upgrade evidence and branch-policy decisions inside Azure DevOps.",
+  "publisher": "CHANGE-ME",
+  "public": false,
+  "categories": ["Azure Pipelines"],
+  "targets": [
+    { "id": "Microsoft.VisualStudio.Services.Cloud" }
+  ],
+  "scopes": ["vso.build"],
+  "branding": {
+    "color": "#0b3b35",
+    "theme": "dark"
+  },
+  "contributions": [
+    {
+      "id": "upgrade-pilot-hub-group",
+      "type": "ms.vss-web.hub-group",
+      "description": "Adds Upgrade Pilot to project navigation.",
+      "targets": ["ms.vss-web.project-hub-groups-collection"],
+      "properties": {
+        "name": "Upgrade Pilot",
+        "order": 90
+      }
+    },
+    {
+      "id": "upgrade-pilot-hub",
+      "type": "ms.vss-web.hub",
+      "description": "Shows dependency findings and upgrade evidence from Azure Pipeline artifacts.",
+      "targets": [".upgrade-pilot-hub-group"],
+      "properties": {
+        "name": "Evidence",
+        "order": 1,
+        "uri": "dist/index.html"
+      }
+    }
+  ],
+  "files": [
+    { "path": "dist", "addressable": true }
+  ]
+}
