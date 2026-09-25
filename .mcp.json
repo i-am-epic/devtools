@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "azure-devops": {
+      "command": "node",
+      "args": ["tools/ado-mcp/start.mjs"]
+    }
+  }
+}
