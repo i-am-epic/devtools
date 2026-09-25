@@ -225,6 +225,10 @@ elsewhere). Beyond that, the migrations are part of the release.
 Engineering at Google*: whoever changes a shared API fixes its callers,
 mechanically, in the same change.
 
+*Built:* `lib/remedy.mjs` reads the migration out of the package itself (a
+deprecation note naming the replacement, a kept alias, an enum renamed in
+place), and `fix.mjs` applies it at the consumer's sites.
+
 ### 6. Deprecation counts usage, not calendar time
 
 A deprecated symbol can be removed once the usage index shows no consumer
@@ -467,6 +471,98 @@ matches. The sixth is why the manifest (rule 8) lists root causes.
 
 ---
 
+## What actually breaks, and the fix for each
+
+The audit's 18 incompatible minors have 72 root causes between them.
+`catalogue.mjs` sorts them by kind. A few habits cause almost all of it, and
+each has a fix on both sides: one the consumer can apply, and one the owner
+could have made for free while the PR was open.
+
+| Kind of break | Breaking minors (of 18) | Consumer fix | Owner prevention |
+|---|---|---|---|
+| A type changed shape | 11 | Run the type-check; the verdict lists the sites | Widen instead of replacing: a union of the old and new shape |
+| A value added to an output enum or union | 9 | Nothing, unless a `switch` is exhaustive; then add a default | Declare output enums open (`\| (string & {})`) |
+| A parameter or field became required | 6 | Supply it at the listed call sites | Make it optional with a default |
+| An input stopped accepting a value | 5 | Change the value at the listed sites | Keep accepting it and deprecate it |
+| A signature rewritten | 4 | Run the type-check | Add an overload next to the old one |
+| An export or member removed | 3 | **Automatic** when the package names the replacement | Keep an alias and name the replacement in `@deprecated` |
+| Enum members renamed | 1 | **Automatic**, plus a silent-break scan | Keep the old member as a deprecated alias |
+
+A release can contain several kinds, so the counts overlap. "Type changed
+shape" is also the catch-all for anything the explanation walk can't pin down
+more precisely.
+
+The owner column is the argument for running the check at PR time. Every
+prevention in it is a one-line change while the PR is open. After publishing,
+the same change costs a major release.
+
+### The fix is usually already in the package
+
+When a release renames or removes something, the new name is almost always
+written into the package itself:
+
+- a `@deprecated` note that says what to use instead;
+- an alias the owner kept;
+- an enum renamed in place;
+- a declaration that is identical apart from its name.
+
+`lib/remedy.mjs` reads these out while the diff is taken. `fix.mjs` applies
+them at the consumer's exact sites. There's no changelog to read and no model
+guessing. It found:
+
+| Release | Remedies found in the package |
+|---|---|
+| genai 1.48 | all four `ServiceTier` renames, each with old and new value |
+| lucide-react 1.41, 1.44, 1.45 | `icons.Trash2` → `icons.Trash`, and five more, from the aliases kept at top level |
+| lucide-react 0.484 → 1.47 | 54 icons renamed inside `icons` (for example `Smile` → `FaceSlightlySmiling`) |
+
+Across the audited minors, the package itself resolved every rename and
+removal: 10 remedies, none missing. The 54 brand icons lucide 1.0 dropped have
+no replacement in the package. For those, the fixer carries the owner's note
+and, for portfolio, says the fix is deleting a dead file.
+
+**Checked against the compiler.** The consumer is a small one written against
+genai 1.47 for the test, since none of these repos uses `ServiceTier`. The
+package versions are the real ones.
+
+| Step | `tsc` |
+|---|---|
+| on 1.47.0 | passes |
+| upgraded to 1.48.0 | fails: `SERVICE_TIER_FLEX` does not exist |
+| after `fix.mjs --apply` | passes |
+
+The fixer also reported the break `tsc` can't see. A second file compares a
+stored string with `"SERVICE_TIER_FLEX"`. That still compiles, and after the
+upgrade the API sends `"flex"`, so the comparison silently never matches.
+Silent breaks like this are what reach production. The check finds them
+because it knows both values of every renamed member.
+
+Rule 5 (the breaker migrates) gets cheaper because of this. An owner who keeps
+an alias and writes the replacement's name into `@deprecated` has already
+written the migration; every consumer's fix is automatic.
+
+### The consumer's half: hygiene
+
+Some breakage is caused by the consumer's own setup: nothing in the package
+changed, and the upgrade still hurts. `hygiene.mjs` found all of the following
+in five of this estate's npm projects:
+
+| Finding | Where | Why it hurts |
+|---|---|---|
+| `"latest"` as a version spec | portfolio (`lucide-react`, `clsx`) | a fresh install can jump a major |
+| Two lockfiles disagreeing on 9 packages; the npm one out of sync | portfolio | `npm ci` refuses it, and which versions ship depends on the tool |
+| No lockfile | ipodigest/frontend | every install resolves ranges afresh |
+| `ignoreBuildErrors: true` | portfolio | an incompatible upgrade builds, and fails at runtime |
+| Files no entry point reaches, still importing packages | portfolio (9), ipodigest (2), switchup (1) | every upgrade "breaks" code nothing runs |
+| Runtime dependencies never imported | portfolio (`axios`, `next-auth`), FamilyTree | scanner findings and upgrade PRs for code that never runs |
+| A package whose end of support is announced only in its README | FamilyTree: `@google/generative-ai` ("now considered legacy") | npm's `deprecated` field is empty, so every scanner reads it as healthy |
+
+The last row is problem 3 again, from the other side. A promise nobody can
+read by program might as well not exist, and the hygiene check reads the
+README because the registry field is empty.
+
+---
+
 ## How it runs on Azure DevOps
 
 ```
@@ -517,7 +613,7 @@ It measures what consumers experience, not how often the owner ships.
 
 ## What exists, and what doesn't
 
-Built and tested (`tools/release-contract/`, 24 offline tests plus the
+Built and tested (`tools/release-contract/`, 29 offline tests plus the
 real-world runs above):
 
 - computed semver for npm packages with TypeScript declarations
@@ -526,13 +622,17 @@ real-world runs above):
 - the single-consumer blast radius (`blast.mjs`), with reachability from entry
   points;
 - the owner's pre-publish consumer check (`consumers.mjs`);
-- the release-history audit (`audit.mjs`).
+- the release-history audit (`audit.mjs`) and the break catalogue
+  (`catalogue.mjs`);
+- remedies read from the package, and the fixer that applies them
+  (`fix.mjs`), with silent-break detection for changed enum values;
+- consumer hygiene (`hygiene.mjs`).
 
 Not built:
 
 - the collection service for usage indexes;
 - the feed-promotion gate;
-- migration-PR generation;
+- opening migration PRs (the edits exist; `fix.mjs --apply` makes them locally);
 - the manifest as a published artifact (today `consumers.mjs --json` writes
   its consumer section);
 - the owner view in the hub;

@@ -15,6 +15,10 @@ import { satisfies, resolveRange, lockedVersion } from "../lib/resolve.mjs";
 import { indexRepo, packageOf } from "../lib/usage.mjs";
 import { blast, liveness } from "../lib/blast.mjs";
 import { reachability, siteIsLive } from "../lib/reach.mjs";
+import { plan, apply } from "../lib/migrate.mjs";
+import { namedReplacements } from "../lib/remedy.mjs";
+import { classify } from "../lib/classify.mjs";
+import { check } from "../lib/hygiene.mjs";
 
 test("declared bump follows semver, including the 0.x rule", () => {
   assert.equal(declaredBump("1.2.3", "2.0.0"), "major");
@@ -252,4 +256,84 @@ test("a break only in dead code is reported as such; one live site makes it a re
   assert.equal(liveness(b, s => live.has(s.replace(/:\d+$/, ""))).verdict, "breaks dead code");
   live.add("components/footer.tsx");
   assert.equal(liveness(b, s => live.has(s.replace(/:\d+$/, ""))).verdict, "breaks");
+});
+
+test("a deprecation note's named replacement is found in the usual phrasings", () => {
+  assert.deepEqual(namedReplacements("Use `ContentTooLarge` instead."), ["ContentTooLarge"]);
+  assert.deepEqual(namedReplacements("use {@link createClient} instead"), ["createClient"]);
+  assert.deepEqual(namedReplacements("Renamed to FaceSmile."), ["FaceSmile"]);
+  assert.deepEqual(namedReplacements("Brand icons are due to be removed."), []);
+});
+
+test("the checker reads each kind of remedy out of the new declarations", () => {
+  const r = versions(
+    `/** @deprecated Use \`createClient\` instead. */\nexport declare function makeClient(): void;\n` +
+    `export declare function oldName(a: string, b: number): boolean;\n` +
+    `export declare enum ServiceTier { SERVICE_TIER_FLEX = "SERVICE_TIER_FLEX", SERVICE_TIER_STANDARD = "SERVICE_TIER_STANDARD" }\n` +
+    `declare const Trash2: number;\ndeclare const Trash: number;\ndeclare namespace index { export { Trash, Trash2 } }\n` +
+    `export { index as icons, Trash, Trash2 };\n`,
+    `export declare function createClient(): void;\nexport declare function newName(a: string, b: number): boolean;\n` +
+    `export declare enum ServiceTier { FLEX = "flex", STANDARD = "standard" }\n` +
+    `declare const Trash: number;\ndeclare namespace index { export { Trash } }\nexport { index as icons, Trash, Trash as Trash2 };\n`);
+  assert.deepEqual(r.remedies.exports.makeClient, { to: "createClient", via: "deprecation note", note: "Use `createClient` instead." });
+  assert.equal(r.remedies.exports.oldName.to, "newName");
+  assert.equal(r.remedies.exports.oldName.via, "identical declaration");
+  assert.deepEqual(r.remedies.enumMembers.map(e => [e.from, e.to, e.toValue]),
+    [["SERVICE_TIER_FLEX", "FLEX", "flex"], ["SERVICE_TIER_STANDARD", "STANDARD", "standard"]]);
+  assert.deepEqual(r.remedies.members.map(m => [m.owner, m.from, m.to]), [["icons", "Trash2", "Trash"]]);
+});
+
+test("a migration keeps local names, rewrites members, and reports what it can't rewrite", () => {
+  const diff = { remedies: {
+    exports: { makeClient: { to: "createClient", via: "deprecation note" }, Facebook: { to: null, note: "Brand icons are removed." } },
+    enumMembers: [{ enum: "ServiceTier", from: "SERVICE_TIER_FLEX", to: "FLEX", via: "same name", fromValue: "SERVICE_TIER_FLEX", toValue: "flex" }],
+    members: [{ owner: "icons", from: "Trash2", to: "Trash", via: "alias" }] } };
+  const dir = repo({
+    "src/a.ts": `import { makeClient, ServiceTier, icons, Facebook } from "pkg";\nmakeClient();\n` +
+                `const t = ServiceTier.SERVICE_TIER_FLEX;\nconst i = icons.Trash2;\nconst j = icons["Trash2"];\n` +
+                `const k = (n: string) => icons[n];\n`,
+    "src/ledger.ts": `export const flex = (s: string) => s === "SERVICE_TIER_FLEX";\n`,
+    "src/types.ts": `import { type makeClient as Maker } from "pkg";\nexport type M = typeof Maker;\n`,
+  });
+  const p = plan(dir, "pkg", diff);
+  assert.deepEqual(p.edits.map(e => e.to).sort(), ["\"Trash\"", "FLEX", "Trash", "createClient as makeClient", "type createClient as Maker"]);
+  assert.deepEqual(p.silent.map(s => s.site), ["src/ledger.ts:1"]);
+  assert.equal(p.dynamic.length, 1);
+  assert.deepEqual(p.manual.map(m => m.name), ["Facebook"]);
+  apply(dir, p.edits);
+  const text = fs.readFileSync(path.join(dir, "src/a.ts"), "utf8");
+  assert.match(text, /import \{ createClient as makeClient, ServiceTier, icons, Facebook \}/);
+  assert.match(text, /ServiceTier\.FLEX;/);
+  assert.match(text, /icons\.Trash;\nconst j = icons\["Trash"\];/);
+  assert.match(text, /\nmakeClient\(\);/, "local names are kept");
+});
+
+test("root causes are grouped into the kinds of break that cause them", () => {
+  const k = classify([
+    "enum ServiceTier gained UNSPECIFIED, FLEX", "enum ServiceTier lost SERVICE_TIER_FLEX",
+    "enum TrafficType gained ON_DEMAND_FLEX", "icons.Trash2 removed", "Opts.region now required",
+    "now requires argument 3 (requestDetails)", "no longer accepts undefined", "lost 2 call overload(s)",
+    "RawAxiosHeaders → Record<string, string>",
+  ]);
+  assert.deepEqual(Object.fromEntries(Object.entries(k).map(([a, b]) => [a, b.length])), {
+    "enum-renamed": 2, "value-added": 1, "removed": 1, "newly-required": 2, "input-narrowed": 1,
+    "signature-rewritten": 1, "type-changed": 1 });
+});
+
+test("hygiene finds floating specs, lockfile conflicts, an ungated build, dead files and unused dependencies", async () => {
+  const dir = repo({
+    "package.json": JSON.stringify({ scripts: { build: "next build" },
+      dependencies: { "lucide-react": "latest", "axios": "^1.0.0", "next": "15.0.0" } }),
+    "package-lock.json": JSON.stringify({ lockfileVersion: 3, packages: { "": { dependencies: { "lucide-react": "latest" } },
+      "node_modules/lucide-react": { version: "0.484.0" } } }),
+    "pnpm-lock.yaml": "importers:\n  .:\n    dependencies:\n      lucide-react:\n        specifier: latest\n        version: 0.577.0(react@19.2.0)\n",
+    "next.config.mjs": "export default { typescript: { ignoreBuildErrors: true } };\n",
+    "app/page.tsx": `import { Heart } from "lucide-react";\nexport default () => <Heart/>;\n`,
+    "components/footer.tsx": `import { Github } from "lucide-react";\n`,
+  });
+  const { findings } = await check(dir, "demo", { online: false });
+  const kinds = findings.map(f => f.kind).sort();
+  assert.deepEqual(kinds, ["dead", "floating", "lockfiles", "lockfiles", "ungated", "unused"]);
+  assert.match(findings.find(f => f.kind === "unused").detail, /axios/);
+  assert.match(findings.find(f => f.kind === "dead").detail, /components\/footer\.tsx/);
 });

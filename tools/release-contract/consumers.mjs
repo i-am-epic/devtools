@@ -21,7 +21,7 @@ import { manifestsUsing, lockedVersion, resolveRange } from "./lib/resolve.mjs";
 const args = process.argv.slice(2);
 const jsonAt = args.indexOf("--json");
 const outFile = jsonAt >= 0 ? args[jsonAt + 1] : null;
-const [pkg, to, ...repos] = args.filter((a, i) => !a.startsWith("--") && i !== jsonAt + 1);
+const [pkg, to, ...repos] = args.filter((a, i) => !a.startsWith("--") && (jsonAt < 0 || i !== jsonAt + 1));
 if (!pkg || !to || !repos.length) {
   console.error("usage: consumers <package> <to> <repo-dir>... [--json out.json]");
   process.exit(2);

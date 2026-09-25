@@ -7,7 +7,7 @@ for making this how releases work, is in
 
 ```
 npm install
-npm test                                   # 24 offline tests, no registry needed
+npm test                                   # 29 offline tests, no registry needed
 ```
 
 ## The tools
@@ -19,6 +19,9 @@ npm test                                   # 24 offline tests, no registry neede
 | `node blast.mjs <repo> <pkg> <from> <to>` | Does this release break this repo? |
 | `node consumers.mjs <pkg> <to> <repo>… [--json out]` | The owner's view: before publishing, which consumers break, at which lines? |
 | `node audit.mjs <pkg>[@major]… [--json out]` | How often does this package's declared version understate the change? |
+| `node fix.mjs <repo> <pkg> <to> [--from v] [--apply]` | Migrate a consumer across a release, using fixes read out of the package itself. |
+| `node catalogue.mjs <audit.json>… [--markdown]` | Across audited releases, which kinds of change broke things, how often, and the fix for each. |
+| `node hygiene.mjs <repo>… [--json out]` | What in a consumer turns an upgrade into an incident, each finding with its fix. |
 
 Each run installs the two versions side by side under `.work/`, as npm aliases
 `old-api` and `new-api`, with install scripts disabled. Set
@@ -70,6 +73,55 @@ Each run installs the two versions side by side under `.work/`, as npm aliases
    version its lockfile pins. A `package-lock.json` that is out of sync with
    `package.json` loses to one that is in sync, and the disagreement is
    reported.
+
+## Fixes the package already contains
+
+When a release removes or renames something, the new name is almost always
+written down in the package. `lib/remedy.mjs` reads it out while the diff is
+taken, from four places:
+
+| Source | Example |
+|---|---|
+| The old version's `@deprecated` note | `Use \`ContentTooLarge\` instead` |
+| An enum renamed in place, matched by name without its prefix, or by value | genai 1.48: `ServiceTier.SERVICE_TIER_FLEX` became `ServiceTier.FLEX` |
+| An alias the new version keeps | lucide 1.41: `Trash as Trash2`, so `icons.Trash2` became `icons.Trash` |
+| One added export whose declaration is identical to a removed one | a plain rename |
+
+`fix.mjs` turns these into edits at the consumer's exact sites. It keeps local
+names, so `import { Trash2 }` becomes `import { Trash as Trash2 }` and nothing
+below it changes. It also reports what an edit can't fix:
+
+- **Silent:** string literals holding an enum value the release changed. They
+  compile, and silently stop matching.
+- **Dynamic:** lookups such as `icons[name]` into a map that renamed keys.
+- **Manual:** removals with no named replacement. The owner's note is
+  attached, and the report says when deleting a dead file is the whole fix.
+
+Validated on genai 1.47 → 1.48, with a two-file consumer written for the test:
+
+| | `tsc` |
+|---|---|
+| on 1.47 | passes |
+| after the upgrade | 1 error (`SERVICE_TIER_FLEX` does not exist) |
+| after `fix.mjs --apply` | passes |
+
+The fixer also flagged the one line `tsc` can't see: a comparison against
+`"SERVICE_TIER_FLEX"`, which the API now sends as `"flex"`.
+
+## Consumer hygiene
+
+`hygiene.mjs` looks for what turns an upgrade into an incident, and gives the
+fix for each:
+
+- floating specs (`"latest"`, `"*"`);
+- a missing lockfile, one out of sync with `package.json`, or two that
+  disagree;
+- builds that never type-check (`ignoreBuildErrors`, `vite build` without
+  `tsc`);
+- files no entry point reaches that still import packages;
+- runtime dependencies nothing imports;
+- deprecated packages. That includes the ones deprecated only in the README,
+  where npm's field stays empty and every scanner reads the package as healthy.
 
 ## Validated against real builds
 

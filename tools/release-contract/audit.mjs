@@ -18,7 +18,7 @@ import { diffIsolated } from "./lib/isolated.mjs";
 const args = process.argv.slice(2);
 const jsonAt = args.indexOf("--json");
 const outFile = jsonAt >= 0 ? args[jsonAt + 1] : null;
-const targets = args.filter((a, i) => !a.startsWith("--") && i !== jsonAt + 1);
+const targets = args.filter((a, i) => !a.startsWith("--") && (jsonAt < 0 || i !== jsonAt + 1));
 const root = process.env.RELEASE_CONTRACT_WORK || path.join(process.cwd(), ".work");
 const PER_PACKAGE = Number(process.env.AUDIT_STEPS || 10);
 
@@ -53,7 +53,13 @@ for (const t of targets) {
         review: d.changed.length, unstable: d.unstable.length,
         removedNames: d.removed.slice(0, 6).map(x => x.name),
         brokenNames: d.broken.slice(0, 6).map(x => `${x.name}${x.members?.length ? " (" + x.members.slice(0, 3).join(", ") + ")" : ""}`),
-        causes: (d.causes ?? []).slice(0, 6).map(c => `${c.what} [${c.exports}]`),
+        causes: (d.causes ?? []).map(c => c.what),
+        remedies: {
+          renamedExports: Object.values(d.remedies?.exports ?? {}).filter(x => x.to).length,
+          unreplacedExports: Object.values(d.remedies?.exports ?? {}).filter(x => !x.to).length,
+          enumRenames: d.remedies?.enumMembers?.length ?? 0,
+          memberMoves: d.remedies?.members?.length ?? 0,
+        },
         understated: d.understated,
         overstated: d.declared === "major" && d.computed !== "major" };
       rows.push(row);

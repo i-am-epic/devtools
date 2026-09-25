@@ -12,6 +12,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import ts from "typescript";
+import { remedies } from "./remedy.mjs";
 
 const REGISTRY = process.env.RELEASE_CONTRACT_REGISTRY || "https://registry.npmjs.org";
 
@@ -494,6 +495,9 @@ export function compare(dir) {
     causes.set(c.what, e);
   }
   out.causes = [...causes.values()].sort((a, b) => b.exports - a.exports);
+
+  // Where the package itself says what replaced what (see remedy.mjs).
+  out.remedies = remedies(checker, sf, oldEx, newEx, out);
 
   // The computed bump rests only on what is certain: a removal, or a change the
   // checker proves incompatible. "changed" needs a person; "unstable" is exempt
