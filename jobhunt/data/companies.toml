@@ -1,0 +1,158 @@
+# Seed list of companies to watch: Bengaluru engineering centres and remote-first
+# teams that hire from India, filtered to ones where a backend / data-platform /
+# AI-infra engineer with ~4 years has a realistic path to >= 25 LPA.
+#
+# tier  A = typically clears 30 LPA total comp for ~4 YOE backend (public salary
+#           data: levels.fyi, AmbitionBox, Glassdoor); B = usually 22-35 LPA,
+#           negotiate. These are estimates to rank by, not quotes -- check the
+#           "Salaries" link in each kit.
+# ats / slug   Optional. Left blank, `python -m jobhunt companies resolve` probes
+#              Greenhouse, Lever, Ashby, Workable, SmartRecruiters and Recruitee
+#              for the right board and remembers it. Workday slugs are
+#              tenant/wdN/site and are verified by the same command.
+# careers      Companies on in-house systems (Google, Microsoft, ...) can't be
+#              polled; the dashboard links their careers search instead.
+#
+# Add your own:  python -m jobhunt companies add "Name" --domain name.com
+#           or:  python -m jobhunt companies add-url https://jobs.lever.co/name
+
+company = [
+  # --- Data infrastructure, databases, observability ---
+  { name = "Databricks", domain = "databricks.com", tier = "A", category = "Data platform", why = "Lakehouse / Spark company; Bengaluru engineering centre" },
+  { name = "Confluent", domain = "confluent.io", tier = "A", category = "Streaming", why = "The Kafka company; streaming infrastructure" },
+  { name = "Rubrik", domain = "rubrik.com", tier = "A", category = "Data security", why = "Large Bengaluru R&D; distributed storage and backup" },
+  { name = "Cohesity", domain = "cohesity.com", tier = "A", category = "Data management", why = "Distributed file system and data platform, Bengaluru R&D" },
+  { name = "Snowflake", domain = "snowflake.com", tier = "A", category = "Data cloud", why = "Cloud data warehouse; India engineering" },
+  { name = "MongoDB", domain = "mongodb.com", tier = "A", category = "Database", why = "Database company; India engineering" },
+  { name = "Elastic", domain = "elastic.co", tier = "A", category = "Search / observability", why = "Distributed-by-default company, remote-friendly" },
+  { name = "ClickHouse", domain = "clickhouse.com", tier = "A", category = "Database", why = "Real-time analytics database; remote-first" },
+  { name = "Grafana Labs", domain = "grafana.com", tier = "A", category = "Observability", why = "Observability (Prometheus/Grafana ecosystem); remote-first" },
+  { name = "Cockroach Labs", domain = "cockroachlabs.com", tier = "A", category = "Database", why = "Distributed SQL" },
+  { name = "Yugabyte", domain = "yugabyte.com", tier = "A", category = "Database", why = "Distributed SQL with India engineering" },
+  { name = "Couchbase", domain = "couchbase.com", tier = "B", category = "Database", why = "Bengaluru R&D" },
+  { name = "Redis", domain = "redis.io", tier = "B", category = "Database", why = "India engineering" },
+  { name = "Hevo Data", domain = "hevodata.com", tier = "B", category = "Data pipelines", why = "ETL/ELT data pipeline platform in Bengaluru" },
+  { name = "Atlan", domain = "atlan.com", tier = "A", category = "Data catalog", why = "Metadata platform, remote India" },
+  { name = "SigNoz", domain = "signoz.io", tier = "B", category = "Observability", why = "Open-source observability on ClickHouse" },
+  { name = "Last9", domain = "last9.io", tier = "B", category = "Observability", why = "Time-series/reliability platform" },
+  { name = "Pure Storage", domain = "purestorage.com", tier = "A", category = "Storage", why = "Bengaluru R&D" },
+  { name = "NetApp", domain = "netapp.com", tier = "B", category = "Storage", why = "Bengaluru R&D" },
+  { name = "Nutanix", domain = "nutanix.com", tier = "A", category = "Cloud infra", why = "Bengaluru R&D, distributed systems" },
+  { name = "Fivetran", domain = "fivetran.com", tier = "A", category = "Data pipelines", why = "Data movement at scale; Bengaluru office" },
+  { name = "ThoughtSpot", domain = "thoughtspot.com", tier = "A", category = "Analytics", why = "Search/analytics engine built in Bengaluru" },
+  { name = "Temporal Technologies", domain = "temporal.io", tier = "A", category = "Developer infra", why = "Durable execution; remote" },
+  { name = "Supabase", domain = "supabase.com", tier = "A", category = "Developer infra", why = "Postgres platform, fully remote" },
+  { name = "Neon", domain = "neon.tech", tier = "A", category = "Database", why = "Serverless Postgres, remote" },
+
+  # --- AI / LLM infrastructure and applied AI ---
+  { name = "Sarvam AI", domain = "sarvam.ai", tier = "A", category = "AI", why = "Indian foundation models, Bengaluru" },
+  { name = "Glean", domain = "glean.com", tier = "A", category = "AI search", why = "Enterprise search and RAG at scale", ats = "greenhouse", slug = "gleanwork" },
+  { name = "Composio", domain = "composio.dev", tier = "B", category = "AI agents", why = "Tool-calling infra for agents, Bengaluru" },
+  { name = "Simplismart", domain = "simplismart.ai", tier = "B", category = "AI infra", why = "Model inference infra, Bengaluru" },
+  { name = "Atomicwork", domain = "atomicwork.com", tier = "B", category = "AI SaaS", why = "Agentic service management, Bengaluru" },
+  { name = "Observe.AI", domain = "observe.ai", tier = "B", category = "AI", why = "Conversation intelligence, Bengaluru" },
+  { name = "Uniphore", domain = "uniphore.com", tier = "B", category = "AI", why = "Enterprise AI" },
+  { name = "Krutrim", domain = "olakrutrim.com", tier = "B", category = "AI", why = "Indian AI cloud and models" },
+  { name = "Hugging Face", domain = "huggingface.co", tier = "A", category = "AI", why = "Remote-first ML platform" },
+  { name = "Anthropic", domain = "anthropic.com", tier = "A", category = "AI", why = "Frontier lab; check for India-eligible roles" },
+  { name = "Leena AI", domain = "leena.ai", tier = "B", category = "AI SaaS", why = "Agentic enterprise assistant" },
+  { name = "Yellow.ai", domain = "yellow.ai", tier = "B", category = "AI", why = "Conversational AI, Bengaluru" },
+  { name = "Gupshup", domain = "gupshup.io", tier = "B", category = "Messaging / AI", why = "High-throughput messaging infra" },
+
+  # --- Developer tools & SaaS ---
+  { name = "Postman", domain = "postman.com", tier = "A", category = "Developer tools", why = "API platform born in Bengaluru" },
+  { name = "Harness", domain = "harness.io", tier = "A", category = "Developer tools", why = "CI/CD platform, large Bengaluru team" },
+  { name = "BrowserStack", domain = "browserstack.com", tier = "A", category = "Developer tools", why = "Testing infra at scale; remote India" },
+  { name = "Hasura", domain = "hasura.io", tier = "B", category = "Developer tools", why = "GraphQL engine, Bengaluru" },
+  { name = "Appsmith", domain = "appsmith.com", tier = "B", category = "Developer tools", why = "Open source, Bengaluru/remote" },
+  { name = "ToolJet", domain = "tooljet.com", tier = "B", category = "Developer tools", why = "Open source, remote" },
+  { name = "GitLab", domain = "gitlab.com", tier = "A", category = "Developer tools", why = "All-remote, hires in India" },
+  { name = "Atlassian", domain = "atlassian.com", tier = "A", category = "SaaS", why = "Bengaluru + remote India ('Team Anywhere')", careers = "https://www.atlassian.com/company/careers/all-jobs?location=India" },
+  { name = "Rippling", domain = "rippling.com", tier = "A", category = "SaaS", why = "Fast-growing HR/IT platform, big Bengaluru team" },
+  { name = "Freshworks", domain = "freshworks.com", tier = "B", category = "SaaS", why = "Indian SaaS major" },
+  { name = "Chargebee", domain = "chargebee.com", tier = "B", category = "SaaS", why = "Billing platform" },
+  { name = "Sprinklr", domain = "sprinklr.com", tier = "B", category = "SaaS", why = "Large-scale data and AI platform" },
+  { name = "MoEngage", domain = "moengage.com", tier = "B", category = "SaaS", why = "Event ingestion at very high volume" },
+  { name = "CleverTap", domain = "clevertap.com", tier = "B", category = "SaaS", why = "Real-time analytics engine" },
+  { name = "Darwinbox", domain = "darwinbox.com", tier = "B", category = "SaaS", why = "HR platform at scale" },
+  { name = "Sprinto", domain = "sprinto.com", tier = "B", category = "SaaS", why = "Compliance automation, Bengaluru" },
+  { name = "Plivo", domain = "plivo.com", tier = "B", category = "Communications", why = "Voice/SMS infra" },
+  { name = "Exotel", domain = "exotel.com", tier = "B", category = "Communications", why = "Cloud telephony, Bengaluru" },
+  { name = "Twilio", domain = "twilio.com", tier = "A", category = "Communications", why = "Bengaluru engineering" },
+  { name = "Okta", domain = "okta.com", tier = "A", category = "Security", why = "Identity platform, Bengaluru R&D" },
+  { name = "Zscaler", domain = "zscaler.com", tier = "A", category = "Security", why = "Cloud security, India R&D" },
+  { name = "Tekion", domain = "tekion.com", tier = "A", category = "SaaS", why = "Auto-retail cloud, big Bengaluru team" },
+  { name = "Innovaccer", domain = "innovaccer.com", tier = "A", category = "Health data", why = "Healthcare data platform" },
+  { name = "Amagi", domain = "amagi.com", tier = "B", category = "Media cloud", why = "Video/media infra, Bengaluru" },
+  { name = "Locus", domain = "locus.sh", tier = "B", category = "Logistics SaaS", why = "Routing/optimisation, Bengaluru" },
+
+  # --- Fintech ---
+  { name = "Razorpay", domain = "razorpay.com", tier = "A", category = "Fintech", why = "Payments infra in Bengaluru; event-driven at scale" },
+  { name = "PhonePe", domain = "phonepe.com", tier = "A", category = "Fintech", why = "UPI scale, Bengaluru" },
+  { name = "CRED", domain = "cred.club", tier = "A", category = "Fintech", why = "Strong backend culture, Bengaluru" },
+  { name = "Groww", domain = "groww.in", tier = "A", category = "Fintech", why = "Brokerage at scale, Bengaluru" },
+  { name = "Zeta", domain = "zeta.tech", tier = "A", category = "Fintech", why = "Banking cloud" },
+  { name = "Juspay", domain = "juspay.in", tier = "A", category = "Fintech", why = "Payments orchestration, Bengaluru" },
+  { name = "Stripe", domain = "stripe.com", tier = "A", category = "Fintech", why = "Bengaluru engineering hub" },
+  { name = "Coinbase", domain = "coinbase.com", tier = "A", category = "Fintech", why = "Remote-first, hires in India" },
+  { name = "Kraken", domain = "kraken.com", tier = "A", category = "Fintech", why = "Remote-first exchange" },
+  { name = "Cashfree Payments", domain = "cashfree.com", tier = "B", category = "Fintech", why = "Payments, Bengaluru" },
+  { name = "Setu", domain = "setu.co", tier = "B", category = "Fintech", why = "Financial APIs, Bengaluru" },
+  { name = "Pine Labs", domain = "pinelabs.com", tier = "B", category = "Fintech", why = "Merchant payments" },
+  { name = "slice", domain = "sliceit.com", tier = "B", category = "Fintech", why = "Bengaluru" },
+  { name = "Jar", domain = "myjar.app", tier = "B", category = "Fintech", why = "Bengaluru" },
+  { name = "Navi", domain = "navi.com", tier = "B", category = "Fintech", why = "Bengaluru" },
+  { name = "Jupiter", domain = "jupiter.money", tier = "B", category = "Fintech", why = "Bengaluru" },
+  { name = "smallcase", domain = "smallcase.com", tier = "B", category = "Fintech", why = "Bengaluru" },
+  { name = "INDmoney", domain = "indmoney.com", tier = "B", category = "Fintech", why = "Wealth platform" },
+  { name = "Acko", domain = "acko.com", tier = "B", category = "Insurtech", why = "Bengaluru" },
+  { name = "Go Digit", domain = "godigit.com", tier = "B", category = "Insurtech", why = "Bengaluru" },
+  { name = "Visa", domain = "visa.com", tier = "A", category = "Payments", why = "Bengaluru engineering" },
+  { name = "PayPal", domain = "paypal.com", tier = "A", category = "Payments", why = "Bengaluru/Chennai engineering", ats = "workday", slug = "paypal/wd1/jobs" },
+  { name = "Goldman Sachs", domain = "goldmansachs.com", tier = "A", category = "Finance tech", why = "Bengaluru engineering", careers = "https://higher.gs.com/results?LOCATION=Bengaluru" },
+  { name = "Arcesium", domain = "arcesium.com", tier = "A", category = "Finance tech", why = "Data platform for funds" },
+
+  # --- Consumer internet / commerce / mobility ---
+  { name = "Swiggy", domain = "swiggy.com", tier = "A", category = "Consumer", why = "Real-time logistics at scale, Bengaluru" },
+  { name = "Zepto", domain = "zeptonow.com", tier = "A", category = "Quick commerce", why = "Hyper-growth, Bengaluru/Mumbai" },
+  { name = "Meesho", domain = "meesho.com", tier = "A", category = "E-commerce", why = "Bengaluru, strong infra teams" },
+  { name = "Flipkart", domain = "flipkart.com", tier = "A", category = "E-commerce", why = "Bengaluru", careers = "https://www.flipkartcareers.com/#!/joblist" },
+  { name = "Myntra", domain = "myntra.com", tier = "B", category = "E-commerce", why = "Bengaluru" },
+  { name = "Uber", domain = "uber.com", tier = "A", category = "Mobility", why = "Bengaluru engineering", careers = "https://www.uber.com/us/en/careers/list/?location=IND-Karnataka-Bangalore" },
+  { name = "Rapido", domain = "rapido.bike", tier = "B", category = "Mobility", why = "Bengaluru" },
+  { name = "ShareChat", domain = "sharechat.com", tier = "A", category = "Consumer", why = "Bengaluru, large data infra" },
+  { name = "InMobi", domain = "inmobi.com", tier = "A", category = "Adtech", why = "High-throughput ad serving; Glance" },
+  { name = "Games24x7", domain = "games24x7.com", tier = "B", category = "Gaming", why = "Bengaluru" },
+  { name = "MPL", domain = "mpl.live", tier = "B", category = "Gaming", why = "Bengaluru" },
+  { name = "Udaan", domain = "udaan.com", tier = "B", category = "B2B commerce", why = "Bengaluru" },
+  { name = "Licious", domain = "licious.in", tier = "B", category = "Consumer", why = "Bengaluru" },
+  { name = "Cult.fit", domain = "cult.fit", tier = "B", category = "Consumer", why = "Bengaluru" },
+  { name = "Ather Energy", domain = "atherenergy.com", tier = "B", category = "EV / IoT", why = "Connected-vehicle telemetry and IoT data" },
+  { name = "Cars24", domain = "cars24.com", tier = "B", category = "Marketplace", why = "Bengaluru/Gurugram" },
+  { name = "Booking.com", domain = "booking.com", tier = "A", category = "Travel", why = "Bengaluru tech centre" },
+
+  # --- Large tech with Bengaluru centres (in-house or Workday careers) ---
+  { name = "Google", domain = "google.com", tier = "A", category = "Big tech", why = "Bengaluru", careers = "https://www.google.com/about/careers/applications/jobs/results/?location=Bangalore%20India&q=backend" },
+  { name = "Microsoft", domain = "microsoft.com", tier = "A", category = "Big tech", why = "IDC Bengaluru/Hyderabad", careers = "https://jobs.careers.microsoft.com/global/en/search?lc=Bangalore%2C%20Karnataka%2C%20India&q=software%20engineer" },
+  { name = "LinkedIn", domain = "linkedin.com", tier = "A", category = "Big tech", why = "Bengaluru", careers = "https://www.linkedin.com/jobs/search/?f_C=1337&location=Bengaluru" },
+  { name = "Apple", domain = "apple.com", tier = "A", category = "Big tech", why = "Bengaluru/Hyderabad", careers = "https://jobs.apple.com/en-in/search?location=bengaluru-BGL" },
+  { name = "Nvidia", domain = "nvidia.com", tier = "A", category = "Big tech", why = "Bengaluru/Pune", ats = "workday", slug = "nvidia/wd5/NVIDIAExternalCareerSite" },
+  { name = "Salesforce", domain = "salesforce.com", tier = "A", category = "Big tech", why = "Bengaluru/Hyderabad", ats = "workday", slug = "salesforce/wd12/External_Career_Site" },
+  { name = "Adobe", domain = "adobe.com", tier = "A", category = "Big tech", why = "Bengaluru/Noida", ats = "workday", slug = "adobe/wd5/external_experienced" },
+  { name = "Walmart Global Tech", domain = "walmart.com", tier = "A", category = "Retail tech", why = "Large Bengaluru engineering centre", ats = "workday", slug = "walmart/wd5/WalmartExternal" },
+  { name = "Intuit", domain = "intuit.com", tier = "A", category = "Fintech SaaS", why = "Bengaluru" },
+  { name = "Target", domain = "target.com", tier = "B", category = "Retail tech", why = "Bengaluru engineering", ats = "workday", slug = "target/wd5/targetcareers" },
+  { name = "Broadcom", domain = "broadcom.com", tier = "B", category = "Infra software", why = "VMware Bengaluru", ats = "workday", slug = "broadcom/wd1/External_Career" },
+  { name = "Autodesk", domain = "autodesk.com", tier = "A", category = "Software", why = "Bengaluru", ats = "workday", slug = "autodesk/wd1/Ext" },
+  { name = "Dell Technologies", domain = "dell.com", tier = "B", category = "Infra", why = "Bengaluru R&D", ats = "workday", slug = "dell/wd1/External" },
+  { name = "Oracle", domain = "oracle.com", tier = "B", category = "Cloud", why = "OCI Bengaluru/Hyderabad", careers = "https://careers.oracle.com/jobs/#en/sites/jobsearch/requisitions?location=Bengaluru" },
+  { name = "SAP Labs India", domain = "sap.com", tier = "B", category = "Enterprise", why = "Bengaluru", careers = "https://jobs.sap.com/search/?locationsearch=Bangalore" },
+  { name = "Cisco", domain = "cisco.com", tier = "B", category = "Networking", why = "Bengaluru", careers = "https://jobs.cisco.com/jobs/SearchJobs/?21178=%5B169482%5D" },
+
+  # --- Remote-first companies that hire engineers in India ---
+  { name = "Automattic", domain = "automattic.com", tier = "A", category = "Remote-first", why = "Fully distributed" },
+  { name = "Canonical", domain = "canonical.com", tier = "B", category = "Remote-first", why = "Fully distributed, hires in India" },
+  { name = "Deel", domain = "deel.com", tier = "A", category = "Remote-first", why = "Global payroll; remote" },
+  { name = "Remote", domain = "remote.com", tier = "A", category = "Remote-first", why = "Remote" },
+  { name = "Toggl", domain = "toggl.com", tier = "B", category = "Remote-first", why = "Remote" },
+]

@@ -1,0 +1,53 @@
+# Daily jobhunt run on GitHub Actions.
+#
+# ONLY use this in a PRIVATE repository. Workflow logs on a public repo are
+# public, and they would show which companies you are applying to.
+#
+# Setup (in the private repo that holds a copy of jobhunt/):
+#   1. Copy this file to .github/workflows/jobhunt.yml
+#   2. Add repository secrets:
+#        JOBHUNT_PROFILE_TOML   contents of your profile.toml
+#        JOBHUNT_IMAP_PASSWORD  Gmail app password
+#        ANTHROPIC_API_KEY      optional; enables Claude-written letters and prep
+#   3. The database lives in the Actions cache between runs. Download the
+#      dashboard and kits from the run's artifacts.
+name: jobhunt-daily
+on:
+  schedule:
+    - cron: "15 3 * * *"   # 08:45 IST
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: jobhunt
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install anthropic
+      - uses: actions/cache@v4
+        with:
+          path: jobhunt/var
+          key: jobhunt-var-${{ github.run_id }}
+          restore-keys: jobhunt-var-
+      - name: Write profile
+        run: printf '%s' "$PROFILE" > profile.toml
+        env:
+          PROFILE: ${{ secrets.JOBHUNT_PROFILE_TOML }}
+      - name: Daily run
+        run: python -m jobhunt daily --email
+        env:
+          JOBHUNT_IMAP_PASSWORD: ${{ secrets.JOBHUNT_IMAP_PASSWORD }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jobhunt-${{ github.run_id }}
+          path: |
+            jobhunt/var/out
+            jobhunt/var/kits
+          retention-days: 14

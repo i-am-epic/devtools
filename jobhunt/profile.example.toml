@@ -1,0 +1,176 @@
+# Copy to profile.toml (gitignored) and fill in the blanks:
+#
+#     cp profile.example.toml profile.toml
+#
+# Everything the tool writes -- cover letters, referral notes, form autofill,
+# fit scoring -- is driven from this file. The more honest detail you give it,
+# the better the output.
+
+[me]
+name = "Your Name"
+email = "you@example.com"            # used for autofill and the daily digest
+phone = "+91 00000 00000"
+city = "Bengaluru"
+linkedin = "https://linkedin.com/in/your-handle"
+github = "https://github.com/your-handle"
+portfolio = ""
+resume = "~/Documents/resume.pdf"    # uploaded by `apply --assist`
+current_company = "Current Co"
+current_title = "Software Engineer"
+college = "Your College of Engineering"
+college_short = "YCE"
+years_experience = 4
+notice_period = "60 days"            # what forms should say
+current_ctc_lpa = 0                  # fill in; used only in application answers
+expected_ctc_lpa = 30
+work_authorization = "Indian citizen; open to remote roles paid via EOR/contractor"
+# One sentence, first person -- it follows "I'm a <title> at <company> with N years of experience."
+pitch = "I build streaming and data-intensive backend services in Python on Kubernetes, and LLM-backed features over company data."
+
+[target]
+min_lpa = 25                 # floor; jobs that state a lower band are penalised
+usd_inr = 88.0
+eur_inr = 95.0
+gbp_inr = 112.0
+locations = ["bengaluru", "bangalore", "blr"]
+remote_ok = ["india", "apac", "asia", "worldwide", "anywhere", "global", "remote - in", "ist"]
+accept_other_india_cities = false    # Hyderabad, Pune, ... only if remote
+application_goal = 50
+companies_per_campaign = 2           # at most N roles per company in a `campaign`
+
+# Titles. "strong" matches score highest, "ok" is fine, "exclude" is dropped.
+[target.titles]
+strong = [
+  "backend", "back-end", "back end", "platform", "distributed", "infrastructure",
+  "data platform", "data infrastructure", "streaming", "ai engineer", "applied ai",
+  "llm", "ml platform", "ml infrastructure", "agent*", "search", "core engineering",
+]
+ok = [
+  "software engineer", "software development engineer", "sde", "developer",
+  "member of technical staff", "mts", "data engineer", "full stack", "full-stack",
+  "site reliability", "sre", "founding engineer", "product engineer",
+]
+# Whole-word matches; a trailing * matches as a prefix.
+exclude = [
+  "frontend", "front-end", "front end", "ios", "android", "mobile", "designer",
+  "product manager", "program manager", "project manager", "sales engineer",
+  "account executive", "business development", "marketing", "recruiter", "talent",
+  "intern", "internship", "apprentice", "new grad", "graduate", "fresher", "qa",
+  "quality assurance", "test engineer", "sdet", "support engineer", "customer success",
+  "customer engineer", "solutions engineer", "analyst", "director", "vice president",
+  "vp", "head of", "chief", "engineering manager", "manager", "principal",
+  "distinguished", "architect", "embedded", "firmware", "hardware", "verification",
+  "salesforce", "sap", "mainframe",
+]
+penalise = ["staff", "lead", "iii", "junior", "associate", "entry"]
+
+# Skill weights used for fit scoring and for picking which resume bullets to
+# lead with. 3 = core, 2 = strong, 1 = familiar.
+[skills]
+3 = [
+  "python", "distributed systems", "kafka", "event-driven", "streaming",
+  "data pipeline", "etl", "microservices", "kubernetes", "backend",
+  "high throughput", "scalab*", "rag", "llm", "agentic",
+]
+2 = [
+  "c#", ".net", "asp.net", "fastapi", "django", "grpc", "rest", "graphql",
+  "azure", "event hub", "service bus", "spark", "clickhouse", "duckdb",
+  "postgres", "mongodb", "redis", "parquet", "time series", "time-series",
+  "docker", "helm", "keda", "prometheus", "grafana", "observability", "mcp",
+  "tool calling", "sql", "kql", "iot", "telemetry",
+]
+1 = [
+  "java", "javascript", "bash", "linux", "ci/cd", "mqtt", "flutter", "dart",
+  "aws", "gcp", "terraform", "airflow", "flink", "elasticsearch",
+]
+
+# Resume bullets, with real numbers. `tags` decide which three lead a cover
+# letter for a given posting -- use the same words as [skills].
+[[highlights]]
+text = "Built an event-driven ingestion service on Kafka that routes thousands of records per second into Postgres, Redis and object storage, with gRPC between services."
+tags = ["kafka", "streaming", "event-driven", "grpc", "distributed systems", "data pipeline", "high throughput"]
+
+[[highlights]]
+text = "Rewrote a batch file loader with DuckDB and ClickHouse, cutting a multi-hour job to minutes, autoscaled on Kubernetes with KEDA."
+tags = ["duckdb", "clickhouse", "etl", "kubernetes", "keda", "scalab*", "data pipeline", "performance"]
+
+[[highlights]]
+text = "Own a REST/GraphQL data-access API used by 1,000+ internal clients, including its time-series query layer."
+tags = ["api", "rest", "graphql", "time series", "backend", "platform", "microservices"]
+
+[[highlights]]
+text = "Built a retrieval-augmented assistant that turns natural-language questions into SQL across several databases."
+tags = ["rag", "llm", "agentic", "sql", "ai", "tool calling", "mcp"]
+
+[[highlights]]
+text = "Run Prometheus/Grafana observability and Helm-based CI/CD for the team's services."
+tags = ["observability", "prometheus", "grafana", "helm", "ci/cd", "kubernetes"]
+
+# STAR stories for behavioural rounds. `prep` maps them to the usual questions
+# (conflict, failure, ownership, ambiguity, impact).
+[[stories]]
+title = "The batch loader rewrite"
+themes = ["impact", "ownership", "technical depth"]
+situation = ""
+task = ""
+action = ""
+result = ""
+
+[[stories]]
+title = "The ingestion incident"
+themes = ["failure", "ambiguity"]
+situation = ""
+task = ""
+action = ""
+result = ""
+
+[llm]
+# Optional. With the `anthropic` package installed and ANTHROPIC_API_KEY set
+# (or `ant auth login`), cover letters, reply classification and prep plans are
+# written by Claude. Without it the built-in templates are used.
+enabled = true
+model = "claude-opus-5-5"
+effort = "medium"
+
+[inbox]
+# Gmail: turn on 2-step verification, create an app password at
+# https://myaccount.google.com/apppasswords and export it as
+# JOBHUNT_IMAP_PASSWORD. Nothing is ever sent from this account except the
+# optional daily digest to yourself.
+host = "imap.gmail.com"
+user = "you@example.com"
+password_env = "JOBHUNT_IMAP_PASSWORD"
+days = 21
+digest_to = ""                       # set to your address to get `daily --email`
+smtp_host = "smtp.gmail.com"
+
+[sources]
+# Toggle discovery sources. ats = company career boards from data/companies.toml
+# plus everything resolved from funding news and YC.
+ats = true
+amazon = true
+remoteok = true
+remotive = true
+himalayas = true
+jobicy = true
+weworkremotely = true
+hn = true
+yc = true
+funding = true
+
+[funding]
+days = 45
+queries = [
+  "startup raises Series A Bengaluru",
+  "startup raises Series B India",
+  "Series C funding Indian startup",
+  "AI startup raises funding India",
+  "SaaS startup raises funding Bengaluru",
+  "fintech raises funding India",
+  "devtools startup raises seed India",
+]
+feeds = [
+  "https://entrackr.com/feed/",
+  "https://inc42.com/feed/",
+  "https://techcrunch.com/category/venture/feed/",
+]

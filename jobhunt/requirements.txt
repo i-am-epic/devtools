@@ -1,0 +1,3 @@
+# Optional extras. The core tool needs only Python 3.11+.
+anthropic>=1.0      # Claude-written cover letters, reply classification, prep briefs
+playwright>=1.45    # `apply --assist` form filling (then: playwright install chromium)
