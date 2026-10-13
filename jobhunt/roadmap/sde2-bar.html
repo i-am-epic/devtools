@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- Open this file directly in a browser; ticks are kept in localStorage. The same page is published as a claude.ai artifact where ticks sync to your account. -->
+</head><body>
+<title>SDE-2 Bar 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a spec sheet. Sticky index of tracks with gauges on the left, the checklist on the right;
+   the header bar is literally "the bar" -- one segment per track, filled by what you've done. */
+:root {
+  --bg: #f3f6f8;
+  --surface: #ffffff;
+  --ink: #15202b;
+  --muted: #5a6876;
+  --line: #d8e0e7;
+  --accent: #2443b0;
+  --accent-soft: #e6ecfb;
+  --floor: #5f6f7e;
+  --core: #2443b0;
+  --edge: #7a3db8;
+  --flag: #a85a00;
+  --done-ink: #8592a0;
+  --display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1319; --surface: #151c24; --ink: #e5ecf2; --muted: #93a2b0; --line: #26313c;
+    --accent: #93abff; --accent-soft: #1d2847; --floor: #9aa9b7; --core: #93abff; --edge: #c69bf2;
+    --flag: #f0a54a; --done-ink: #6c7a88; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1319; --surface: #151c24; --ink: #e5ecf2; --muted: #93a2b0; --line: #26313c;
+  --accent: #93abff; --accent-soft: #1d2847; --floor: #9aa9b7; --core: #93abff; --edge: #c69bf2;
+  --flag: #f0a54a; --done-ink: #6c7a88; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); margin: 0; }
+.page { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 64px; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+header.top { display: grid; gap: 14px; margin-bottom: 22px; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 800 clamp(34px, 6vw, 56px)/0.95 var(--display); font-stretch: 78%; letter-spacing: -.01em; margin: 0; text-wrap: balance; }
+.lede { max-width: 66ch; color: var(--muted); margin: 0; }
+.score { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.score b { font: 700 28px/1 var(--display); font-stretch: 85%; color: var(--ink); }
+.score span { color: var(--muted); font-size: 13px; }
+.bar { display: flex; gap: 3px; height: 14px; }
+.bar .seg { position: relative; background: var(--line); border-radius: 2px; overflow: hidden; min-width: 6px; }
+.bar .seg i { position: absolute; inset: 0 auto 0 0; background: var(--accent); transition: width .25s ease; }
+.bar-key { display: flex; flex-wrap: wrap; gap: 4px 12px; font: 12px/1.4 var(--mono); color: var(--muted); }
+
+.levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.level { border-top: 3px solid var(--lv); padding-top: 8px; font-size: 13.5px; color: var(--muted); }
+.level strong { display: block; color: var(--ink); font: 700 15px/1.3 var(--display); font-stretch: 90%; }
+
+.controls { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-block: 10px; border-bottom: 1px solid var(--line); }
+.controls input[type="search"] { flex: 1 1 200px; min-width: 0; font: inherit; padding: 7px 10px; border: 1px solid var(--line);
+  border-radius: 6px; background: var(--surface); color: var(--ink); }
+.seg-ctl { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.seg-ctl button { font: 500 13px/1 var(--body); padding: 8px 10px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.seg-ctl button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.save { font: 12px/1.3 var(--mono); color: var(--muted); margin-left: auto; }
+
+.layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 32px; margin-top: 18px; }
+nav.index { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 64px); align-self: start; display: grid; gap: 2px; }
+nav.index a { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 7px 8px; border-radius: 6px; color: var(--ink); text-decoration: none; font-size: 14px; }
+nav.index a:hover { background: var(--surface); }
+nav.index a small { font: 12px/1 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+nav.index a .g { grid-column: 1 / -1; height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+nav.index a .g i { display: block; height: 100%; background: var(--accent); }
+
+section.track { margin-bottom: 34px; scroll-margin-top: 70px; }
+.track-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; border-bottom: 2px solid var(--ink); padding-bottom: 6px; margin-bottom: 4px; }
+.track-head h2 { font: 800 26px/1.05 var(--display); font-stretch: 80%; margin: 0; text-wrap: balance; }
+.track-head .count { font: 13px/1 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.track-why { color: var(--muted); font-size: 14px; margin: 6px 0 8px; max-width: 70ch; }
+h3.group { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 18px 0 4px; }
+
+ul.items { list-style: none; margin: 0; padding: 0; }
+li.item { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+li.item input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accent); cursor: pointer; }
+li.item label { cursor: pointer; display: grid; gap: 2px; }
+.t { font-weight: 600; }
+.d { color: var(--muted); font-size: 13.5px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 3px; font: 11.5px/1 var(--mono); }
+.lv { padding: 3px 6px; border-radius: 3px; border: 1px solid currentColor; }
+.lv.l0 { color: var(--floor); } .lv.l1 { color: var(--core); } .lv.l2 { color: var(--edge); }
+.flag { color: var(--flag); }
+.tags a { text-decoration: none; }
+.tags a:hover { text-decoration: underline; }
+li.item.done .t { color: var(--done-ink); text-decoration: line-through; text-decoration-thickness: 1px; }
+li.item.done .d { color: var(--done-ink); }
+.empty { color: var(--muted); padding: 24px 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.foot { margin-top: 40px; color: var(--muted); font-size: 13px; max-width: 70ch; }
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  nav.index { position: static; display: flex; overflow-x: auto; gap: 6px; padding-bottom: 6px; }
+  nav.index a { flex: 0 0 auto; background: var(--surface); border: 1px solid var(--line); grid-template-columns: auto auto; }
+  .save { margin-left: 0; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .bar .seg i { transition: none; } }
+</style>
+
+<div class="page">
+  <header class="top">
+    <div class="eyebrow">Backend engineer · ~4 years · 2026 · 25+ LPA bar</div>
+    <h1>The SDE-2 Bar</h1>
+    <p class="lede">Everything a strong four-year backend engineer is expected to know in 2026, from the basics up: DSA, languages, CS fundamentals, design patterns, distributed systems, data, cloud, AI engineering, craft, and the papers behind it all. Tick an item when you could explain it at a whiteboard or have shipped it.</p>
+    <div class="score" aria-live="polite"><b id="score-n">0</b><span id="score-of">of 0 done</span><span id="score-pct"></span></div>
+    <div class="bar" id="bar" role="img" aria-label="Progress by track"></div>
+    <div class="bar-key" id="bar-key"></div>
+    <div class="levels">
+      <div class="level" style="--lv: var(--floor)"><strong>Floor</strong>Every engineer at four years has this. Gaps here fail interviews quietly.</div>
+      <div class="level" style="--lv: var(--core)"><strong>SDE-2</strong>What 25-45 LPA loops actually test, and what you use on the job.</div>
+      <div class="level" style="--lv: var(--edge)"><strong>Senior edge</strong>Sets you apart at top-tier companies and for the next level.</div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <label for="q" class="sr-only">Search topics</label>
+    <input id="q" type="search" placeholder="Search topics, e.g. kafka, raft, sliding window" autocomplete="off">
+    <div class="seg-ctl" role="group" aria-label="Show">
+      <button type="button" data-show="all" aria-pressed="true">All</button>
+      <button type="button" data-show="todo" aria-pressed="false">To do</button>
+      <button type="button" data-show="done" aria-pressed="false">Done</button>
+    </div>
+    <div class="seg-ctl" role="group" aria-label="Level">
+      <button type="button" data-level="any" aria-pressed="true">Any level</button>
+      <button type="button" data-level="0" aria-pressed="false">Floor</button>
+      <button type="button" data-level="1" aria-pressed="false">SDE-2</button>
+      <button type="button" data-level="2" aria-pressed="false">Edge</button>
+      <button type="button" data-level="interview" aria-pressed="false">Interview-critical</button>
+    </div>
+    <span class="save" id="save">Saved in this browser</span>
+  </div>
+
+  <div class="layout">
+    <nav class="index" id="index" aria-label="Tracks"></nav>
+    <main id="tracks"></main>
+  </div>
+
+  <p class="foot">Order that pays off for a switch: DSA patterns and machine coding first (they gate every loop), then system design and distributed systems, with your data and AI work as the spike you lead with. Read one paper a week alongside. Paper and book links open a Google Scholar or Google search.</p>
+</div>
+
+<script>
+// [id, title, what "done" means, level 0/1/2, interview-critical 0/1, link?]
+const S = q => "https://scholar.google.com/scholar?q=" + encodeURIComponent(q);
+const G = q => "https://www.google.com/search?q=" + encodeURIComponent(q);
+const TRACKS = [
+ { id: "dsa", name: "DSA & problem solving", why: "Every product-company loop in India opens with one or two DSA rounds. Learn patterns, not problems: about 150 well-chosen problems cover it.", groups: [
+  ["Foundations", [
+   ["dsa-bigo", "Big-O for time and space", "Derive the complexity of any loop, recursion, or library call you write", 0, 1],
+   ["dsa-arrays", "Arrays, strings and hashing", "Frequency maps, set lookups, anagram/grouping problems in O(n)", 0, 1],
+   ["dsa-twoptr", "Two pointers", "Pair sums, dedupe in place, container/trapping-water style problems", 0, 1],
+   ["dsa-window", "Sliding window", "Fixed and variable windows: longest substring, minimum window, at-most-K", 0, 1],
+   ["dsa-prefix", "Prefix sums and difference arrays", "Subarray sum equals K, range updates", 0, 1],
+   ["dsa-bsearch", "Binary search, including on the answer", "Rotated arrays, first/last position, minimise-the-maximum problems", 0, 1],
+   ["dsa-stack", "Stacks and monotonic stacks", "Valid parentheses, next greater element, largest rectangle", 0, 1],
+   ["dsa-list", "Linked lists", "Reverse, merge, cycle detection, LRU's doubly linked list", 0, 0],
+   ["dsa-recursion", "Recursion and backtracking", "Subsets, permutations, combination sum, N-Queens with pruning", 0, 1],
+  ]],
+  ["Core patterns", [
+   ["dsa-heap", "Heaps and top-K", "K closest, merge K sorted lists, median of a stream", 1, 1],
+   ["dsa-intervals", "Intervals", "Merge, insert, meeting rooms, sweep line", 1, 1],
+   ["dsa-trees", "Trees: DFS/BFS, BST, LCA", "Traversals iteratively, validate BST, diameter, serialize/deserialize", 1, 1],
+   ["dsa-trie", "Tries", "Prefix search, word search II, autocomplete", 1, 0],
+   ["dsa-graphs", "Graphs: BFS/DFS, grids", "Islands, shortest path in unweighted graphs, multi-source BFS", 1, 1],
+   ["dsa-topo", "Topological sort", "Course schedule, build order, cycle detection in DAGs", 1, 1],
+   ["dsa-dijkstra", "Dijkstra and 0-1 BFS", "Network delay, cheapest flights with K stops", 1, 0],
+   ["dsa-uf", "Union-find", "Connected components, redundant connection, accounts merge", 1, 0],
+   ["dsa-dp1", "Dynamic programming, 1D", "Climbing stairs to house robber to word break; top-down then bottom-up", 1, 1],
+   ["dsa-dp2", "Dynamic programming, 2D and strings", "Grid paths, LCS, edit distance, knapsack variants", 1, 1],
+   ["dsa-greedy", "Greedy", "Jump game, gas station, interval scheduling, with an exchange argument", 1, 0],
+   ["dsa-bits", "Bit manipulation", "Single number, counting bits, subsets via masks", 1, 0],
+  ]],
+  ["Edge and practice", [
+   ["dsa-segtree", "Segment tree / Fenwick tree", "Range sum and range min with point updates", 2, 0],
+   ["dsa-dpadv", "Advanced DP: interval, bitmask, digit", "Burst balloons, travelling salesman on small N", 2, 0],
+   ["dsa-mst", "Minimum spanning tree, strongly connected components", "Kruskal/Prim, Tarjan/Kosaraju", 2, 0],
+   ["dsa-150", "150 curated problems done, timed", "e.g. the NeetCode 150, mediums in 25 minutes, explained out loud", 1, 1, G("NeetCode 150")],
+   ["dsa-contest", "Weekly contests", "Regular LeetCode or Codeforces contests; aim for a 1800+ LeetCode rating", 2, 0],
+   ["dsa-machine", "Machine-coding round", "Build a working LRU cache, rate limiter, or parking lot with tests in 90 minutes", 1, 1],
+  ]],
+ ]},
+ { id: "lang", name: "Languages & runtimes", why: "Depth in one language, working fluency in a second. Most Bengaluru product companies run Java or Go on the backend, so add one of them to your Python.", groups: [
+  ["Python, in depth", [
+   ["py-datamodel", "The data model", "Dunder methods, descriptors, __slots__, how attribute lookup works", 1, 0],
+   ["py-iter", "Iterators, generators, comprehensions", "yield, yield from, lazy pipelines over large files", 0, 1],
+   ["py-deco", "Decorators and context managers", "Write a retry decorator and a timing context manager from scratch", 0, 1],
+   ["py-typing", "Typing", "Generics, Protocols, TypedDict, mypy or pyright in CI", 1, 0],
+   ["py-async", "asyncio internals", "Event loop, tasks vs coroutines, cancellation, async context managers, blocking-call pitfalls", 1, 1],
+   ["py-gil", "The GIL, threads and processes", "When threads help (I/O) and when they don't (CPU); free-threaded 3.13+ builds", 1, 1],
+   ["py-mem", "Memory and garbage collection", "Reference counting, the cycle collector, tracemalloc", 2, 0],
+   ["py-perf", "Profiling", "cProfile, py-spy flame graphs, line profiling a hot path", 1, 0],
+   ["py-test", "Testing", "pytest fixtures and parametrize, mocking boundaries, Hypothesis property tests", 1, 0],
+   ["py-pkg", "Packaging and tooling", "uv or Poetry, pyproject.toml, ruff, reproducible builds", 0, 0],
+  ]],
+  ["C# / .NET", [
+   ["cs-async", "async/await in .NET", "Task vs ValueTask, ConfigureAwait, thread-pool starvation", 1, 0],
+   ["cs-mem", "Span, Memory and allocation-free code", "Where they remove GC pressure in parsers and hot paths", 2, 0],
+   ["cs-di", "ASP.NET Core pipeline", "Middleware, DI lifetimes, minimal APIs, hosted services", 1, 0],
+   ["cs-gc", ".NET GC", "Generations, LOH, server vs workstation GC", 2, 0],
+  ]],
+  ["A second backend language", [
+   ["go-basics", "Go: the language", "Structs, interfaces, errors as values, generics, modules", 1, 0],
+   ["go-conc", "Go: concurrency", "Goroutines, channels, select, context cancellation, the race detector", 1, 1],
+   ["go-svc", "Go: ship a service", "A small HTTP or gRPC service with tests and graceful shutdown", 1, 0],
+   ["java-core", "Java: collections and concurrency", "HashMap internals, ConcurrentHashMap, ExecutorService, CompletableFuture", 1, 1],
+   ["java-vt", "Java 21: virtual threads and records", "When virtual threads replace reactive code", 2, 0],
+   ["java-jvm", "JVM memory and GC", "Heap regions, G1/ZGC, reading a GC log", 2, 0],
+   ["java-spring", "Spring Boot basics", "Beans, auto-configuration, transactions, actuator", 1, 0],
+   ["rust-own", "Rust: ownership and borrowing", "Enough to read Rust in infra codebases", 2, 0],
+  ]],
+  ["SQL", [
+   ["sql-window", "Window functions and CTEs", "Running totals, rank per group, gaps and islands", 0, 1],
+   ["sql-joins", "Joins and aggregation at scale", "Join algorithms (hash, merge, nested loop) and when each is picked", 1, 0],
+   ["sql-plans", "Reading query plans", "EXPLAIN ANALYZE, spotting seq scans, misestimates, sort spills", 1, 1],
+  ]],
+ ]},
+ { id: "cs", name: "CS fundamentals", why: "The questions behind the questions. Interviewers probe these when you say 'it's slow' or 'it scales'.", groups: [
+  ["Operating systems", [
+   ["os-proc", "Processes, threads, context switches", "What each costs and what they share", 0, 1],
+   ["os-mem", "Virtual memory and paging", "Page faults, TLB, mmap, the page cache", 1, 0],
+   ["os-io", "I/O models", "Blocking, non-blocking, epoll/kqueue, io_uring; why event loops scale", 1, 1],
+   ["os-fd", "File descriptors and syscalls", "Open files, sockets, ulimits, strace a process", 1, 0],
+  ]],
+  ["Concurrency", [
+   ["cc-locks", "Locks, deadlocks, condition variables", "Dining philosophers, lock ordering, producer-consumer", 0, 1],
+   ["cc-atomic", "Atomics and compare-and-swap", "Lock-free counters, ABA problem, memory ordering basics", 2, 0],
+   ["cc-pool", "Thread pools and work queues", "Sizing pools for CPU vs I/O work, bounded queues, rejection", 1, 1],
+  ]],
+  ["Networking", [
+   ["net-tcp", "TCP", "Handshake, flow control, congestion control, TIME_WAIT, Nagle", 1, 1],
+   ["net-tls", "TLS 1.3", "Handshake, certificates and chains, mTLS", 1, 0],
+   ["net-http", "HTTP/1.1, HTTP/2, HTTP/3 (QUIC)", "Head-of-line blocking, multiplexing, keep-alive", 1, 1],
+   ["net-dns", "DNS", "Resolution path, TTLs, why DNS is the first suspect", 0, 0],
+   ["net-lb", "Load balancing L4 vs L7", "Algorithms (round robin, least connections, consistent hash), health checks", 1, 1],
+   ["net-grpc", "gRPC and Protobuf", "Streaming RPCs, deadlines, schema evolution rules", 1, 0],
+  ]],
+  ["Database internals", [
+   ["db-btree", "B-trees vs LSM trees", "Read, write and space amplification; which engines use which", 1, 1],
+   ["db-wal", "Write-ahead logging and recovery", "Why a commit is durable, checkpoints, fsync", 1, 0],
+   ["db-mvcc", "MVCC", "How Postgres keeps versions, vacuum, bloat", 1, 1],
+   ["db-iso", "Isolation levels and anomalies", "Dirty and non-repeatable reads, phantoms, write skew; what each level prevents", 1, 1],
+   ["db-index", "Indexing strategy", "Composite and covering indexes, selectivity, index-only scans", 0, 1],
+   ["db-repl", "Replication", "Sync vs async, replication lag, read-your-writes, failover", 1, 1],
+   ["db-shard", "Partitioning and sharding", "Range vs hash, hot keys, resharding", 1, 1],
+  ]],
+  ["Hardware sense", [
+   ["hw-latency", "Latency numbers", "L1 to RAM to SSD to network round trips, from memory", 1, 1, G("latency numbers every programmer should know")],
+   ["hw-cache", "CPU caches and false sharing", "Cache lines, data-oriented layouts", 2, 0],
+   ["hw-linux", "Linux performance tools", "top, vmstat, iostat, perf, tcpdump, ss", 1, 0],
+  ]],
+ ]},
+ { id: "lld", name: "Design patterns & LLD", why: "Low-level design and machine-coding rounds check whether your code bends without breaking.", groups: [
+  ["Principles", [
+   ["lld-solid", "SOLID", "Explain each with a refactor you have actually done", 0, 1],
+   ["lld-comp", "Composition over inheritance", "Replace a class hierarchy with strategies", 0, 0],
+   ["lld-di", "Dependency injection and inversion", "Constructor injection, testing with fakes", 0, 0],
+   ["lld-clean", "Hexagonal / clean architecture", "Ports and adapters; keeping domain logic framework-free", 1, 0],
+  ]],
+  ["Gang of Four, the ones you'll use", [
+   ["gof-strategy", "Strategy", "Swap pricing, retry or routing policies at runtime", 0, 1],
+   ["gof-factory", "Factory and Abstract Factory", "Creating connectors or parsers by type", 0, 1],
+   ["gof-builder", "Builder", "Complex request or config objects", 0, 0],
+   ["gof-singleton", "Singleton, and why to avoid it", "Global state vs injected single instances", 0, 1],
+   ["gof-adapter", "Adapter and Facade", "Wrapping a third-party SDK behind your own interface", 0, 0],
+   ["gof-decorator", "Decorator and Proxy", "Caching, logging and auth layers around a service", 1, 0],
+   ["gof-observer", "Observer", "Event listeners, in-process pub/sub", 0, 1],
+   ["gof-command", "Command", "Undo stacks, job queues, audit trails", 1, 0],
+   ["gof-state", "State", "Order or payment state machines with legal transitions", 1, 1],
+   ["gof-chain", "Chain of Responsibility", "Middleware pipelines, validation chains", 1, 0],
+   ["gof-template", "Template Method and Iterator", "Shared algorithm skeletons; custom iteration", 1, 0],
+  ]],
+  ["Integration and resilience patterns", [
+   ["ip-outbox", "Transactional outbox", "Publish events reliably alongside a database write", 1, 1],
+   ["ip-idem", "Idempotent consumer and idempotency keys", "Dedupe tables, safe retries on APIs", 1, 1],
+   ["ip-saga", "Sagas", "Orchestration vs choreography, compensating actions", 1, 1],
+   ["ip-cqrs", "CQRS and event sourcing", "When the read model should differ from the write model", 2, 0],
+   ["ip-dlq", "Retries, dead-letter queues, poison messages", "Backoff with jitter, redrive", 1, 1],
+   ["ip-cb", "Timeouts, circuit breakers, bulkheads", "Stop one slow dependency taking down everything", 1, 1],
+   ["ip-rl", "Rate limiting algorithms", "Token bucket, leaky bucket, fixed and sliding window", 1, 1],
+   ["ip-bp", "Backpressure", "Bounded queues, load shedding, consumer lag as a signal", 1, 0],
+  ]],
+  ["API design", [
+   ["api-rest", "REST resource modelling", "Nouns, status codes, partial updates, HATEOAS awareness", 0, 1],
+   ["api-page", "Pagination", "Cursor vs offset, stable ordering", 1, 1],
+   ["api-version", "Versioning and compatibility", "Additive changes, deprecation", 1, 0],
+   ["api-errors", "Error models", "Problem Details (RFC 9457), retryable vs not", 1, 0],
+   ["api-gql", "GraphQL trade-offs", "N+1 and DataLoader, query cost limits", 2, 0],
+  ]],
+  ["LLD problems to build", [
+   ["lldp-parking", "Parking lot", "Classes, extensibility for new vehicle types", 1, 1],
+   ["lldp-lru", "LRU and LFU cache", "O(1) operations, thread safety", 1, 1],
+   ["lldp-rl", "Rate limiter library", "Pluggable algorithms, per-key limits", 1, 1],
+   ["lldp-split", "Splitwise", "Balances, simplifying debts", 1, 1],
+   ["lldp-booking", "Movie / event booking", "Seat locking and expiry", 1, 1],
+   ["lldp-elevator", "Elevator system", "Scheduling strategy as a pluggable policy", 1, 0],
+   ["lldp-kv", "In-memory key-value store with TTL", "Expiry, eviction, snapshots", 1, 0],
+   ["lldp-pubsub", "In-memory pub/sub or job scheduler", "Topics, consumers, retries, delayed jobs", 1, 0],
+  ]],
+ ]},
+ { id: "hld", name: "Distributed systems & HLD", why: "System design decides your level and band. Say the trade-off before anyone asks.", groups: [
+  ["Building blocks", [
+   ["hld-scale", "Scaling basics", "Stateless services, vertical vs horizontal, read replicas", 0, 1],
+   ["hld-cache", "Caching", "Cache-aside, write-through, write-back, invalidation, stampede protection", 1, 1],
+   ["hld-chash", "Consistent hashing", "Virtual nodes, rebalancing cost", 1, 1],
+   ["hld-queue", "Queues vs logs", "RabbitMQ/SQS vs Kafka: ordering, replay, retention, fan-out", 1, 1],
+   ["hld-ids", "Unique ID generation", "Snowflake, ULID, UUIDv7; why sortable IDs matter", 1, 1],
+   ["hld-blob", "Blob storage and CDNs", "Pre-signed URLs, multipart upload, cache headers", 1, 0],
+   ["hld-search", "Search systems", "Inverted index, BM25, sharded search clusters", 1, 0],
+   ["hld-geo", "Geospatial indexing", "Geohash, quadtrees, H3, nearby-driver queries", 2, 0],
+   ["hld-gw", "API gateway, service discovery, service mesh", "What each removes from application code", 1, 0],
+  ]],
+  ["Theory you must be able to use", [
+   ["ds-cap", "CAP and PACELC", "Pick a side for a real system and defend it", 1, 1],
+   ["ds-consistency", "Consistency models", "Linearizable, sequential, causal, eventual, read-your-writes", 1, 1],
+   ["ds-quorum", "Replication and quorums", "N, R, W; sloppy quorum and hinted handoff", 1, 1],
+   ["ds-consensus", "Consensus: Raft at whiteboard depth", "Leader election, log replication, safety", 2, 1],
+   ["ds-leases", "Leases, locks and fencing tokens", "Why a distributed lock needs a fencing token", 2, 0],
+   ["ds-clocks", "Clocks", "Lamport and vector clocks, hybrid logical clocks, clock skew", 2, 0],
+   ["ds-tx", "Distributed transactions", "2PC and its failure modes vs sagas and outbox", 1, 1],
+   ["ds-eos", "Exactly-once in practice", "Idempotence plus dedupe plus transactional writes", 1, 1],
+   ["ds-failure", "Failure modes", "Partial failure, retries amplifying load, split brain, gray failure", 1, 0],
+  ]],
+  ["Running at scale", [
+   ["sc-estimate", "Back-of-envelope estimation", "QPS, storage, bandwidth and memory in under 3 minutes", 0, 1],
+   ["sc-multiregion", "Multi-region and disaster recovery", "Active-active vs active-passive, RPO and RTO", 2, 0],
+   ["sc-hotkey", "Hot keys and hot partitions", "Key salting, request coalescing, local caches", 1, 1],
+   ["sc-tail", "Tail latency", "p99 vs mean, hedged requests, fan-out amplification", 2, 0],
+  ]],
+  ["Design prompts to rehearse (45 minutes each)", [
+   ["hd-url", "URL shortener", "IDs, redirects, analytics, cache", 0, 1],
+   ["hd-rl", "Distributed rate limiter", "Per-user limits across many gateway nodes", 1, 1],
+   ["hd-feed", "News feed", "Fan-out on write vs read, celebrities", 1, 1],
+   ["hd-chat", "Chat / WhatsApp", "Connections, delivery receipts, offline sync, groups", 1, 1],
+   ["hd-notif", "Notification system", "Channels, priorities, user preferences, dedupe", 1, 1],
+   ["hd-pay", "Payment system", "Idempotency, ledger, reconciliation, PSP failures", 1, 1],
+   ["hd-ride", "Ride hailing", "Location updates, matching, surge", 1, 1],
+   ["hd-type", "Typeahead / autocomplete", "Tries vs search index, ranking, freshness", 1, 0],
+   ["hd-booking", "Ticket booking at a flash sale", "Seat holds, queues, oversell prevention", 1, 1],
+   ["hd-metrics", "Metrics and logging pipeline", "Ingestion at 1M events/s, downsampling, retention tiers", 1, 1],
+   ["hd-sched", "Distributed job scheduler", "Exactly-once triggering, retries, sharding", 1, 0],
+   ["hd-docs", "Collaborative editor", "OT vs CRDTs, presence", 2, 0],
+   ["hd-crawler", "Web crawler", "Politeness, dedupe, frontier", 2, 0],
+  ]],
+ ]},
+ { id: "data", name: "Data & storage", why: "Streaming and data platforms are a strong spike for backend roles. Go one level deeper than most candidates.", groups: [
+  ["Operational stores", [
+   ["pg-deep", "Postgres in depth", "EXPLAIN ANALYZE, vacuum, partitioning, logical replication, connection pooling", 1, 1],
+   ["redis-deep", "Redis in depth", "Data structures, persistence, Streams, Lua, Cluster", 1, 1],
+   ["nosql", "Document and wide-column stores", "MongoDB, Cassandra and DynamoDB data modelling around access patterns", 1, 0],
+   ["vector", "Vector search", "HNSW and IVF, recall vs latency, pgvector vs a dedicated store", 2, 0],
+  ]],
+  ["Streaming", [
+   ["kafka-deep", "Kafka internals", "Partitions, ISR, acks, idempotent producer, transactions, rebalancing, KRaft", 1, 1],
+   ["kafka-ops", "Kafka in production", "Lag, retention, compaction, tiered storage, schema registry", 2, 0],
+   ["stream-proc", "Stream processing", "Event time, watermarks, windows, state and checkpoints (Flink, Kafka Streams)", 2, 0],
+   ["cdc", "Change data capture", "Debezium, the outbox pattern from the data side", 2, 0],
+  ]],
+  ["Analytics and batch", [
+   ["olap", "Columnar OLAP", "ClickHouse MergeTree, materialised views, sort keys", 2, 0],
+   ["parquet", "Parquet and Arrow", "Row groups, encodings, predicate pushdown", 1, 0],
+   ["lakehouse", "Lakehouse table formats", "Iceberg or Delta: snapshots, schema evolution, compaction", 2, 0],
+   ["spark", "Spark", "Shuffles, skew, partitioning, adaptive query execution", 1, 0],
+   ["orchestration", "Orchestration", "Airflow or Dagster DAGs vs Temporal durable workflows", 1, 0],
+   ["modeling", "Data modelling", "Star schemas, slowly changing dimensions, event schemas", 1, 0],
+  ]],
+ ]},
+ { id: "cloud", name: "Cloud, infra & reliability", why: "Owning a service end to end, including the pager, is what separates SDE-2 from SDE-1.", groups: [
+  ["Containers and Kubernetes", [
+   ["docker", "Docker internals", "Namespaces, cgroups, layers, multi-stage builds, small images", 0, 0],
+   ["k8s-core", "Kubernetes core objects", "Pods, Deployments, Services, ConfigMaps, Secrets, probes", 0, 1],
+   ["k8s-sched", "Scheduling and autoscaling", "Requests and limits, HPA, KEDA, PDBs, node affinity", 1, 0],
+   ["k8s-net", "Kubernetes networking", "CNI, Services vs Ingress vs Gateway API", 1, 0],
+   ["k8s-op", "Controllers and operators", "Reconcile loops; write a tiny operator", 2, 0],
+  ]],
+  ["Cloud and delivery", [
+   ["aws-map", "AWS core services", "EC2, S3, SQS/SNS, DynamoDB, Lambda, EKS, IAM, VPC, and their Azure and GCP equivalents", 1, 1],
+   ["iac", "Infrastructure as code", "Terraform or OpenTofu modules and state; Pulumi awareness", 1, 0],
+   ["cicd", "CI/CD", "Pipelines, caching, trunk-based development", 0, 0],
+   ["deploy", "Progressive delivery", "Blue-green, canary, feature flags, safe rollbacks and migrations", 1, 1],
+  ]],
+  ["Observability and operations", [
+   ["otel", "OpenTelemetry", "Traces, metrics and logs correlated; context propagation", 1, 0],
+   ["slo", "SLIs, SLOs and error budgets", "Alert on symptoms, not causes", 1, 1],
+   ["incident", "Incident response and postmortems", "Runbooks, blameless reviews, follow-through", 1, 1],
+   ["loadtest", "Load testing and capacity", "k6 or Locust, finding the knee of the curve", 1, 0],
+   ["ebpf", "eBPF awareness", "What Cilium, Pixie and bpftrace make possible", 2, 0],
+  ]],
+  ["Security", [
+   ["sec-owasp", "OWASP API Top 10", "Broken object-level auth, injection, SSRF", 0, 1],
+   ["sec-oauth", "OAuth 2.0 and OIDC", "Auth code + PKCE, client credentials, token lifetimes", 1, 1],
+   ["sec-jwt", "JWT pitfalls", "alg confusion, revocation, what not to put in a token", 1, 0],
+   ["sec-secrets", "Secrets and least privilege", "Vaults, workload identity, scoped IAM", 1, 0],
+   ["sec-supply", "Supply-chain security", "Dependency pinning, SBOMs, signed artifacts", 2, 0],
+  ]],
+ ]},
+ { id: "ai", name: "AI engineering", why: "The fastest-growing backend specialism in 2026. Production RAG and agent experience is rare; make it a headline.", groups: [
+  ["Foundations", [
+   ["ai-llm", "How LLMs work, conceptually", "Tokens, context windows, sampling, attention, why outputs vary", 0, 1],
+   ["ai-embed", "Embeddings and similarity", "Cosine vs dot product, embedding drift, dimensionality", 0, 1],
+   ["ai-struct", "Prompting and structured outputs", "System prompts, JSON schemas, few-shot, failure handling", 0, 0],
+  ]],
+  ["Building with models", [
+   ["ai-tools", "Tool calling and agent loops", "Design tool schemas, handle errors, bound the loop", 1, 1],
+   ["ai-mcp", "Model Context Protocol", "Build an MCP server; auth and permission design", 1, 0],
+   ["ai-rag", "RAG in production", "Chunking, hybrid BM25 + vector retrieval, re-ranking, citations, access control", 1, 1],
+   ["ai-context", "Context engineering and memory", "What goes in the window, summarisation, long-running agents", 2, 0],
+   ["ai-multi", "Multi-agent orchestration", "Planner/worker, parallel sub-agents, when one agent is better", 2, 0],
+  ]],
+  ["Quality, cost and safety", [
+   ["ai-evals", "Evals", "Golden sets, LLM-as-judge with calibration, regression gates in CI", 1, 1],
+   ["ai-guard", "Guardrails and prompt injection", "Untrusted input, tool permissioning, output validation", 1, 1],
+   ["ai-cost", "Latency and cost", "Prompt caching, batching, streaming, model routing, token budgets", 1, 1],
+   ["ai-obs", "LLM observability", "Tracing calls, token accounting, feedback loops", 1, 0],
+  ]],
+  ["Serving and training (awareness)", [
+   ["ai-serve", "Inference serving", "KV cache, continuous batching, quantisation, vLLM", 2, 0],
+   ["ai-ft", "Fine-tuning", "LoRA, when retrieval or prompting beats fine-tuning", 2, 0],
+   ["ai-dev", "AI-assisted development", "Agentic coding workflows; reviewing AI-written code critically", 0, 0],
+  ]],
+ ]},
+ { id: "craft", name: "Engineering craft", why: "The behavioural and hiring-manager rounds look for these. They also decide promotions once you're in.", groups: [
+  ["Execution", [
+   ["cr-design", "Design docs and ADRs", "Write one with alternatives considered and get it reviewed", 1, 1],
+   ["cr-review", "Code review that teaches", "Comments on design and risk, not just style", 1, 0],
+   ["cr-test", "Testing strategy", "Unit, integration, contract tests; Testcontainers; what not to test", 1, 1],
+   ["cr-refactor", "Refactoring legacy code safely", "Characterisation tests, strangler fig", 1, 0],
+   ["cr-own", "Owning a service end to end", "Dashboards, alerts, runbooks, on-call", 1, 1],
+   ["cr-estimate", "Breaking down and estimating work", "Milestones, risks first, saying no", 1, 0],
+  ]],
+  ["Influence", [
+   ["cr-mentor", "Mentoring", "Onboard someone; pair regularly", 1, 0],
+   ["cr-xteam", "Cross-team work", "Driving a change that needed another team's buy-in", 2, 0],
+   ["cr-product", "Product sense", "Tie your work to a metric the business tracks", 1, 1],
+   ["cr-tradeoffs", "Communicating trade-offs", "Explain a technical decision to a non-engineer in two minutes", 1, 1],
+  ]],
+  ["Interview readiness", [
+   ["cr-stories", "Six STAR stories", "Impact, conflict, failure, ambiguity, ownership, leadership, each in about two minutes", 0, 1],
+   ["cr-intro", "A 90-second introduction", "Who you are, your two strongest systems, what you want next", 0, 1],
+   ["cr-public", "Something public", "A blog post, OSS contribution or talk that shows your depth", 2, 0],
+  ]],
+ ]},
+ { id: "papers", name: "Papers & books", why: "Most system-design 'patterns' are a famous paper in disguise. One a week is enough.", groups: [
+  ["Distributed systems papers", [
+   ["p-lamport", "Time, Clocks, and the Ordering of Events (Lamport, 1978)", "Happens-before and logical clocks", 1, 0, S("Time, Clocks, and the Ordering of Events in a Distributed System")],
+   ["p-gfs", "The Google File System (2003)", "Single master, chunk servers, relaxed consistency", 1, 0, S("The Google File System Ghemawat")],
+   ["p-mapreduce", "MapReduce (2004)", "Batch processing model and fault tolerance", 1, 0, S("MapReduce: Simplified Data Processing on Large Clusters")],
+   ["p-bigtable", "Bigtable (2006)", "Wide-column model, SSTables, tablets", 1, 0, S("Bigtable: A Distributed Storage System for Structured Data")],
+   ["p-chubby", "Chubby (2006)", "Lock service, leases, coarse-grained locking", 2, 0, S("The Chubby lock service for loosely-coupled distributed systems")],
+   ["p-dynamo", "Dynamo (2007)", "Consistent hashing, quorums, vector clocks, hinted handoff", 1, 1, S("Dynamo: Amazon's Highly Available Key-value Store")],
+   ["p-dapper", "Dapper (2010)", "The origin of distributed tracing", 2, 0, S("Dapper, a Large-Scale Distributed Systems Tracing Infrastructure")],
+   ["p-kafka", "Kafka (2011)", "The log as a messaging system", 1, 1, S("Kafka: a Distributed Messaging System for Log Processing")],
+   ["p-log", "The Log (Kreps, 2013)", "The log as the unifying abstraction for data systems", 1, 0, G("Jay Kreps The Log: What every software engineer should know about real-time data's unifying abstraction")],
+   ["p-spanner", "Spanner (2012)", "TrueTime and external consistency", 2, 0, S("Spanner: Google's Globally-Distributed Database")],
+   ["p-tail", "The Tail at Scale (2013)", "Why p99 dominates at fan-out, hedged requests", 2, 1, S("The Tail at Scale Dean Barroso")],
+   ["p-raft", "Raft (2014)", "Understandable consensus", 1, 1, S("In Search of an Understandable Consensus Algorithm")],
+   ["p-borg", "Borg (2015)", "The ancestor of Kubernetes", 2, 0, S("Large-scale cluster management at Google with Borg")],
+   ["p-dataflow", "The Dataflow Model (2015)", "Event time, windows, watermarks, triggers", 2, 0, S("The Dataflow Model: A Practical Approach to Balancing Correctness, Latency, and Cost")],
+   ["p-aurora", "Amazon Aurora (2017)", "The log is the database", 2, 0, S("Amazon Aurora: Design Considerations for High Throughput Cloud-Native Relational Databases")],
+   ["p-zanzibar", "Zanzibar (2019)", "Authorization at global scale", 2, 0, S("Zanzibar: Google's Consistent, Global Authorization System")],
+  ]],
+  ["AI papers", [
+   ["p-attention", "Attention Is All You Need (2017)", "The transformer", 1, 1, S("Attention Is All You Need")],
+   ["p-rag", "Retrieval-Augmented Generation (2020)", "The original RAG formulation", 1, 1, S("Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks")],
+   ["p-lora", "LoRA (2021)", "Low-rank adaptation for cheap fine-tuning", 2, 0, S("LoRA: Low-Rank Adaptation of Large Language Models")],
+   ["p-cot", "Chain-of-Thought Prompting (2022)", "Reasoning through intermediate steps", 1, 0, S("Chain-of-Thought Prompting Elicits Reasoning in Large Language Models")],
+   ["p-react", "ReAct (2022)", "Interleaving reasoning and tool use: the agent loop", 1, 1, S("ReAct: Synergizing Reasoning and Acting in Language Models")],
+   ["p-toolformer", "Toolformer (2023)", "Models learning to call tools", 2, 0, S("Toolformer: Language Models Can Teach Themselves to Use Tools")],
+   ["p-lost", "Lost in the Middle (2023)", "Why position in the context matters for RAG", 2, 0, S("Lost in the Middle: How Language Models Use Long Contexts")],
+   ["p-paged", "PagedAttention / vLLM (2023)", "KV-cache memory management for serving", 2, 0, S("Efficient Memory Management for Large Language Model Serving with PagedAttention")],
+  ]],
+  ["Books", [
+   ["b-ddia", "Designing Data-Intensive Applications (Kleppmann)", "The one book for backend system design", 0, 1, G("Designing Data-Intensive Applications Kleppmann")],
+   ["b-xu", "System Design Interview, vol. 1 and 2 (Alex Xu)", "Interview-shaped walkthroughs", 1, 1, G("System Design Interview Alex Xu volume 2")],
+   ["b-uds", "Understanding Distributed Systems (Vitillo)", "A short, practical primer", 1, 0, G("Understanding Distributed Systems Roberto Vitillo")],
+   ["b-dbi", "Database Internals (Petrov)", "Storage engines and distributed databases", 2, 0, G("Database Internals Alex Petrov")],
+   ["b-posd", "A Philosophy of Software Design (Ousterhout)", "Deep modules, complexity", 1, 0, G("A Philosophy of Software Design Ousterhout")],
+   ["b-release", "Release It! (Nygard)", "Stability patterns from production failures", 1, 0, G("Release It! Michael Nygard")],
+   ["b-sre", "Site Reliability Engineering (Google)", "SLOs, toil, on-call", 2, 0, G("Site Reliability Engineering Google book")],
+  ]],
+ ]},
+];
+
+const LV = ["Floor", "SDE-2", "Senior edge"];
+const ALL = [];
+TRACKS.forEach(t => t.groups.forEach(([g, items]) => items.forEach(it => ALL.push({ track: t.id, group: g, id: it[0], t: it[1], d: it[2], lv: it[3], iv: it[4], link: it[5] }))));
+
+// ---- state -------------------------------------------------------------------
+let done = {};                       // id -> ISO date ticked
+let view = { show: "all", level: "any", q: "" };
+const LS_DONE = "sde2bar.done", LS_VIEW = "sde2bar.view";
+const lsGet = k => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+done = lsGet(LS_DONE) || {};
+view = Object.assign(view, lsGet(LS_VIEW) || {}, { q: "" });
+
+let remote = null;                   // {ref} when saving to the account
+let writing = false, pending = false, saveTimer = null;
+const saveEl = document.getElementById("save");
+
+function scheduleSave() {
+  lsSet(LS_DONE, done);
+  if (!remote) { saveEl.textContent = "Saved in this browser"; return; }
+  saveEl.textContent = "Saving…";
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flush, 700);
+}
+async function flush() {
+  saveTimer = null;
+  if (writing) { pending = true; return; }
+  writing = true;
+  try {
+    await remote.ref.set({ done, updated: new Date().toISOString() });
+    saveEl.textContent = "Saved to your account";
+  } catch (e) {
+    saveEl.textContent = e && e.code === "quota_exceeded" ? "Account storage full; saved in this browser" : "Couldn't save to your account; saved in this browser";
+  } finally {
+    writing = false;
+    if (pending) { pending = false; flush(); }
+  }
+}
+
+// ---- render ------------------------------------------------------------------
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v; else if (k === "text") n.textContent = v; else n.setAttribute(k, v);
+  }
+  kids.flat().forEach(k => k && n.append(k));
+  return n;
+};
+
+function visible(it) {
+  if (view.show === "todo" && done[it.id]) return false;
+  if (view.show === "done" && !done[it.id]) return false;
+  if (view.level === "interview" && !it.iv) return false;
+  if (["0", "1", "2"].includes(view.level) && String(it.lv) !== view.level) return false;
+  if (view.q) {
+    const hay = (it.t + " " + it.d + " " + it.group).toLowerCase();
+    if (!view.q.toLowerCase().split(/\s+/).every(w => hay.includes(w))) return false;
+  }
+  return true;
+}
+
+function renderTracks() {
+  const main = document.getElementById("tracks");
+  main.replaceChildren();
+  let shown = 0;
+  for (const t of TRACKS) {
+    const items = ALL.filter(i => i.track === t.id);
+    const vis = items.filter(visible);
+    if (!vis.length) continue;
+    shown += vis.length;
+    const sec = el("section", { class: "track", id: t.id },
+      el("div", { class: "track-head" }, el("h2", { text: t.name }), el("span", { class: "count", "data-count": t.id })),
+      el("p", { class: "track-why", text: t.why }));
+    for (const [g] of t.groups) {
+      const gv = vis.filter(i => i.group === g);
+      if (!gv.length) continue;
+      sec.append(el("h3", { class: "group", text: g }));
+      const ul = el("ul", { class: "items" });
+      for (const it of gv) {
+        const cb = el("input", { type: "checkbox", id: "cb-" + it.id });
+        cb.checked = !!done[it.id];
+        cb.addEventListener("change", () => {
+          if (cb.checked) done[it.id] = new Date().toISOString().slice(0, 10); else delete done[it.id];
+          li.classList.toggle("done", cb.checked);
+          updateCounts(); scheduleSave();
+        });
+        const tags = el("span", { class: "tags" }, el("span", { class: "lv l" + it.lv, text: LV[it.lv] }));
+        if (it.iv) tags.append(el("span", { class: "flag", text: "Interview-critical" }));
+        if (it.link) tags.append(el("a", { href: it.link, target: "_blank", rel: "noopener", text: "Find it ↗" }));
+        if (done[it.id]) tags.append(el("span", { class: "d", text: "ticked " + done[it.id] }));
+        const li = el("li", { class: "item" + (done[it.id] ? " done" : "") }, cb,
+          el("label", { for: "cb-" + it.id }, el("span", { class: "t", text: it.t }), el("span", { class: "d", text: it.d }), tags));
+        ul.append(li);
+      }
+      sec.append(ul);
+    }
+    main.append(sec);
+  }
+  if (!shown) main.append(el("p", { class: "empty", text: "Nothing matches. Clear the search or switch the filters back to All." }));
+  updateCounts();
+}
+
+function updateCounts() {
+  const total = ALL.length, n = ALL.filter(i => done[i.id]).length;
+  document.getElementById("score-n").textContent = n;
+  document.getElementById("score-of").textContent = "of " + total + " done";
+  document.getElementById("score-pct").textContent = Math.round(n / total * 100) + "%";
+  const bar = document.getElementById("bar"), key = document.getElementById("bar-key"), idx = document.getElementById("index");
+  bar.replaceChildren(); key.replaceChildren(); idx.replaceChildren();
+  for (const t of TRACKS) {
+    const items = ALL.filter(i => i.track === t.id), d = items.filter(i => done[i.id]).length;
+    const pct = items.length ? d / items.length * 100 : 0;
+    const fill = el("i"); fill.style.width = pct + "%";
+    const seg = el("div", { class: "seg", title: t.name + ": " + d + "/" + items.length }, fill);
+    seg.style.flex = String(items.length);
+    bar.append(seg);
+    const g = el("i"); g.style.width = pct + "%";
+    idx.append(el("a", { href: "#" + t.id }, el("span", { text: t.name }), el("small", { text: d + "/" + items.length }), el("span", { class: "g" }, g)));
+    const c = document.querySelector('[data-count="' + t.id + '"]');
+    if (c) c.textContent = d + " / " + items.length;
+  }
+  key.append(el("span", { text: "Each segment is one track, sized by how much it covers." }));
+}
+
+// ---- controls ----------------------------------------------------------------
+function syncControls() {
+  document.querySelectorAll("[data-show]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.show === view.show)));
+  document.querySelectorAll("[data-level]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.level === view.level)));
+}
+document.querySelectorAll("[data-show]").forEach(b => b.addEventListener("click", () => { view.show = b.dataset.show; lsSet(LS_VIEW, { show: view.show, level: view.level }); syncControls(); renderTracks(); }));
+document.querySelectorAll("[data-level]").forEach(b => b.addEventListener("click", () => { view.level = b.dataset.level; lsSet(LS_VIEW, { show: view.show, level: view.level }); syncControls(); renderTracks(); }));
+let qTimer;
+document.getElementById("q").addEventListener("input", e => { clearTimeout(qTimer); qTimer = setTimeout(() => { view.q = e.target.value.trim(); renderTracks(); }, 120); });
+
+syncControls();
+renderTracks();
+
+function sameKeys(a, b) {
+  const ka = Object.keys(a).sort(), kb = Object.keys(b).sort();
+  return ka.length === kb.length && ka.every((k, i) => k === kb[i]);
+}
+
+// ---- account sync (claude.ai artifact runtime; absent when opened as a local file) ----
+(async () => {
+  if (!window.claude || !window.claude.use) return;
+  const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+  if (!db || !user) return;
+  const uid = await user.id();
+  if (!uid) return;
+  let ref;
+  try { ref = db.doc("data/users/" + uid + "/progress"); } catch { return; }
+  remote = { ref };
+  saveEl.textContent = "Loading your progress…";
+  let first = true;
+  ref.onSnapshot(snap => {
+    if (snap.metadata.hasPendingWrites) return;
+    const body = snap.exists ? snap.data() : null;
+    if (first) {
+      first = false;
+      const local = done;
+      const fromAccount = (body && body.done) || {};
+      done = Object.assign({}, local, fromAccount);
+      renderTracks();
+      // Carry ticks made in this browser before signing in up to the account.
+      if (Object.keys(local).some(k => !fromAccount[k])) scheduleSave();
+      else saveEl.textContent = "Saved to your account";
+      return;
+    }
+    // Ticks made on another device arrive here.
+    if (body && body.done && !writing && !saveTimer && !sameKeys(body.done, done)) {
+      done = Object.assign({}, body.done); lsSet(LS_DONE, done); renderTracks();
+    }
+  }, () => { remote = null; saveEl.textContent = "Saved in this browser"; });
+})();
+</script>
+
+</body></html>

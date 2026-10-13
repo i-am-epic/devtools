@@ -148,6 +148,16 @@ built-in templates are used, and they are good enough on their own.
   accounts that do it, and your LinkedIn account is your referral network.
   jobhunt generates the searches and the messages; you send them.
 
+## Skills checklist
+
+`roadmap/sde2-bar.html` is a 238-item checklist of what a strong four-year
+backend engineer is expected to know in 2026, from the basics up: DSA patterns,
+Python/Go/Java, CS fundamentals, design patterns and LLD, distributed systems
+and system design, data and streaming, cloud and reliability, AI engineering,
+craft, and the classic papers. Items are tagged Floor / SDE-2 / Senior edge and
+flagged when interviews lean on them. Open the file in a browser; your ticks
+are kept in that browser.
+
 ## Privacy
 
 `profile.toml`, the database, kits, the dashboard and the browser profile live
